@@ -46,17 +46,20 @@ webhooks: {
 },
 
 
-  hooks: {
-    afterAuth: async ({ session }) => {
-      await registerWebhooks({ session });
-    },
+hooks: {
+  afterAuth: async ({ session }) => {
+    console.log("afterAuth: starting webhook registration for", session.shop);
+
+    try {
+      const result = await registerWebhooks({ session });
+      console.log("afterAuth: registerWebhooks result =", JSON.stringify(result, null, 2));
+    } catch (err) {
+      console.error("afterAuth: registerWebhooks ERROR =", err);
+    }
+
+    console.log("afterAuth: finished webhook registration attempt for", session.shop);
   },
-  future: {
-    expiringOfflineAccessTokens: true,
-  },
-  ...(process.env.SHOP_CUSTOM_DOMAIN
-    ? { customShopDomains: [process.env.SHOP_CUSTOM_DOMAIN] }
-    : {}),
+},
 });
 
 export default shopify;
