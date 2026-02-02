@@ -141,27 +141,10 @@ export const loader = async ({ request }) => {
     }
   }
 
-  // ========== TEMP DEBUG: Fetch webhook subscriptions ==========
-  let debugWebhooks = [];
-  try {
-    const webhookRes = await admin.graphql(`
-      query { webhookSubscriptions(first: 50) { edges { node { topic endpoint { __typename ... on WebhookHttpEndpoint { callbackUrl } } } } } }
-    `);
-    const webhookJson = await webhookRes.json();
-    debugWebhooks = webhookJson?.data?.webhookSubscriptions?.edges?.map(e => ({
-      topic: e.node.topic,
-      callbackUrl: e.node.endpoint?.callbackUrl || "N/A"
-    })) || [];
-  } catch (err) {
-    debugWebhooks = [{ topic: "ERROR", callbackUrl: String(err) }];
-  }
-  // ========== END TEMP DEBUG ==========
-
   return {
     config: configMf?.value ?? JSON.stringify({ version: 1, rules: [] }),
     globalSettings,
     shopId, // Pass to client for action
-    debugWebhooks, // TEMP DEBUG
   };
 };
 
@@ -597,7 +580,7 @@ function defaultRule() {
 // ============================================================================
 
 export default function Index() {
-  const { config, globalSettings, shopId, debugWebhooks } = useLoaderData(); // debugWebhooks is TEMP DEBUG
+  const { config, globalSettings, shopId } = useLoaderData();
 
   // Parse and migrate config to v2 format on initial load
   const initialConfig = (() => {
@@ -1028,16 +1011,6 @@ export default function Index() {
           }
         }
       `}</style>
-
-      {/* ========== TEMP DEBUG: Registered Webhooks ========== */}
-      <div style={{ background: "#fffbe6", border: "2px solid #faad14", padding: "12px", marginBottom: "16px", borderRadius: "8px" }}>
-        <strong style={{ color: "#d48806" }}>TEMP DEBUG: Registered Webhooks</strong>
-        <pre style={{ marginTop: "8px", fontSize: "12px", overflow: "auto", maxHeight: "200px" }}>
-          {JSON.stringify(debugWebhooks, null, 2)}
-        </pre>
-      </div>
-      {/* ========== END TEMP DEBUG ========== */}
-
       <s-page heading="Editor">
         <s-section>
           <s-box
