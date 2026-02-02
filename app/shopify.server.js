@@ -33,32 +33,18 @@ const shopify = shopifyApp({
   sessionStorage: new PrismaSessionStorage(prisma),
   distribution: AppDistribution.AppStore,
 
-   webhooks: {
+webhooks: {
   APP_UNINSTALLED: {
     deliveryMethod: "http",
-    callbackUrl: "/webhooks/app/uninstalled",
+    callbackUrl: "/webhooks",
   },
 
   APP_SCOPES_UPDATE: {
     deliveryMethod: "http",
-    callbackUrl: "/webhooks/app/scopes_update",
-  },
-
-  CUSTOMERS_DATA_REQUEST: {
-    deliveryMethod: "http",
-    callbackUrl: "/webhooks/customers/data_request",
-  },
-
-  CUSTOMERS_REDACT: {
-    deliveryMethod: "http",
-    callbackUrl: "/webhooks/customers/redact",
-  },
-
-  SHOP_REDACT: {
-    deliveryMethod: "http",
-    callbackUrl: "/webhooks/shop/redact",
+    callbackUrl: "/webhooks",
   },
 },
+
 
   hooks: {
     afterAuth: async ({ session }) => {
