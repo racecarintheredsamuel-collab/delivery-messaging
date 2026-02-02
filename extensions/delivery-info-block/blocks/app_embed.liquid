@@ -1,0 +1,52 @@
+{%- comment -%}
+  Delivery Info - App Embed Block
+  Loads on all pages, injects cart messages on cart page
+  This is an app embed block that merchants enable once in Theme Settings > App embeds
+{%- endcomment -%}
+
+{%- assign rules_metafield = shop.metafields.delivery_rules.config -%}
+
+<script id="dib-cart-config" type="application/json">
+{%- if rules_metafield != blank and rules_metafield.value != blank -%}
+{{ rules_metafield.value | json }}
+{%- else -%}
+{"version":1,"rules":[]}
+{%- endif -%}
+</script>
+
+<script>
+  (function () {
+    if (window.__DIB_CART_LOADED__) return;
+    window.__DIB_CART_LOADED__ = true;
+    var s = document.createElement("script");
+    s.src = "{{ 'dib-cart.js' | asset_url }}";
+    s.defer = true;
+    document.head.appendChild(s);
+  })();
+</script>
+
+<style>
+.dib-cart-message,
+.cart .dib-cart-message,
+.cart-drawer .dib-cart-message,
+.mini-cart .dib-cart-message,
+cart-drawer .dib-cart-message,
+[data-cart-drawer] .dib-cart-message {
+  color: #6b7280 !important;
+  font-size: 0.7em !important;
+  font-weight: 600 !important;
+  margin-top: 4px !important;
+  line-height: 1.4 !important;
+  font-style: normal !important;
+  text-transform: none !important;
+  letter-spacing: normal !important;
+}
+</style>
+
+{% schema %}
+{
+  "name": "Delivery Info (cart)",
+  "target": "body",
+  "settings": []
+}
+{% endschema %}

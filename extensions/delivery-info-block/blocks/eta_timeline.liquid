@@ -1,0 +1,338 @@
+{%- assign uid = 'eta-' | append: block.id -%}
+{%- assign show_eta_timeline_final = false -%}
+{%- assign eta_icon_size_final = 'medium' -%}
+{%- assign eta_connector_style_final = 'arrows' -%}
+{%- assign eta_connector_color_final = '#111827' -%}
+{%- assign eta_connector_use_main_color_final = true -%}
+{%- assign eta_connector_alignment_final = 'center' -%}
+{%- assign eta_color_final = '#111827' -%}
+{%- assign eta_use_main_icon_color_final = true -%}
+{%- assign eta_border_width_final = 0 -%}
+{%- assign eta_border_color_final = '#e5e7eb' -%}
+{%- assign eta_border_radius_final = 8 -%}
+{%- assign eta_delivery_days_min_final = 3 -%}
+{%- assign eta_delivery_days_max_final = 5 -%}
+{%- assign eta_order_icon_final = 'clipboard-document-check' -%}
+{%- assign eta_shipping_icon_final = 'truck' -%}
+{%- assign eta_delivery_icon_final = 'home' -%}
+{%- assign eta_order_icon_style_final = 'solid' -%}
+{%- assign eta_shipping_icon_style_final = 'solid' -%}
+{%- assign eta_delivery_icon_style_final = 'solid' -%}
+{%- assign eta_label_order_final = 'Ordered' -%}
+{%- assign eta_label_shipping_final = 'Shipped' -%}
+{%- assign eta_label_delivery_final = 'Delivered' -%}
+{%- assign eta_gap_icon_label_final = 2 -%}
+{%- assign eta_gap_label_date_final = 0 -%}
+{%- assign eta_horizontal_gap_final = 12 -%}
+{%- assign eta_padding_horizontal_final = 8 -%}
+{%- assign eta_padding_vertical_final = 8 -%}
+{%- assign cutoff_time_final = '14:00' -%}
+{%- assign cutoff_time_sat_final = '' -%}
+{%- assign cutoff_time_sun_final = '' -%}
+{%- assign closed_days_final = '' -%}
+{%- assign lead_time_final = 0 -%}
+{%- assign courier_no_delivery_days_final = 'sat,sun' -%}
+{%- assign bank_holiday_country_final = '' -%}
+{%- assign custom_holidays_final = '' -%}
+{%- assign icon_color = '#111827' -%}
+{%- assign eta_use_theme_font_final = true -%}
+{%- assign eta_match_messages_font_final = false -%}
+{%- assign eta_custom_font_family_final = '' -%}
+{%- assign use_theme_font_final = true -%}
+{%- assign custom_font_family_final = '' -%}
+{%- assign eta_use_theme_text_styling_final = true -%}
+{%- assign eta_label_color_final = '' -%}
+{%- assign eta_label_font_size_final = 'small' -%}
+{%- assign eta_label_font_weight_final = 'semibold' -%}
+{%- assign eta_date_color_final = '' -%}
+{%- assign eta_date_font_size_final = 'xsmall' -%}
+{%- assign eta_date_font_weight_final = 'normal' -%}
+{%- assign eta_margin_top = 0 -%}
+{%- assign eta_margin_bottom = 0 -%}
+{%- assign eta_alignment = 'left' -%}
+{%- assign rules_json = shop.metafields.delivery_rules.config.value -%}
+{%- assign rules_obj = nil -%}
+{%- assign rules = nil -%}
+{%- if rules_json != blank -%}
+  {%- assign rules_obj = rules_json | parse_json -%}
+  {%- if rules_obj.version == 2 -%}
+    {%- assign active_profile_id = rules_obj.activeProfileId | strip -%}
+    {%- assign found_profile = false -%}
+    {%- for profile in rules_obj.profiles -%}
+      {%- assign profile_id_check = profile.id | strip -%}
+      {%- if profile_id_check == active_profile_id -%}
+        {%- assign rules = profile.rules -%}
+        {%- assign found_profile = true -%}
+        {%- break -%}
+      {%- endif -%}
+    {%- endfor -%}
+    {%- if found_profile == false and rules_obj.profiles.size > 0 -%}
+      {%- assign rules = rules_obj.profiles.first.rules -%}
+    {%- endif -%}
+  {%- else -%}
+    {%- assign rules = rules_obj.rules -%}
+  {%- endif -%}
+{%- endif -%}
+{%- assign global_settings_json = shop.metafields.delivery_rules.settings.value -%}
+{%- assign global_settings = nil -%}
+{%- if global_settings_json != blank -%}
+  {%- assign global_settings = global_settings_json | parse_json -%}
+{%- endif -%}
+{%- if global_settings != nil -%}
+  {%- if global_settings.cutoff_time != blank -%}{%- assign cutoff_time_final = global_settings.cutoff_time -%}{%- endif -%}
+  {%- if global_settings.cutoff_time_sat != blank -%}{%- assign cutoff_time_sat_final = global_settings.cutoff_time_sat -%}{%- endif -%}
+  {%- if global_settings.cutoff_time_sun != blank -%}{%- assign cutoff_time_sun_final = global_settings.cutoff_time_sun -%}{%- endif -%}
+  {%- if global_settings.closed_days != blank -%}{%- assign closed_days_final = global_settings.closed_days | join: ',' -%}{%- endif -%}
+  {%- if global_settings.lead_time != blank -%}{%- assign lead_time_final = global_settings.lead_time -%}{%- endif -%}
+  {%- if global_settings.courier_no_delivery_days != blank -%}{%- assign courier_no_delivery_days_final = global_settings.courier_no_delivery_days | join: ',' -%}{%- endif -%}
+  {%- if global_settings.bank_holiday_country != blank -%}{%- assign bank_holiday_country_final = global_settings.bank_holiday_country -%}{%- endif -%}
+  {%- if global_settings.custom_holidays != blank -%}
+    {%- assign custom_holidays_dates = '' -%}
+    {%- for holiday in global_settings.custom_holidays -%}
+      {%- if custom_holidays_dates != '' -%}{%- assign custom_holidays_dates = custom_holidays_dates | append: ',' -%}{%- endif -%}
+      {%- assign custom_holidays_dates = custom_holidays_dates | append: holiday.date -%}
+    {%- endfor -%}
+    {%- assign custom_holidays_final = custom_holidays_dates -%}
+  {%- endif -%}
+  {%- if global_settings.use_theme_font == false -%}{%- assign use_theme_font_final = false -%}{%- endif -%}
+  {%- if global_settings.custom_font_family != blank -%}{%- assign custom_font_family_final = global_settings.custom_font_family -%}{%- endif -%}
+  {%- if global_settings.eta_use_theme_font == false or global_settings.eta_use_theme_font == 'false' -%}{%- assign eta_use_theme_font_final = false -%}{%- endif -%}
+  {%- if global_settings.eta_match_messages_font == true or global_settings.eta_match_messages_font == 'true' -%}{%- assign eta_match_messages_font_final = true -%}{%- endif -%}
+  {%- if global_settings.eta_custom_font_family != blank -%}{%- assign eta_custom_font_family_final = global_settings.eta_custom_font_family -%}{%- endif -%}
+  {%- if global_settings.eta_use_theme_text_styling == false -%}
+    {%- assign eta_use_theme_text_styling_final = false -%}
+    {%- if global_settings.eta_label_color != blank -%}{%- assign eta_label_color_final = global_settings.eta_label_color -%}{%- endif -%}
+    {%- if global_settings.eta_label_font_size != blank -%}{%- assign eta_label_font_size_final = global_settings.eta_label_font_size -%}{%- endif -%}
+    {%- if global_settings.eta_label_font_weight != blank -%}{%- assign eta_label_font_weight_final = global_settings.eta_label_font_weight -%}{%- endif -%}
+    {%- if global_settings.eta_date_color != blank -%}{%- assign eta_date_color_final = global_settings.eta_date_color -%}{%- endif -%}
+    {%- if global_settings.eta_date_font_size != blank -%}{%- assign eta_date_font_size_final = global_settings.eta_date_font_size -%}{%- endif -%}
+    {%- if global_settings.eta_date_font_weight != blank -%}{%- assign eta_date_font_weight_final = global_settings.eta_date_font_weight -%}{%- endif -%}
+  {%- endif -%}
+  {%- if global_settings.eta_margin_top != blank -%}{%- assign eta_margin_top = global_settings.eta_margin_top -%}{%- endif -%}
+  {%- if global_settings.eta_margin_bottom != blank -%}{%- assign eta_margin_bottom = global_settings.eta_margin_bottom -%}{%- endif -%}
+  {%- if global_settings.eta_alignment != blank -%}{%- assign eta_alignment = global_settings.eta_alignment -%}{%- endif -%}
+  {%- if global_settings.eta_gap_icon_label != blank -%}{%- assign eta_gap_icon_label_final = global_settings.eta_gap_icon_label -%}{%- endif -%}
+  {%- if global_settings.eta_gap_label_date != blank -%}{%- assign eta_gap_label_date_final = global_settings.eta_gap_label_date -%}{%- endif -%}
+  {%- if global_settings.eta_horizontal_gap != blank -%}{%- assign eta_horizontal_gap_final = global_settings.eta_horizontal_gap -%}{%- endif -%}
+  {%- if global_settings.eta_padding_horizontal != blank -%}{%- assign eta_padding_horizontal_final = global_settings.eta_padding_horizontal -%}{%- endif -%}
+  {%- if global_settings.eta_padding_vertical != blank -%}{%- assign eta_padding_vertical_final = global_settings.eta_padding_vertical -%}{%- endif -%}
+  {%- if global_settings.eta_connector_alignment != blank -%}{%- assign eta_connector_alignment_final = global_settings.eta_connector_alignment -%}{%- endif -%}
+{%- endif -%}
+{%- assign eta_font_family_css = nil -%}
+{%- if eta_use_theme_font_final == false -%}
+  {%- if eta_match_messages_font_final and custom_font_family_final != blank -%}
+    {%- assign eta_font_family_css = custom_font_family_final | append: ', sans-serif' -%}
+  {%- elsif eta_custom_font_family_final != blank -%}
+    {%- assign eta_font_family_css = eta_custom_font_family_final | append: ', sans-serif' -%}
+  {%- endif -%}
+{%- endif -%}
+{%- assign any_rule_matched = false -%}
+{%- if product and rules and rules.size > 0 -%}
+  {%- assign product_handle = product.handle -%}
+  {%- for r in rules -%}
+    {%- assign m = r.match -%}
+    {%- assign handle_match = false -%}
+    {%- assign tag_match = false -%}
+    {%- if m.product_handles and m.product_handles.size > 0 and m.product_handles contains product_handle -%}
+      {%- assign handle_match = true -%}
+    {%- endif -%}
+    {%- if m.tags and m.tags.size > 0 -%}
+      {%- for tg in m.tags -%}
+        {%- if product.tags contains tg -%}
+          {%- assign tag_match = true -%}
+          {% break %}
+        {%- endif -%}
+      {%- endfor -%}
+    {%- endif -%}
+    {%- assign stock_match = true -%}
+    {%- assign stock_status_value = m.stock_status | default: 'any' -%}
+    {%- if stock_status_value != 'any' -%}
+      {%- assign has_stock = false -%}
+      {%- assign is_pre_order = false -%}
+      {%- assign is_mixed_stock = false -%}
+      {%- assign has_in_stock_variant = false -%}
+      {%- assign has_out_of_stock_variant = false -%}
+      {%- assign has_preorder_variant = false -%}
+      {%- for variant in product.variants -%}
+        {%- if variant.available and variant.inventory_quantity > 0 -%}
+          {%- assign has_in_stock_variant = true -%}
+        {%- elsif variant.available and variant.inventory_quantity <= 0 -%}
+          {%- assign has_preorder_variant = true -%}
+        {%- elsif variant.available == false -%}
+          {%- assign has_out_of_stock_variant = true -%}
+        {%- endif -%}
+      {%- endfor -%}
+      {%- assign status_count = 0 -%}
+      {%- if has_in_stock_variant -%}{%- assign status_count = status_count | plus: 1 -%}{%- endif -%}
+      {%- if has_out_of_stock_variant -%}{%- assign status_count = status_count | plus: 1 -%}{%- endif -%}
+      {%- if has_preorder_variant -%}{%- assign status_count = status_count | plus: 1 -%}{%- endif -%}
+      {%- if status_count > 1 -%}{%- assign is_mixed_stock = true -%}{%- endif -%}
+      {%- if product.available -%}
+        {%- assign has_stock = true -%}
+        {%- if has_in_stock_variant == false and has_preorder_variant -%}{%- assign is_pre_order = true -%}{%- endif -%}
+      {%- endif -%}
+      {%- if stock_status_value == 'in_stock' and has_stock == false -%}{%- assign stock_match = false -%}{%- endif -%}
+      {%- if stock_status_value == 'in_stock' and is_pre_order == true -%}{%- assign stock_match = false -%}{%- endif -%}
+      {%- if stock_status_value == 'in_stock' and is_mixed_stock == true -%}{%- assign stock_match = false -%}{%- endif -%}
+      {%- if stock_status_value == 'out_of_stock' and has_stock == true -%}{%- assign stock_match = false -%}{%- endif -%}
+      {%- if stock_status_value == 'pre_order' and is_pre_order == false -%}{%- assign stock_match = false -%}{%- endif -%}
+      {%- if stock_status_value == 'pre_order' and is_mixed_stock == true -%}{%- assign stock_match = false -%}{%- endif -%}
+      {%- if stock_status_value == 'mixed_stock' and is_mixed_stock == false -%}{%- assign stock_match = false -%}{%- endif -%}
+    {%- endif -%}
+    {%- assign final_match = false -%}
+    {%- if m.is_fallback == true or m.is_fallback == 'true' -%}
+      {%- if stock_match -%}{%- assign final_match = true -%}{%- endif -%}
+    {%- elsif handle_match or tag_match -%}
+      {%- if stock_match -%}{%- assign final_match = true -%}{%- endif -%}
+    {%- endif -%}
+    {%- if final_match -%}
+      {%- assign any_rule_matched = true -%}
+      {%- assign s = r.settings -%}
+      {%- if s.icon_color != blank -%}{%- assign icon_color = s.icon_color -%}{%- endif -%}
+      {%- if s.override_cutoff_times == true or s.override_cutoff_times == 'true' -%}
+        {%- if s.cutoff_time != blank -%}{%- assign cutoff_time_final = s.cutoff_time -%}{%- endif -%}
+        {%- if s.cutoff_time_sat != blank -%}{%- assign cutoff_time_sat_final = s.cutoff_time_sat -%}{%- endif -%}
+        {%- if s.cutoff_time_sun != blank -%}{%- assign cutoff_time_sun_final = s.cutoff_time_sun -%}{%- endif -%}
+      {%- endif -%}
+      {%- if s.override_lead_time == true or s.override_lead_time == 'true' -%}
+        {%- if s.lead_time != blank -%}{%- assign lead_time_final = s.lead_time -%}{%- endif -%}
+      {%- endif -%}
+      {%- if s.override_closed_days == true or s.override_closed_days == 'true' -%}
+        {%- assign closed_days_final = s.closed_days | join: ',' -%}
+      {%- endif -%}
+      {%- if s.override_courier_no_delivery_days == true or s.override_courier_no_delivery_days == 'true' -%}
+        {%- assign courier_no_delivery_days_final = s.courier_no_delivery_days | join: ',' -%}
+      {%- endif -%}
+      {%- if s.show_eta_timeline == true or s.show_eta_timeline == 'true' -%}{%- assign show_eta_timeline_final = true -%}{%- endif -%}
+      {%- if s.show_eta_timeline == false -%}{%- assign show_eta_timeline_final = false -%}{%- endif -%}
+      {%- if s.eta_icon_size != blank -%}{%- assign eta_icon_size_final = s.eta_icon_size -%}{%- endif -%}
+      {%- if s.eta_connector_style != blank -%}{%- assign eta_connector_style_final = s.eta_connector_style -%}{%- endif -%}
+      {%- if s.eta_connector_color != blank -%}{%- assign eta_connector_color_final = s.eta_connector_color -%}{%- endif -%}
+      {%- if s.eta_connector_use_main_color == true or s.eta_connector_use_main_color == 'true' -%}{%- assign eta_connector_use_main_color_final = true -%}{%- endif -%}
+      {%- if s.eta_connector_use_main_color == false or s.eta_connector_use_main_color == 'false' -%}{%- assign eta_connector_use_main_color_final = false -%}{%- endif -%}
+      {%- if s.eta_connector_alignment != blank -%}{%- assign eta_connector_alignment_final = s.eta_connector_alignment -%}{%- endif -%}
+      {%- if s.eta_color != blank -%}{%- assign eta_color_final = s.eta_color -%}{%- endif -%}
+      {%- if s.eta_use_main_icon_color == true or s.eta_use_main_icon_color == 'true' -%}{%- assign eta_use_main_icon_color_final = true -%}{%- endif -%}
+      {%- if s.eta_use_main_icon_color == false or s.eta_use_main_icon_color == 'false' -%}{%- assign eta_use_main_icon_color_final = false -%}{%- endif -%}
+      {%- if s.eta_border_width != blank -%}{%- assign eta_border_width_final = s.eta_border_width -%}{%- endif -%}
+      {%- if s.eta_border_color != blank -%}{%- assign eta_border_color_final = s.eta_border_color -%}{%- endif -%}
+      {%- if s.eta_border_radius != blank -%}{%- assign eta_border_radius_final = s.eta_border_radius -%}{%- endif -%}
+      {%- if s.eta_delivery_days_min != blank -%}{%- assign eta_delivery_days_min_final = s.eta_delivery_days_min -%}{%- endif -%}
+      {%- if s.eta_delivery_days_max != blank -%}{%- assign eta_delivery_days_max_final = s.eta_delivery_days_max -%}{%- endif -%}
+      {%- if s.eta_order_icon != blank -%}{%- assign eta_order_icon_final = s.eta_order_icon -%}{%- endif -%}
+      {%- if s.eta_shipping_icon != blank -%}{%- assign eta_shipping_icon_final = s.eta_shipping_icon -%}{%- endif -%}
+      {%- if s.eta_delivery_icon != blank -%}{%- assign eta_delivery_icon_final = s.eta_delivery_icon -%}{%- endif -%}
+      {%- if s.eta_order_icon_style != blank -%}{%- assign eta_order_icon_style_final = s.eta_order_icon_style -%}{%- endif -%}
+      {%- if s.eta_shipping_icon_style != blank -%}{%- assign eta_shipping_icon_style_final = s.eta_shipping_icon_style -%}{%- endif -%}
+      {%- if s.eta_delivery_icon_style != blank -%}{%- assign eta_delivery_icon_style_final = s.eta_delivery_icon_style -%}{%- endif -%}
+      {%- if s.eta_label_order != blank -%}{%- assign eta_label_order_final = s.eta_label_order -%}{%- endif -%}
+      {%- if s.eta_label_shipping != blank -%}{%- assign eta_label_shipping_final = s.eta_label_shipping -%}{%- endif -%}
+      {%- if s.eta_label_delivery != blank -%}{%- assign eta_label_delivery_final = s.eta_label_delivery -%}{%- endif -%}
+      {%- if s.override_eta_text_styling == true or s.override_eta_text_styling == 'true' -%}
+        {%- assign eta_use_theme_text_styling_final = false -%}
+        {%- if s.eta_label_color != blank -%}{%- assign eta_label_color_final = s.eta_label_color -%}{%- endif -%}
+        {%- if s.eta_label_font_size != blank -%}{%- assign eta_label_font_size_final = s.eta_label_font_size -%}{%- endif -%}
+        {%- if s.eta_label_font_weight != blank -%}{%- assign eta_label_font_weight_final = s.eta_label_font_weight -%}{%- endif -%}
+        {%- if s.eta_date_color != blank -%}{%- assign eta_date_color_final = s.eta_date_color -%}{%- endif -%}
+        {%- if s.eta_date_font_size != blank -%}{%- assign eta_date_font_size_final = s.eta_date_font_size -%}{%- endif -%}
+        {%- if s.eta_date_font_weight != blank -%}{%- assign eta_date_font_weight_final = s.eta_date_font_weight -%}{%- endif -%}
+      {%- endif -%}
+      {% break %}
+    {%- endif -%}
+  {%- endfor -%}
+{%- endif -%}
+{%- assign eta_label_color_css = nil -%}
+{%- assign eta_label_font_size_css = nil -%}
+{%- assign eta_label_font_weight_css = nil -%}
+{%- assign eta_date_color_css = nil -%}
+{%- assign eta_date_font_size_css = nil -%}
+{%- assign eta_date_font_weight_css = nil -%}
+{%- if eta_use_theme_text_styling_final == false -%}
+  {%- if eta_label_color_final != blank -%}{%- assign eta_label_color_css = eta_label_color_final -%}{%- endif -%}
+  {%- case eta_label_font_size_final -%}{%- when 'xsmall' -%}{%- assign eta_label_font_size_css = '11px' -%}{%- when 'medium' -%}{%- assign eta_label_font_size_css = '14px' -%}{%- else -%}{%- assign eta_label_font_size_css = '12px' -%}{%- endcase -%}
+  {%- case eta_label_font_weight_final -%}{%- when 'normal' -%}{%- assign eta_label_font_weight_css = '400' -%}{%- when 'medium' -%}{%- assign eta_label_font_weight_css = '500' -%}{%- when 'bold' -%}{%- assign eta_label_font_weight_css = '700' -%}{%- else -%}{%- assign eta_label_font_weight_css = '600' -%}{%- endcase -%}
+  {%- if eta_date_color_final != blank -%}{%- assign eta_date_color_css = eta_date_color_final -%}{%- endif -%}
+  {%- case eta_date_font_size_final -%}{%- when 'xxsmall' -%}{%- assign eta_date_font_size_css = '10px' -%}{%- when 'small' -%}{%- assign eta_date_font_size_css = '12px' -%}{%- else -%}{%- assign eta_date_font_size_css = '11px' -%}{%- endcase -%}
+  {%- case eta_date_font_weight_final -%}{%- when 'medium' -%}{%- assign eta_date_font_weight_css = '500' -%}{%- when 'semibold' -%}{%- assign eta_date_font_weight_css = '600' -%}{%- else -%}{%- assign eta_date_font_weight_css = '400' -%}{%- endcase -%}
+{%- endif -%}
+{%- if request.design_mode -%}
+{{ 'dib-messages.css' | asset_url | stylesheet_tag }}
+<div style="text-align:{{ eta_alignment }};{% if eta_margin_top != 0 %}margin-top:{{ eta_margin_top }}px;{% endif %}{% if eta_margin_bottom != 0 %}margin-bottom:{{ eta_margin_bottom }}px;{% endif %}"><div style="border:2px dashed #d1d5db;border-radius:8px;padding:16px 20px;background:#f9fafb;display:inline-flex;align-items:center;gap:12px;max-width:400px;"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg><div><div style="font-weight:600;color:#374151;font-size:14px;margin-bottom:2px;">ETA Timeline</div><div style="color:#6b7280;font-size:12px;">Configure rules in the app with "Show ETA Timeline" enabled to display the delivery timeline here.</div></div></div></div>
+{%- elsif any_rule_matched and show_eta_timeline_final -%}
+  {%- assign eta_icon_px = 36 -%}
+  {%- if eta_icon_size_final == 'small' -%}{%- assign eta_icon_px = 24 -%}{%- elsif eta_icon_size_final == 'medium' -%}{%- assign eta_icon_px = 36 -%}{%- elsif eta_icon_size_final == 'large' -%}{%- assign eta_icon_px = 48 -%}{%- endif -%}
+  {%- assign connector_align_arrows = '' -%}
+  {%- assign connector_align_bigarrow = '' -%}
+  {%- assign connector_align_line = '' -%}
+  {%- assign connector_align_custom = '' -%}
+  {%- if eta_connector_alignment_final == 'icon' -%}
+    {%- assign mt_arrows = eta_icon_px | divided_by: 2 | minus: 8 -%}
+    {%- assign mt_bigarrow = eta_icon_px | divided_by: 2 | minus: 18 -%}
+    {%- assign mt_line = eta_icon_px | divided_by: 2 | minus: 1 -%}
+    {%- assign mt_custom = eta_icon_px | divided_by: 2 | minus: 18 -%}
+    {%- assign connector_align_arrows = 'margin-top:' | append: mt_arrows | append: 'px;' -%}
+    {%- assign connector_align_bigarrow = 'margin-top:' | append: mt_bigarrow | append: 'px;' -%}
+    {%- assign connector_align_line = 'margin-top:' | append: mt_line | append: 'px;' -%}
+    {%- assign connector_align_custom = 'margin-top:' | append: mt_custom | append: 'px;' -%}
+  {%- endif -%}
+  {%- comment -%}Determine ETA icon color - use main icon color unless explicitly set to use custom{%- endcomment -%}
+  {%- assign eta_icon_color = icon_color -%}
+  {%- if eta_use_main_icon_color_final == false -%}{%- assign eta_icon_color = eta_color_final -%}{%- endif -%}
+  {%- comment -%}Determine connector color - use main ETA icon color unless explicitly set to use custom{%- endcomment -%}
+  {%- assign eta_connector_color = eta_icon_color -%}
+  {%- if eta_connector_use_main_color_final == false -%}{%- assign eta_connector_color = eta_connector_color_final -%}{%- endif -%}
+  {%- if eta_use_theme_font_final == false -%}{%- assign font_to_load = nil -%}{%- if eta_match_messages_font_final and custom_font_family_final != blank -%}{%- assign font_to_load = custom_font_family_final -%}{%- elsif eta_custom_font_family_final != blank -%}{%- assign font_to_load = eta_custom_font_family_final -%}{%- endif -%}{%- if font_to_load != blank -%}<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family={{ font_to_load | replace: ' ', '+' }}:wght@400;500;600;700&display=swap" rel="stylesheet">{%- endif -%}{%- endif -%}
+  {%- assign shipping_days_ahead = 1 -%}
+  {%- capture eta_order_icon_markup -%}
+    {%- if eta_order_icon_final contains 'custom-' -%}
+      {%- assign custom_idx_str = eta_order_icon_final | remove: 'custom-' -%}
+      {%- assign custom_idx = custom_idx_str | minus: 1 -%}
+      {%- if global_settings != nil and global_settings.custom_icons != blank and global_settings.custom_icons.size > custom_idx -%}
+        {%- assign custom_icon = global_settings.custom_icons[custom_idx] -%}
+        {%- if custom_icon.svg != blank -%}{{ custom_icon.svg }}{%- elsif custom_icon.url != blank -%}<img src="{{ custom_icon.url }}" alt="" width="100%" height="100%" loading="lazy" style="object-fit:contain;display:block;width:100%;height:100%">{%- endif -%}
+      {%- endif -%}
+    {%- else -%}
+      {%- render 'icon', icon: eta_order_icon_final, style: eta_order_icon_style_final -%}
+    {%- endif -%}
+  {%- endcapture -%}
+  {%- capture eta_shipping_icon_markup -%}
+    {%- if eta_shipping_icon_final contains 'custom-' -%}
+      {%- assign custom_idx_str = eta_shipping_icon_final | remove: 'custom-' -%}
+      {%- assign custom_idx = custom_idx_str | minus: 1 -%}
+      {%- if global_settings != nil and global_settings.custom_icons != blank and global_settings.custom_icons.size > custom_idx -%}
+        {%- assign custom_icon = global_settings.custom_icons[custom_idx] -%}
+        {%- if custom_icon.svg != blank -%}{{ custom_icon.svg }}{%- elsif custom_icon.url != blank -%}<img src="{{ custom_icon.url }}" alt="" width="100%" height="100%" loading="lazy" style="object-fit:contain;display:block;width:100%;height:100%">{%- endif -%}
+      {%- endif -%}
+    {%- else -%}
+      {%- render 'icon', icon: eta_shipping_icon_final, style: eta_shipping_icon_style_final -%}
+    {%- endif -%}
+  {%- endcapture -%}
+  {%- capture eta_delivery_icon_markup -%}
+    {%- if eta_delivery_icon_final contains 'custom-' -%}
+      {%- assign custom_idx_str = eta_delivery_icon_final | remove: 'custom-' -%}
+      {%- assign custom_idx = custom_idx_str | minus: 1 -%}
+      {%- if global_settings != nil and global_settings.custom_icons != blank and global_settings.custom_icons.size > custom_idx -%}
+        {%- assign custom_icon = global_settings.custom_icons[custom_idx] -%}
+        {%- if custom_icon.svg != blank -%}{{ custom_icon.svg }}{%- elsif custom_icon.url != blank -%}<img src="{{ custom_icon.url }}" alt="" width="100%" height="100%" loading="lazy" style="object-fit:contain;display:block;width:100%;height:100%">{%- endif -%}
+      {%- endif -%}
+    {%- else -%}
+      {%- render 'icon', icon: eta_delivery_icon_final, style: eta_delivery_icon_style_final -%}
+    {%- endif -%}
+  {%- endcapture -%}
+{{ 'dib-messages.css' | asset_url | stylesheet_tag }}
+<style>.dib-eta-timeline-block,.dib-eta-timeline-block .dib-eta-timeline{text-align:{{ eta_alignment }}!important}.dib-eta-timeline-block .dib-eta-stages{gap:{{ eta_horizontal_gap_final }}px!important}</style>
+<div id="{{ uid }}" class="dib-eta-timeline-block" style="{% if eta_margin_top != 0 %}margin-top:{{ eta_margin_top }}px;{% endif %}{% if eta_margin_bottom != 0 %}margin-bottom:{{ eta_margin_bottom }}px;{% endif %}">
+<div class="dib-eta-timeline" style="margin:16px 0;" data-dib-js data-uid="{{ uid }}" data-delivery-min="{{ eta_delivery_days_min_final }}" data-delivery-max="{{ eta_delivery_days_max_final }}" data-shop-offset="{{ 'now' | date: '%z' }}" data-cutoff="{{ cutoff_time_final }}" data-cutoff-sat="{{ cutoff_time_sat_final }}" data-cutoff-sun="{{ cutoff_time_sun_final }}" data-closed-days="{{ closed_days_final }}" data-lead-time="{{ lead_time_final }}" data-courier-no-delivery="{{ courier_no_delivery_days_final }}" data-bank-holiday-country="{{ bank_holiday_country_final }}" data-custom-holidays="{{ custom_holidays_final }}">
+<div class="dib-eta-scale-wrapper">
+<div class="dib-eta-stages" style="display:flex;{% if eta_connector_alignment_final == 'icon' %}align-items:flex-start;{% else %}align-items:center;{% endif %}padding:{{ eta_padding_vertical_final }}px {{ eta_padding_horizontal_final }}px;{% if eta_border_width_final > 0 %}border:{{ eta_border_width_final }}px solid {{ eta_border_color_final }};border-radius:{{ eta_border_radius_final }}px;{% endif %}">
+<div class="dib-eta-stage" style="flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;text-align:center;"><div class="dib-eta-icon" style="width:{{ eta_icon_px }}px;height:{{ eta_icon_px }}px;margin-bottom:{{ eta_gap_icon_label_final }}px;color:{{ eta_icon_color }};">{{ eta_order_icon_markup }}</div><div class="dib-eta-label" style="{% if eta_font_family_css %}font-family:{{ eta_font_family_css }};{% endif %}{% if eta_label_font_size_css %}font-size:{{ eta_label_font_size_css }};{% endif %}{% if eta_label_font_weight_css %}font-weight:{{ eta_label_font_weight_css }};{% endif %}{% if eta_label_color_css %}color:{{ eta_label_color_css }};{% endif %}line-height:1;margin-bottom:{{ eta_gap_label_date_final }}px;">{{ eta_label_order_final }}</div><div class="dib-eta-date" style="{% if eta_font_family_css %}font-family:{{ eta_font_family_css }};{% endif %}{% if eta_date_font_size_css %}font-size:{{ eta_date_font_size_css }};{% endif %}{% if eta_date_font_weight_css %}font-weight:{{ eta_date_font_weight_css }};{% endif %}{% if eta_date_color_css %}color:{{ eta_date_color_css }};{% endif %}line-height:1;white-space:nowrap;">{{ 'now' | date: '%b %d' }}</div></div>
+{%- if eta_connector_style_final == 'line' -%}<div style="display:flex;gap:0;margin:0 -4px;align-items:center;justify-content:center;flex:0 0 40px;{{ connector_align_line }}"><span style="display:block;width:40px;border-top:1.5px solid {{ eta_connector_color }};"></span></div>{%- elsif eta_connector_style_final == 'big-arrow' -%}<div style="display:flex;align-items:center;justify-content:center;flex:0 0 40px;color:{{ eta_connector_color }};{{ connector_align_bigarrow }}"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" style="width:36px;height:36px;"><path fill-rule="evenodd" d="M16.72 7.72a.75.75 0 0 1 1.06 0l3.75 3.75a.75.75 0 0 1 0 1.06l-3.75 3.75a.75.75 0 1 1-1.06-1.06l2.47-2.47H3a.75.75 0 0 1 0-1.5h16.19l-2.47-2.47a.75.75 0 0 1 0-1.06Z" clip-rule="evenodd"/></svg></div>{%- elsif eta_connector_style_final == 'custom' and global_settings.custom_connector_svg != blank -%}<div style="display:flex;align-items:center;justify-content:center;color:{{ eta_connector_color }};{{ connector_align_custom }}"><span style="width:36px;height:36px;display:block;">{{ global_settings.custom_connector_svg }}</span></div>{%- else -%}<div style="display:flex;gap:0;margin:0 -4px;{{ connector_align_arrows }}"><div style="flex:0 0 auto;color:{{ eta_connector_color }};"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" style="width:16px;height:16px;"><path fill-rule="evenodd" d="M16.28 11.47a.75.75 0 0 1 0 1.06l-7.5 7.5a.75.75 0 0 1-1.06-1.06L14.69 12 7.72 5.03a.75.75 0 0 1 1.06-1.06l7.5 7.5Z" clip-rule="evenodd"/></svg></div><div style="flex:0 0 auto;color:{{ eta_connector_color }};margin-left:-4px;"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" style="width:16px;height:16px;"><path fill-rule="evenodd" d="M16.28 11.47a.75.75 0 0 1 0 1.06l-7.5 7.5a.75.75 0 0 1-1.06-1.06L14.69 12 7.72 5.03a.75.75 0 0 1 1.06-1.06l7.5 7.5Z" clip-rule="evenodd"/></svg></div><div style="flex:0 0 auto;color:{{ eta_connector_color }};margin-left:-4px;"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" style="width:16px;height:16px;"><path fill-rule="evenodd" d="M16.28 11.47a.75.75 0 0 1 0 1.06l-7.5 7.5a.75.75 0 0 1-1.06-1.06L14.69 12 7.72 5.03a.75.75 0 0 1 1.06-1.06l7.5 7.5Z" clip-rule="evenodd"/></svg></div></div>{%- endif -%}
+<div class="dib-eta-stage" style="flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;text-align:center;"><div class="dib-eta-icon" style="width:{{ eta_icon_px }}px;height:{{ eta_icon_px }}px;margin-bottom:{{ eta_gap_icon_label_final }}px;color:{{ eta_icon_color }};">{{ eta_shipping_icon_markup }}</div><div class="dib-eta-label" style="{% if eta_font_family_css %}font-family:{{ eta_font_family_css }};{% endif %}{% if eta_label_font_size_css %}font-size:{{ eta_label_font_size_css }};{% endif %}{% if eta_label_font_weight_css %}font-weight:{{ eta_label_font_weight_css }};{% endif %}{% if eta_label_color_css %}color:{{ eta_label_color_css }};{% endif %}line-height:1;margin-bottom:{{ eta_gap_label_date_final }}px;">{{ eta_label_shipping_final }}</div><div class="dib-eta-date" style="{% if eta_font_family_css %}font-family:{{ eta_font_family_css }};{% endif %}{% if eta_date_font_size_css %}font-size:{{ eta_date_font_size_css }};{% endif %}{% if eta_date_font_weight_css %}font-weight:{{ eta_date_font_weight_css }};{% endif %}{% if eta_date_color_css %}color:{{ eta_date_color_css }};{% endif %}line-height:1;white-space:nowrap;">{%- assign shipping_seconds = 86400 | times: shipping_days_ahead -%}{%- assign shipping_timestamp = 'now' | date: '%s' | plus: shipping_seconds -%}{{ shipping_timestamp | date: '%b %d' }}</div></div>
+{%- if eta_connector_style_final == 'line' -%}<div style="display:flex;gap:0;margin:0 -4px;align-items:center;justify-content:center;flex:0 0 40px;{{ connector_align_line }}"><span style="display:block;width:40px;border-top:1.5px solid {{ eta_connector_color }};"></span></div>{%- elsif eta_connector_style_final == 'big-arrow' -%}<div style="display:flex;align-items:center;justify-content:center;flex:0 0 40px;color:{{ eta_connector_color }};{{ connector_align_bigarrow }}"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" style="width:36px;height:36px;"><path fill-rule="evenodd" d="M16.72 7.72a.75.75 0 0 1 1.06 0l3.75 3.75a.75.75 0 0 1 0 1.06l-3.75 3.75a.75.75 0 1 1-1.06-1.06l2.47-2.47H3a.75.75 0 0 1 0-1.5h16.19l-2.47-2.47a.75.75 0 0 1 0-1.06Z" clip-rule="evenodd"/></svg></div>{%- elsif eta_connector_style_final == 'custom' and global_settings.custom_connector_svg != blank -%}<div style="display:flex;align-items:center;justify-content:center;color:{{ eta_connector_color }};{{ connector_align_custom }}"><span style="width:36px;height:36px;display:block;">{{ global_settings.custom_connector_svg }}</span></div>{%- else -%}<div style="display:flex;gap:0;margin:0 -4px;{{ connector_align_arrows }}"><div style="flex:0 0 auto;color:{{ eta_connector_color }};"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" style="width:16px;height:16px;"><path fill-rule="evenodd" d="M16.28 11.47a.75.75 0 0 1 0 1.06l-7.5 7.5a.75.75 0 0 1-1.06-1.06L14.69 12 7.72 5.03a.75.75 0 0 1 1.06-1.06l7.5 7.5Z" clip-rule="evenodd"/></svg></div><div style="flex:0 0 auto;color:{{ eta_connector_color }};margin-left:-4px;"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" style="width:16px;height:16px;"><path fill-rule="evenodd" d="M16.28 11.47a.75.75 0 0 1 0 1.06l-7.5 7.5a.75.75 0 0 1-1.06-1.06L14.69 12 7.72 5.03a.75.75 0 0 1 1.06-1.06l7.5 7.5Z" clip-rule="evenodd"/></svg></div><div style="flex:0 0 auto;color:{{ eta_connector_color }};margin-left:-4px;"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" style="width:16px;height:16px;"><path fill-rule="evenodd" d="M16.28 11.47a.75.75 0 0 1 0 1.06l-7.5 7.5a.75.75 0 0 1-1.06-1.06L14.69 12 7.72 5.03a.75.75 0 0 1 1.06-1.06l7.5 7.5Z" clip-rule="evenodd"/></svg></div></div>{%- endif -%}
+<div class="dib-eta-stage" style="flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;text-align:center;"><div class="dib-eta-icon" style="width:{{ eta_icon_px }}px;height:{{ eta_icon_px }}px;margin-bottom:{{ eta_gap_icon_label_final }}px;color:{{ eta_icon_color }};">{{ eta_delivery_icon_markup }}</div><div class="dib-eta-label" style="{% if eta_font_family_css %}font-family:{{ eta_font_family_css }};{% endif %}{% if eta_label_font_size_css %}font-size:{{ eta_label_font_size_css }};{% endif %}{% if eta_label_font_weight_css %}font-weight:{{ eta_label_font_weight_css }};{% endif %}{% if eta_label_color_css %}color:{{ eta_label_color_css }};{% endif %}line-height:1;margin-bottom:{{ eta_gap_label_date_final }}px;">{{ eta_label_delivery_final }}</div><div class="dib-eta-date" style="{% if eta_font_family_css %}font-family:{{ eta_font_family_css }};{% endif %}{% if eta_date_font_size_css %}font-size:{{ eta_date_font_size_css }};{% endif %}{% if eta_date_font_weight_css %}font-weight:{{ eta_date_font_weight_css }};{% endif %}{% if eta_date_color_css %}color:{{ eta_date_color_css }};{% endif %}line-height:1;white-space:nowrap;">{%- assign delivery_min_total_days = shipping_days_ahead | plus: eta_delivery_days_min_final -%}{%- assign delivery_max_total_days = shipping_days_ahead | plus: eta_delivery_days_max_final -%}{%- assign delivery_min_seconds = 86400 | times: delivery_min_total_days -%}{%- assign delivery_max_seconds = 86400 | times: delivery_max_total_days -%}{%- assign delivery_min_timestamp = 'now' | date: '%s' | plus: delivery_min_seconds -%}{%- assign delivery_max_timestamp = 'now' | date: '%s' | plus: delivery_max_seconds -%}{%- if eta_delivery_days_min_final == eta_delivery_days_max_final -%}{{ delivery_min_timestamp | date: '%b %d' }}{%- else -%}{%- assign min_month = delivery_min_timestamp | date: '%b' -%}{%- assign max_month = delivery_max_timestamp | date: '%b' -%}{%- if min_month == max_month -%}{{ delivery_min_timestamp | date: '%b %d' }}-{{ delivery_max_timestamp | date: '%d' }}{%- else -%}{{ delivery_min_timestamp | date: '%b %d' }}-{{ delivery_max_timestamp | date: '%b %d' }}{%- endif -%}{%- endif -%}</div></div>
+</div></div></div></div>
+<script>(function(){if(window.__DIB_COUNTDOWN_LOADED__)return;if(!document.querySelector('[data-dib-js]'))return;window.__DIB_COUNTDOWN_LOADED__=true;var s=document.createElement("script");s.src="{{ 'dib-countdown.js' | asset_url }}";s.defer=true;document.head.appendChild(s)})();</script>
+{%- endif -%}
+{% schema %}
+{"name":"ETA Timeline","target":"section","settings":[]}
+{% endschema %}

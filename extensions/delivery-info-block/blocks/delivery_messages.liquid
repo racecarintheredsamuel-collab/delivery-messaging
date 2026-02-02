@@ -1,0 +1,290 @@
+{%- assign uid = 'dib-' | append: block.id -%}
+{%- assign icon_final = block.settings.icon | default: 'truck' -%}
+{%- assign icon_style_final = 'solid' -%}
+{%- assign icon_color = block.settings.icon_color | default: '#111827' -%}
+{%- assign message_line_1_final = block.settings.message_line_1 | default: '' -%}
+{%- assign message_line_2_final = block.settings.message_line_2 -%}
+{%- assign message_line_3_final = '' -%}
+{%- assign show_messages_final = true -%}
+{%- assign show_icon_final = true -%}
+{%- assign cutoff_time_final = '14:00' -%}
+{%- assign cutoff_time_sat_final = '' -%}
+{%- assign cutoff_time_sun_final = '' -%}
+{%- assign closed_days_final = '' -%}
+{%- assign lead_time_final = 0 -%}
+{%- assign courier_no_delivery_days_final = 'sat,sun' -%}
+{%- assign bank_holiday_country_final = '' -%}
+{%- assign custom_holidays_final = '' -%}
+{%- assign show_eta_timeline_final = false -%}
+{%- assign delivery_min_final = 3 -%}
+{%- assign delivery_max_final = 5 -%}
+{%- assign match_eta_width_final = false -%}
+{%- assign match_eta_border_final = false -%}
+{%- assign eta_border_width_final = 0 -%}
+{%- assign eta_border_color_final = '#e5e7eb' -%}
+{%- assign eta_border_radius_final = 8 -%}
+{%- assign show_border_final = block.settings.show_border -%}
+{%- assign border_thickness_final = block.settings.border_thickness | default: 1 -%}
+{%- assign border_color_final = block.settings.border_color | default: '#e5e7eb' -%}
+{%- assign border_radius_final = block.settings.border_radius | default: 8 -%}
+{%- assign max_width_final = 600 -%}
+{%- assign icon_layout_final = 'per-line' -%}
+{%- assign single_icon_size_final = 'medium' -%}
+{%- assign icon_vertical_align_final = 'top' -%}
+{%- assign use_theme_text_styling_final = true -%}
+{%- assign text_color_final = '' -%}
+{%- assign font_size_final = 'medium' -%}
+{%- assign font_weight_final = 'normal' -%}
+{%- assign use_theme_font_final = true -%}
+{%- assign custom_font_family_final = '' -%}
+{%- assign messages_margin_top = 0 -%}
+{%- assign messages_margin_bottom = 0 -%}
+{%- assign messages_alignment = 'left' -%}
+{%- assign rules_json = shop.metafields.delivery_rules.config.value -%}
+{%- assign rules_obj = nil -%}
+{%- assign rules = nil -%}
+{%- if rules_json != blank -%}
+  {%- assign rules_obj = rules_json | parse_json -%}
+  {%- if rules_obj.version == 2 -%}
+    {%- assign active_profile_id = rules_obj.activeProfileId | strip -%}
+    {%- assign found_profile = false -%}
+    {%- for profile in rules_obj.profiles -%}
+      {%- assign profile_id_check = profile.id | strip -%}
+      {%- if profile_id_check == active_profile_id -%}
+        {%- assign rules = profile.rules -%}
+        {%- assign found_profile = true -%}
+        {%- break -%}
+      {%- endif -%}
+    {%- endfor -%}
+    {%- if found_profile == false and rules_obj.profiles.size > 0 -%}
+      {%- assign rules = rules_obj.profiles.first.rules -%}
+    {%- endif -%}
+  {%- else -%}
+    {%- assign rules = rules_obj.rules -%}
+  {%- endif -%}
+{%- endif -%}
+{%- assign global_settings_json = shop.metafields.delivery_rules.settings.value -%}
+{%- assign global_settings = nil -%}
+{%- if global_settings_json != blank -%}
+  {%- assign global_settings = global_settings_json | parse_json -%}
+{%- endif -%}
+{%- if global_settings != nil -%}
+  {%- if global_settings.cutoff_time != blank -%}{%- assign cutoff_time_final = global_settings.cutoff_time -%}{%- endif -%}
+  {%- if global_settings.cutoff_time_sat != blank -%}{%- assign cutoff_time_sat_final = global_settings.cutoff_time_sat -%}{%- endif -%}
+  {%- if global_settings.cutoff_time_sun != blank -%}{%- assign cutoff_time_sun_final = global_settings.cutoff_time_sun -%}{%- endif -%}
+  {%- if global_settings.closed_days != blank -%}{%- assign closed_days_final = global_settings.closed_days | join: ',' -%}{%- endif -%}
+  {%- if global_settings.lead_time != blank -%}{%- assign lead_time_final = global_settings.lead_time -%}{%- endif -%}
+  {%- if global_settings.courier_no_delivery_days != blank -%}{%- assign courier_no_delivery_days_final = global_settings.courier_no_delivery_days | join: ',' -%}{%- endif -%}
+  {%- if global_settings.bank_holiday_country != blank -%}{%- assign bank_holiday_country_final = global_settings.bank_holiday_country -%}{%- endif -%}
+  {%- if global_settings.custom_holidays != blank -%}
+    {%- assign custom_holidays_dates = '' -%}
+    {%- for holiday in global_settings.custom_holidays -%}
+      {%- if custom_holidays_dates != '' -%}{%- assign custom_holidays_dates = custom_holidays_dates | append: ',' -%}{%- endif -%}
+      {%- assign custom_holidays_dates = custom_holidays_dates | append: holiday.date -%}
+    {%- endfor -%}
+    {%- assign custom_holidays_final = custom_holidays_dates -%}
+  {%- endif -%}
+  {%- if global_settings.use_theme_font == false -%}{%- assign use_theme_font_final = false -%}{%- endif -%}
+  {%- if global_settings.custom_font_family != blank -%}{%- assign custom_font_family_final = global_settings.custom_font_family -%}{%- endif -%}
+  {%- if global_settings.use_theme_text_styling == false -%}{%- assign use_theme_text_styling_final = false -%}{%- endif -%}
+  {%- if global_settings.text_color != blank -%}{%- assign text_color_final = global_settings.text_color -%}{%- endif -%}
+  {%- if global_settings.font_size != blank -%}{%- assign font_size_final = global_settings.font_size -%}{%- endif -%}
+  {%- if global_settings.font_weight != blank -%}{%- assign font_weight_final = global_settings.font_weight -%}{%- endif -%}
+  {%- if global_settings.messages_margin_top != blank -%}{%- assign messages_margin_top = global_settings.messages_margin_top -%}{%- endif -%}
+  {%- if global_settings.messages_margin_bottom != blank -%}{%- assign messages_margin_bottom = global_settings.messages_margin_bottom -%}{%- endif -%}
+  {%- if global_settings.messages_alignment != blank -%}{%- assign messages_alignment = global_settings.messages_alignment -%}{%- endif -%}
+{%- endif -%}
+{%- assign any_rule_matched = false -%}
+{%- if product and rules and rules.size > 0 -%}
+  {%- assign product_handle = product.handle -%}
+  {%- for r in rules -%}
+    {%- assign m = r.match -%}
+    {%- assign handle_match = false -%}
+    {%- assign tag_match = false -%}
+    {%- if m.product_handles and m.product_handles.size > 0 and m.product_handles contains product_handle -%}
+      {%- assign handle_match = true -%}
+    {%- endif -%}
+    {%- if m.tags and m.tags.size > 0 -%}
+      {%- for tg in m.tags -%}
+        {%- if product.tags contains tg -%}
+          {%- assign tag_match = true -%}
+          {% break %}
+        {%- endif -%}
+      {%- endfor -%}
+    {%- endif -%}
+    {%- assign stock_match = true -%}
+    {%- assign stock_status_value = m.stock_status | default: 'any' -%}
+    {%- if stock_status_value != 'any' -%}
+      {%- assign has_stock = false -%}
+      {%- assign is_pre_order = false -%}
+      {%- assign is_mixed_stock = false -%}
+      {%- assign has_in_stock_variant = false -%}
+      {%- assign has_out_of_stock_variant = false -%}
+      {%- assign has_preorder_variant = false -%}
+      {%- for variant in product.variants -%}
+        {%- if variant.available and variant.inventory_quantity > 0 -%}
+          {%- assign has_in_stock_variant = true -%}
+        {%- elsif variant.available and variant.inventory_quantity <= 0 -%}
+          {%- assign has_preorder_variant = true -%}
+        {%- elsif variant.available == false -%}
+          {%- assign has_out_of_stock_variant = true -%}
+        {%- endif -%}
+      {%- endfor -%}
+      {%- assign status_count = 0 -%}
+      {%- if has_in_stock_variant -%}{%- assign status_count = status_count | plus: 1 -%}{%- endif -%}
+      {%- if has_out_of_stock_variant -%}{%- assign status_count = status_count | plus: 1 -%}{%- endif -%}
+      {%- if has_preorder_variant -%}{%- assign status_count = status_count | plus: 1 -%}{%- endif -%}
+      {%- if status_count > 1 -%}{%- assign is_mixed_stock = true -%}{%- endif -%}
+      {%- if product.available -%}
+        {%- assign has_stock = true -%}
+        {%- if has_in_stock_variant == false and has_preorder_variant -%}{%- assign is_pre_order = true -%}{%- endif -%}
+      {%- endif -%}
+      {%- if stock_status_value == 'in_stock' and has_stock == false -%}{%- assign stock_match = false -%}{%- endif -%}
+      {%- if stock_status_value == 'in_stock' and is_pre_order == true -%}{%- assign stock_match = false -%}{%- endif -%}
+      {%- if stock_status_value == 'in_stock' and is_mixed_stock == true -%}{%- assign stock_match = false -%}{%- endif -%}
+      {%- if stock_status_value == 'out_of_stock' and has_stock == true -%}{%- assign stock_match = false -%}{%- endif -%}
+      {%- if stock_status_value == 'pre_order' and is_pre_order == false -%}{%- assign stock_match = false -%}{%- endif -%}
+      {%- if stock_status_value == 'pre_order' and is_mixed_stock == true -%}{%- assign stock_match = false -%}{%- endif -%}
+      {%- if stock_status_value == 'mixed_stock' and is_mixed_stock == false -%}{%- assign stock_match = false -%}{%- endif -%}
+    {%- endif -%}
+    {%- assign final_match = false -%}
+    {%- if m.is_fallback == true or m.is_fallback == 'true' -%}
+      {%- if stock_match -%}{%- assign final_match = true -%}{%- endif -%}
+    {%- elsif handle_match or tag_match -%}
+      {%- if stock_match -%}{%- assign final_match = true -%}{%- endif -%}
+    {%- endif -%}
+    {%- if final_match -%}
+      {%- assign any_rule_matched = true -%}
+      {%- assign s = r.settings -%}
+      {%- if s.icon_color != blank -%}{%- assign icon_color = s.icon_color -%}{%- endif -%}
+      {%- if s.icon != blank -%}{%- assign icon_final = s.icon -%}{%- endif -%}
+      {%- if s.icon_style != blank -%}{%- assign icon_style_final = s.icon_style -%}{%- endif -%}
+      {%- if s.message_line_1 != blank -%}{%- assign message_line_1_final = s.message_line_1 -%}{%- endif -%}
+      {%- if s.message_line_2 != blank -%}{%- assign message_line_2_final = s.message_line_2 -%}{%- endif -%}
+      {%- if s.message_line_3 != blank -%}{%- assign message_line_3_final = s.message_line_3 -%}{%- endif -%}
+      {%- if s.show_messages == true or s.show_messages == 'true' -%}{%- assign show_messages_final = true -%}{%- endif -%}
+      {%- if s.show_messages == false or s.show_messages == 'false' -%}{%- assign show_messages_final = false -%}{%- endif -%}
+      {%- if s.show_icon == true or s.show_icon == 'true' -%}{%- assign show_icon_final = true -%}{%- endif -%}
+      {%- if s.show_icon == false or s.show_icon == 'false' -%}{%- assign show_icon_final = false -%}{%- endif -%}
+      {%- if s.override_cutoff_times == true or s.override_cutoff_times == 'true' -%}
+        {%- if s.cutoff_time != blank -%}{%- assign cutoff_time_final = s.cutoff_time -%}{%- endif -%}
+        {%- if s.cutoff_time_sat != blank -%}{%- assign cutoff_time_sat_final = s.cutoff_time_sat -%}{%- endif -%}
+        {%- if s.cutoff_time_sun != blank -%}{%- assign cutoff_time_sun_final = s.cutoff_time_sun -%}{%- endif -%}
+      {%- endif -%}
+      {%- if s.override_lead_time == true or s.override_lead_time == 'true' -%}
+        {%- if s.lead_time != blank -%}{%- assign lead_time_final = s.lead_time -%}{%- endif -%}
+      {%- endif -%}
+      {%- if s.override_closed_days == true or s.override_closed_days == 'true' -%}
+        {%- assign closed_days_final = s.closed_days | join: ',' -%}
+      {%- endif -%}
+      {%- if s.override_courier_no_delivery_days == true or s.override_courier_no_delivery_days == 'true' -%}
+        {%- assign courier_no_delivery_days_final = s.courier_no_delivery_days | join: ',' -%}
+      {%- endif -%}
+      {%- if s.show_border != blank -%}{%- assign show_border_final = s.show_border -%}{%- endif -%}
+      {%- if s.border_thickness != blank -%}{%- assign border_thickness_final = s.border_thickness -%}{%- endif -%}
+      {%- if s.border_color != blank -%}{%- assign border_color_final = s.border_color -%}{%- endif -%}
+      {%- if s.border_radius != blank -%}{%- assign border_radius_final = s.border_radius -%}{%- endif -%}
+      {%- if s.max_width != blank -%}{%- assign max_width_final = s.max_width -%}{%- endif -%}
+      {%- if s.icon_layout != blank -%}{%- assign icon_layout_final = s.icon_layout -%}{%- endif -%}
+      {%- if s.single_icon_size != blank -%}{%- assign single_icon_size_final = s.single_icon_size -%}{%- endif -%}
+      {%- if s.icon_vertical_align != blank -%}{%- assign icon_vertical_align_final = s.icon_vertical_align -%}{%- endif -%}
+      {%- if s.eta_delivery_days_min != blank -%}{%- assign delivery_min_final = s.eta_delivery_days_min -%}{%- endif -%}
+      {%- if s.eta_delivery_days_max != blank -%}{%- assign delivery_max_final = s.eta_delivery_days_max -%}{%- endif -%}
+      {%- if s.show_eta_timeline == true or s.show_eta_timeline == 'true' -%}{%- assign show_eta_timeline_final = true -%}{%- endif -%}
+      {%- if s.show_eta_timeline == false -%}{%- assign show_eta_timeline_final = false -%}{%- endif -%}
+      {%- if s.match_eta_width == true or s.match_eta_width == 'true' -%}{%- assign match_eta_width_final = true -%}{%- endif -%}
+      {%- if s.match_eta_width == false -%}{%- assign match_eta_width_final = false -%}{%- endif -%}
+      {%- if s.match_eta_border == true or s.match_eta_border == 'true' -%}{%- assign match_eta_border_final = true -%}{%- endif -%}
+      {%- if s.match_eta_border == false -%}{%- assign match_eta_border_final = false -%}{%- endif -%}
+      {%- if s.eta_border_width != blank -%}{%- assign eta_border_width_final = s.eta_border_width -%}{%- endif -%}
+      {%- if s.eta_border_color != blank -%}{%- assign eta_border_color_final = s.eta_border_color -%}{%- endif -%}
+      {%- if s.eta_border_radius != blank -%}{%- assign eta_border_radius_final = s.eta_border_radius -%}{%- endif -%}
+      {%- if match_eta_border_final == true and show_eta_timeline_final == true -%}
+        {%- assign border_thickness_final = eta_border_width_final -%}
+        {%- assign border_color_final = eta_border_color_final -%}
+        {%- assign border_radius_final = eta_border_radius_final -%}
+        {%- if eta_border_width_final > 0 -%}{%- assign show_border_final = true -%}{%- endif -%}
+      {%- endif -%}
+      {%- if s.override_global_text_styling == true or s.override_global_text_styling == 'true' -%}
+        {%- assign use_theme_text_styling_final = false -%}
+        {%- if s.text_color != blank -%}{%- assign text_color_final = s.text_color -%}{%- endif -%}
+        {%- if s.font_size != blank -%}{%- assign font_size_final = s.font_size -%}{%- endif -%}
+        {%- if s.font_weight != blank -%}{%- assign font_weight_final = s.font_weight -%}{%- endif -%}
+      {%- endif -%}
+      {% break %}
+    {%- endif -%}
+  {%- endfor -%}
+{%- endif -%}
+{{ 'dib-messages.css' | asset_url | stylesheet_tag }}
+<style>
+.dib-messages .dib-icon{width:1.3em;height:1.3em;flex:0 0 auto;display:inline-flex;overflow:hidden}.dib-messages .dib-icon svg,.dib-messages .dib-icon img{width:1.3em!important;height:1.3em!important;max-width:1.3em!important;max-height:1.3em!important;display:block}.dib-messages.icon-layout-single .dib-icon-single{flex:0 0 auto;display:inline-flex}.dib-messages.icon-layout-single .dib-icon-single svg,.dib-messages.icon-layout-single .dib-icon-single img{width:24px!important;height:24px!important}.dib-messages.icon-layout-single .dib-icon{display:none}.dib-messages.icon-layout-single.single-icon-size-small .dib-icon-single svg,.dib-messages.icon-layout-single.single-icon-size-small .dib-icon-single img{width:16px!important;height:16px!important}.dib-messages.icon-layout-single.single-icon-size-large .dib-icon-single svg,.dib-messages.icon-layout-single.single-icon-size-large .dib-icon-single img{width:32px!important;height:32px!important}.dib-messages.icon-layout-single.single-icon-size-x-large .dib-icon-single svg,.dib-messages.icon-layout-single.single-icon-size-x-large .dib-icon-single img{width:40px!important;height:40px!important}.dib-messages.icon-layout-single.single-icon-size-xx-large .dib-icon-single svg,.dib-messages.icon-layout-single.single-icon-size-xx-large .dib-icon-single img{width:48px!important;height:48px!important}
+{%- if icon_vertical_align_final == 'center' %}#{{ uid }} .dib-line{align-items:center}{% endif -%}
+{%- if use_theme_text_styling_final == false %}#{{ uid }} .dib-text{ {%- if text_color_final != blank %}color:{{ text_color_final }};{%- endif %}{%- case font_size_final -%}{%- when 'xsmall' %}font-size:12px;{%- when 'small' %}font-size:14px;{%- when 'large' %}font-size:18px;{%- when 'xlarge' %}font-size:20px;{%- else %}font-size:16px;{%- endcase %}{%- case font_weight_final -%}{%- when 'medium' %}font-weight:500;{%- when 'semibold' %}font-weight:600;{%- when 'bold' %}font-weight:700;{%- else %}font-weight:400;{%- endcase %}}{% endif -%}
+{%- if use_theme_font_final == false and custom_font_family_final != blank %}#{{ uid }} .dib-text{font-family:{{ custom_font_family_final }}}{% endif -%}
+{%- if max_width_final and max_width_final > 0 and match_eta_width_final != true %}#{{ uid }} .dib-container{max-width:{{ max_width_final }}px}{% endif -%}
+{%- if match_eta_width_final == true and show_eta_timeline_final == true %}#{{ uid }}{display:block}{% endif -%}
+.dib-messages-block-{{ uid }}:has(#{{ uid }} .dib-container:not(:has(.dib-line:not(.dib-has-countdown), .dib-has-countdown.is-ready))){display:none}
+</style>
+{%- capture dib_icon_markup -%}
+{%- if icon_final contains 'custom-' -%}
+  {%- assign custom_idx_str = icon_final | remove: 'custom-' -%}
+  {%- assign custom_idx = custom_idx_str | minus: 1 -%}
+  {%- if global_settings != nil and global_settings.custom_icons != blank and global_settings.custom_icons.size > custom_idx -%}
+    {%- assign custom_icon = global_settings.custom_icons[custom_idx] -%}
+    {%- if custom_icon.svg != blank -%}
+      {{ custom_icon.svg }}
+    {%- elsif custom_icon.url != blank -%}
+      <img src="{{ custom_icon.url }}" alt="" width="24" height="24" loading="lazy" style="object-fit:contain;display:block">
+    {%- endif -%}
+  {%- endif -%}
+{%- else -%}
+  {% render 'icon', icon: icon_final, style: icon_style_final %}
+{%- endif -%}
+{%- endcapture -%}
+{%- assign should_show_block = false -%}
+{%- if any_rule_matched -%}
+  {%- if message_line_1_final != blank or message_line_2_final != blank or message_line_3_final != blank -%}
+    {%- assign should_show_block = true -%}
+  {%- endif -%}
+{%- endif -%}
+{%- comment -%}Track which lines have countdown for hiding after cutoff{%- endcomment -%}
+{%- assign line_1_has_countdown = false -%}
+{%- assign line_2_has_countdown = false -%}
+{%- assign line_3_has_countdown = false -%}
+{%- if message_line_1_final contains '{countdown}' -%}{%- assign line_1_has_countdown = true -%}{%- endif -%}
+{%- if message_line_2_final contains '{countdown}' -%}{%- assign line_2_has_countdown = true -%}{%- endif -%}
+{%- if message_line_3_final contains '{countdown}' -%}{%- assign line_3_has_countdown = true -%}{%- endif -%}
+{%- comment -%}Track which lines have {lb} for icon vertical centering{%- endcomment -%}
+{%- assign line_1_has_multiline = false -%}
+{%- assign line_2_has_multiline = false -%}
+{%- assign line_3_has_multiline = false -%}
+{%- if message_line_1_final contains '{lb}' -%}{%- assign line_1_has_multiline = true -%}{%- endif -%}
+{%- if message_line_2_final contains '{lb}' -%}{%- assign line_2_has_multiline = true -%}{%- endif -%}
+{%- if message_line_3_final contains '{lb}' -%}{%- assign line_3_has_multiline = true -%}{%- endif -%}
+{%- comment -%}Replace placeholders with spans that JS will fill in{%- endcomment -%}
+{%- assign message_line_1_final = message_line_1_final | replace: '{arrival}', '<span class="dib-arrival-placeholder" data-uid="ARRIVAL_PLACEHOLDER"></span>' | replace: '{express}', '<span class="dib-express-placeholder" data-uid="EXPRESS_PLACEHOLDER"></span>' | replace: '{countdown}', '<span class="dib-countdown-placeholder" data-uid="COUNTDOWN_PLACEHOLDER"></span>' | replace: '{lb}', '<br>' -%}
+{%- assign message_line_2_final = message_line_2_final | replace: '{arrival}', '<span class="dib-arrival-placeholder" data-uid="ARRIVAL_PLACEHOLDER"></span>' | replace: '{express}', '<span class="dib-express-placeholder" data-uid="EXPRESS_PLACEHOLDER"></span>' | replace: '{countdown}', '<span class="dib-countdown-placeholder" data-uid="COUNTDOWN_PLACEHOLDER"></span>' | replace: '{lb}', '<br>' -%}
+{%- assign message_line_3_final = message_line_3_final | replace: '{arrival}', '<span class="dib-arrival-placeholder" data-uid="ARRIVAL_PLACEHOLDER"></span>' | replace: '{express}', '<span class="dib-express-placeholder" data-uid="EXPRESS_PLACEHOLDER"></span>' | replace: '{countdown}', '<span class="dib-countdown-placeholder" data-uid="COUNTDOWN_PLACEHOLDER"></span>' | replace: '{lb}', '<br>' -%}
+{%- capture message_1_html -%}{%- if message_line_1_final contains '**' -%}{%- assign parts = message_line_1_final | split: '**' -%}{%- for part in parts -%}{%- assign mod = forloop.index | modulo: 2 -%}{%- if mod == 0 -%}<strong>{{ part }}</strong>{%- else -%}{{ part }}{%- endif -%}{%- endfor -%}{%- else -%}{{ message_line_1_final }}{%- endif -%}{%- endcapture -%}
+{%- capture message_2_html -%}{%- if message_line_2_final contains '**' -%}{%- assign parts = message_line_2_final | split: '**' -%}{%- for part in parts -%}{%- assign mod = forloop.index | modulo: 2 -%}{%- if mod == 0 -%}<strong>{{ part }}</strong>{%- else -%}{{ part }}{%- endif -%}{%- endfor -%}{%- else -%}{{ message_line_2_final }}{%- endif -%}{%- endcapture -%}
+{%- capture message_3_html -%}{%- if message_line_3_final contains '**' -%}{%- assign parts = message_line_3_final | split: '**' -%}{%- for part in parts -%}{%- assign mod = forloop.index | modulo: 2 -%}{%- if mod == 0 -%}<strong>{{ part }}</strong>{%- else -%}{{ part }}{%- endif -%}{%- endfor -%}{%- else -%}{{ message_line_3_final }}{%- endif -%}{%- endcapture -%}
+{%- if use_theme_font_final == false and custom_font_family_final != blank -%}{%- assign google_fonts = 'Assistant,Open Sans,Roboto,Lato,Montserrat,Poppins,Raleway,DM Sans,Inter,Nunito,Work Sans' | split: ',' -%}{%- for gf in google_fonts -%}{%- if custom_font_family_final contains gf -%}{%- assign gf_url = gf | replace: ' ', '+' -%}<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family={{ gf_url }}:wght@400;500;600&display=swap" rel="stylesheet">{%- break -%}{%- endif -%}{%- endfor -%}{%- endif -%}
+{% if request.design_mode %}
+<div style="text-align:{{ messages_alignment }};{% if messages_margin_top != 0 %}margin-top:{{ messages_margin_top }}px;{% endif %}{% if messages_margin_bottom != 0 %}margin-bottom:{{ messages_margin_bottom }}px;{% endif %}"><div style="border:2px dashed #d1d5db;border-radius:8px;padding:16px 20px;background:#f9fafb;display:inline-flex;align-items:center;gap:12px;max-width:400px;"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="14" x="2" y="5" rx="2"/><path d="M2 10h20"/></svg><div><div style="font-weight:600;color:#374151;font-size:14px;margin-bottom:2px;">Delivery Info Block</div><div style="color:#6b7280;font-size:12px;">Configure rules in the app to display delivery information here.</div></div></div></div>
+{% elsif should_show_block %}
+<style>.dib-messages-block-{{ uid }}{display:block!important;width:100%!important;text-align:{{ messages_alignment }}!important}.dib-messages-block-{{ uid }} #{{ uid }}{display:inline-block!important;text-align:left!important}</style>
+<div class="dib-messages-block-{{ uid }}" style="{% if messages_margin_top != 0 %}margin-top:{{ messages_margin_top }}px;{% endif %}{% if messages_margin_bottom != 0 %}margin-bottom:{{ messages_margin_bottom }}px;{% endif %}">
+<div id="{{ uid }}" class="dib-messages{% if icon_layout_final == 'single' %} icon-layout-single single-icon-size-{{ single_icon_size_final }}{% endif %}" data-delivery-min="{{ delivery_min_final }}" data-delivery-max="{{ delivery_max_final }}" data-courier-no-delivery="{{ courier_no_delivery_days_final }}"{% if match_eta_width_final == true and show_eta_timeline_final == true %} data-match-eta-width="true"{% endif %}>
+<div class="dib-container {% if show_border_final %}has-border{% endif %}" style="{% if show_border_final %}border-width:{{ border_thickness_final }}px;border-color:{{ border_color_final }};border-radius:{{ border_radius_final }}px;{% endif %}">
+{%- if icon_layout_final == 'single' and show_icon_final -%}<span class="dib-icon-single" aria-hidden="true" style="color:{{ icon_color }};">{{ dib_icon_markup }}</span>{%- endif -%}
+<span class="dib-config" style="display:none" data-dib-js data-uid="{{ uid }}" data-shop-offset="{{ 'now' | date: '%z' }}" data-cutoff="{{ cutoff_time_final }}" data-cutoff-sat="{{ cutoff_time_sat_final }}" data-cutoff-sun="{{ cutoff_time_sun_final }}" data-closed-days="{{ closed_days_final }}" data-lead-time="{{ lead_time_final }}" data-courier-no-delivery="{{ courier_no_delivery_days_final }}" data-bank-holiday-country="{{ bank_holiday_country_final }}" data-custom-holidays="{{ custom_holidays_final }}"></span>
+<div class="dib-lines dib-text">
+{% if show_messages_final and message_line_1_final != blank %}<div class="dib-line{% if line_1_has_countdown %} dib-has-countdown{% endif %}{% if line_1_has_multiline %} dib-multiline{% endif %}"{% if line_1_has_countdown %} data-has-countdown="true"{% endif %}>{%- if show_icon_final and icon_layout_final != 'single' -%}<span class="dib-icon" aria-hidden="true" style="color:{{ icon_color }};">{{ dib_icon_markup }}</span>{%- endif -%}<div class="dib-line-text">{{ message_1_html }}</div></div>{% endif %}
+{% if show_messages_final and message_line_2_final != blank %}<div class="dib-line{% if line_2_has_countdown %} dib-has-countdown{% endif %}{% if line_2_has_multiline %} dib-multiline{% endif %}"{% if line_2_has_countdown %} data-has-countdown="true"{% endif %}>{%- if show_icon_final and icon_layout_final != 'single' -%}<span class="dib-icon" aria-hidden="true" style="color:{{ icon_color }};">{{ dib_icon_markup }}</span>{%- endif -%}<div class="dib-line-text">{{ message_2_html }}</div></div>{% endif %}
+{% if show_messages_final and message_line_3_final != blank %}<div class="dib-line{% if line_3_has_countdown %} dib-has-countdown{% endif %}{% if line_3_has_multiline %} dib-multiline{% endif %}"{% if line_3_has_countdown %} data-has-countdown="true"{% endif %}>{%- if show_icon_final and icon_layout_final != 'single' -%}<span class="dib-icon" aria-hidden="true" style="color:{{ icon_color }};">{{ dib_icon_markup }}</span>{%- endif -%}<div class="dib-line-text">{{ message_3_html }}</div></div>{% endif %}
+</div></div></div></div>
+{% endif %}
+<script>(function(){if(window.__DIB_COUNTDOWN_LOADED__)return;if(!document.querySelector('[data-dib-js]'))return;window.__DIB_COUNTDOWN_LOADED__=true;var s=document.createElement("script");s.src="{{ 'dib-countdown.js' | asset_url }}";s.defer=true;document.head.appendChild(s)})();</script>
+{% schema %}
+{"name":"Delivery Messaging","target":"section","settings":[{"type":"paragraph","content":"Configure delivery rules in the Delivery Messaging app. Place this block where you want delivery information to appear on the product page."}]}
+{% endschema %}

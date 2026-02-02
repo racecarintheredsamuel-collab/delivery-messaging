@@ -1,0 +1,148 @@
+/* Delivery Messages Block - Static CSS */
+
+/* Base layout */
+.dib-messages .dib-lines {
+  display: grid;
+  gap: 0.35em;
+  line-height: 1.3;
+}
+
+.dib-messages .dib-line {
+  display: flex;
+  align-items: flex-start; /* Default, can be overridden inline */
+  gap: 0.5em;
+}
+
+/* Icon sizing */
+.dib-messages .dib-icon {
+  width: 1.3em;
+  height: 1.3em;
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  line-height: 1;
+  margin-top: 0.05em;
+}
+
+.dib-messages .dib-icon svg,
+.dib-messages .dib-icon img {
+  width: 1.3em !important;
+  height: 1.3em !important;
+  max-width: 1.3em !important;
+  max-height: 1.3em !important;
+  display: block;
+}
+
+/* Icon color inheritance */
+.dib-messages .dib-icon svg [fill]:not([fill="none"]) { fill: currentColor; }
+.dib-messages .dib-icon svg [stroke] { stroke: currentColor; }
+
+/* Single icon layout */
+.dib-messages.icon-layout-single .dib-container {
+  display: flex;
+  gap: 0.75em;
+  align-items: center;
+}
+
+.dib-messages.icon-layout-single .dib-icon-single {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.dib-messages.icon-layout-single .dib-icon-single svg { display: block; }
+.dib-messages.icon-layout-single .dib-icon-single svg [fill]:not([fill="none"]) { fill: currentColor; }
+.dib-messages.icon-layout-single .dib-icon-single svg [stroke] { stroke: currentColor; }
+
+.dib-messages.icon-layout-single .dib-line { gap: 0; }
+.dib-messages.icon-layout-single .dib-icon { display: none; }
+
+/* Single icon size variants */
+.dib-messages.icon-layout-single.single-icon-size-small .dib-icon-single svg,
+.dib-messages.icon-layout-single.single-icon-size-small .dib-icon-single img {
+  width: 16px !important;
+  height: 16px !important;
+}
+
+.dib-messages.icon-layout-single.single-icon-size-medium .dib-icon-single svg,
+.dib-messages.icon-layout-single.single-icon-size-medium .dib-icon-single img {
+  width: 24px !important;
+  height: 24px !important;
+}
+
+.dib-messages.icon-layout-single.single-icon-size-large .dib-icon-single svg,
+.dib-messages.icon-layout-single.single-icon-size-large .dib-icon-single img {
+  width: 32px !important;
+  height: 32px !important;
+}
+
+.dib-messages.icon-layout-single.single-icon-size-x-large .dib-icon-single svg,
+.dib-messages.icon-layout-single.single-icon-size-x-large .dib-icon-single img {
+  width: 40px !important;
+  height: 40px !important;
+}
+
+.dib-messages.icon-layout-single.single-icon-size-xx-large .dib-icon-single svg,
+.dib-messages.icon-layout-single.single-icon-size-xx-large .dib-icon-single img {
+  width: 48px !important;
+  height: 48px !important;
+}
+
+/* Text overflow */
+.dib-messages .dib-text {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Container base */
+.dib-messages .dib-container {
+  border: none;
+  border-radius: 0;
+  padding: 0;
+}
+
+.dib-messages .dib-container.has-border {
+  border-style: solid;
+  padding: 10px 12px;
+}
+
+/* Countdown visibility */
+.dib-messages .dib-has-countdown {
+  display: none;
+}
+
+.dib-messages .dib-has-countdown.is-ready {
+  display: flex;
+}
+
+/* Hide container when no visible lines */
+.dib-messages .dib-container:not(:has(.dib-line:not(.dib-has-countdown), .dib-has-countdown.is-ready)) {
+  display: none;
+}
+
+/* ===========================================
+   ETA Timeline Block - Static CSS
+   =========================================== */
+
+.dib-eta-timeline-block {
+  display: block !important;
+  width: 100% !important;
+}
+
+.dib-eta-timeline-block .dib-eta-timeline {
+  display: block !important;
+}
+
+.dib-eta-timeline-block .dib-eta-scale-wrapper {
+  display: inline-block;
+  vertical-align: top;
+}
+
+.dib-eta-timeline-block .dib-eta-stages {
+  display: inline-flex !important;
+}
