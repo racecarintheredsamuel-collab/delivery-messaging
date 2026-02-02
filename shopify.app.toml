@@ -2,7 +2,7 @@
 
 client_id = "30cd8404cf689c75a189b4f2b4bfcea8"
 name = "Delivery Messaging"
-application_url = "https://example.com"
+application_url = "https://delivery-messaging.app"
 embedded = true
 
 [build]
@@ -19,9 +19,24 @@ api_version = "2026-04"
   topics = [ "app/scopes_update" ]
   uri = "/webhooks/app/scopes_update"
 
+  [[webhooks.subscriptions]]
+  topics = [ "customers/data_request" ]
+  uri = "/webhooks/customers/data_request"
+
+  [[webhooks.subscriptions]]
+  topics = [ "customers/redact" ]
+  uri = "/webhooks/customers/redact"
+
+  [[webhooks.subscriptions]]
+  topics = [ "shop/redact" ]
+  uri = "/webhooks/shop/redact"
+
+
 [access_scopes]
 # Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
 scopes = "write_products"
 
 [auth]
-redirect_urls = [ "https://example.com/api/auth" ]
+redirect_urls = [
+  "https://delivery-messaging.app/auth/callback"
+]
