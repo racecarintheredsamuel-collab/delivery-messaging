@@ -106,8 +106,10 @@ export const loader = async ({ request }) => {
   const configMf = json?.data?.shop?.config;
   const settingsMf = json?.data?.shop?.settings;
 
-  // Create default config if it doesn't exist
+  // Create default config if it doesn't exist (first install)
   if (!configMf?.value) {
+    // Include demo rule for first-time users
+    const firstInstallConfig = { version: 1, rules: [defaultDemoRule()] };
     const setRes = await admin.graphql(SET_METAFIELDS, {
       variables: {
         metafields: [
@@ -116,7 +118,7 @@ export const loader = async ({ request }) => {
             namespace: METAFIELD_NAMESPACE,
             key: CONFIG_KEY,
             type: "json",
-            value: JSON.stringify({ version: 1, rules: [] }),
+            value: JSON.stringify(firstInstallConfig),
           },
         ],
       },
@@ -567,6 +569,110 @@ function defaultRule() {
   };
 }
 
+/**
+ * Returns a pre-configured demo rule with example settings.
+ * Used for first-install and "Add Default Rule" button.
+ */
+function defaultDemoRule() {
+  return {
+    id: newRuleId(),
+    name: "Demo Rule",
+    match: {
+      product_handles: [],
+      tags: ["demo-tag"],
+      stock_status: "in_stock",
+      is_fallback: false,
+    },
+    settings: {
+      // Collapsed states - expand relevant sections to showcase features
+      collapsed_product_matching: false,
+      collapsed_dispatch_settings: true,
+      collapsed_countdown_messages: false,
+      collapsed_countdown_icon: false,
+      collapsed_eta_timeline: false,
+
+      // Messages
+      show_messages: true,
+      message_line_1: "Order within **{countdown}** for same-day dispatch",
+      message_line_2: "Upgrade to express delivery & get it by **{express}**",
+      message_line_3: "Free shipping on all orders over £50",
+
+      // Icon
+      show_icon: true,
+      icon: "checkmark",
+      icon_style: "solid",
+      icon_color: "#4E8364",
+      icon_layout: "per-line",
+      single_icon_size: "medium",
+      icon_vertical_align: "center",
+
+      // Border - match ETA timeline
+      show_border: false,
+      border_thickness: 1,
+      border_color: "#e5e7eb",
+      border_radius: 8,
+      max_width: 600,
+      match_eta_border: true,
+      match_eta_width: true,
+
+      // Dispatch settings overrides - all off (use global)
+      override_cutoff_times: false,
+      override_lead_time: false,
+      override_closed_days: false,
+      override_courier_no_delivery_days: false,
+      cutoff_time: "",
+      cutoff_time_sat: "",
+      cutoff_time_sun: "",
+      closed_days: [],
+      lead_time: 0,
+      courier_no_delivery_days: [],
+
+      // ETA Timeline
+      show_eta_timeline: true,
+      eta_left_padding: 0,
+      eta_icon_size: "medium",
+      eta_connector_style: "arrows",
+      eta_connector_color: "#111827",
+      eta_connector_use_main_color: true,
+      eta_connector_alignment: "center",
+      eta_color: "#111827",
+      eta_use_main_icon_color: true,
+      eta_border_width: 1,
+      eta_border_color: "#E5E7EB",
+      eta_border_radius: 8,
+      eta_delivery_days_min: 2,
+      eta_delivery_days_max: 3,
+      eta_order_icon: "shopping-bag",
+      eta_shipping_icon: "truck",
+      eta_delivery_icon: "pin",
+      eta_order_icon_style: "solid",
+      eta_shipping_icon_style: "solid",
+      eta_delivery_icon_style: "solid",
+      eta_label_order: "Ordered",
+      eta_label_shipping: "Shipped",
+      eta_label_delivery: "Delivered",
+
+      // Text styling - use defaults
+      override_global_text_styling: false,
+      text_color: "var(--p-color-text, #374151)",
+      font_size: "medium",
+      font_weight: "normal",
+
+      // ETA text styling - use defaults
+      override_eta_text_styling: false,
+      eta_label_color: "var(--p-color-text, #374151)",
+      eta_label_font_size: "small",
+      eta_label_font_weight: "semibold",
+      eta_date_color: "var(--p-color-text-subdued, #6b7280)",
+      eta_date_font_size: "xsmall",
+      eta_date_font_weight: "normal",
+
+      // Cart message
+      cart_message: "",
+    },
+  };
+}
+
 // ============================================================================
 // PREVIEW COMPONENTS
 // ============================================================================
@@ -895,6 +1001,13 @@ export default function Index() {
     setSelectedIndex(next.length - 1);
   };
 
+  const addDefaultRule = () => {
+    flushPendingEdits(); // Save any pending edits before switching to new rule
+    const next = [...rules, defaultDemoRule()];
+    setRules(next);
+    setSelectedIndex(next.length - 1);
+  };
+
   const duplicateRule = () => {
     flushPendingEdits(); // Save any pending edits before switching to copied rule
     if (selectedIndex < 0 || selectedIndex >= rules.length) return;
@@ -1215,6 +1328,9 @@ export default function Index() {
                 </div>
                 <s-button onClick={addRule}>
                   Add rule
+                </s-button>
+                <s-button onClick={addDefaultRule}>
+                  Add default rule
                 </s-button>
                 <s-button onClick={duplicateRule}>
                   Copy rule
