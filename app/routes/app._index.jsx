@@ -106,8 +106,19 @@ export const loader = async ({ request }) => {
   const configMf = json?.data?.shop?.config;
   const settingsMf = json?.data?.shop?.settings;
 
-  // Create default config if it doesn't exist
+  // Create default config if it doesn't exist (first install)
   if (!configMf?.value) {
+    // Create v2 config with Default profile directly (so it's persisted from the start)
+    const defaultProfileId = newProfileId();
+    const firstInstallConfig = {
+      version: 2,
+      profiles: [{
+        id: defaultProfileId,
+        name: "Default",
+        rules: [],
+      }],
+      activeProfileId: defaultProfileId,
+    };
     const setRes = await admin.graphql(SET_METAFIELDS, {
       variables: {
         metafields: [
@@ -116,7 +127,7 @@ export const loader = async ({ request }) => {
             namespace: METAFIELD_NAMESPACE,
             key: CONFIG_KEY,
             type: "json",
-            value: JSON.stringify({ version: 1, rules: [] }),
+            value: JSON.stringify(firstInstallConfig),
           },
         ],
       },
