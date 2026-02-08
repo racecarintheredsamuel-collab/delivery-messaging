@@ -2,7 +2,7 @@
 // IMPORTS
 // ============================================================================
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useFetcher, useLoaderData, useRouteError } from "react-router";
 import { boundary } from "@shopify/shopify-app-react-router/server";
 import { authenticate } from "../shopify.server";
@@ -60,7 +60,8 @@ function defaultSettings() {
     eta_match_messages_font: false,
     eta_custom_font_family: "",
     eta_preview_theme_font: "", // For previewing theme font in admin
-    eta_preview_font_size_scale: "", // Font size scale for admin preview (100-130%)
+    eta_preview_font_size_scale: "", // Font size scale for admin preview (80-130%)
+    eta_preview_font_weight: "", // Font weight for admin preview
 
     // Typography - ETA Timeline text styling (Labels: Ordered, Shipped, Delivered)
     eta_use_theme_text_styling: true,
@@ -73,15 +74,29 @@ function defaultSettings() {
     eta_date_font_size: "xsmall",
     eta_date_font_weight: "normal",
 
+    // Typography - Special Delivery font
+    special_delivery_use_theme_font: true,
+    special_delivery_match_messages_font: false,
+    special_delivery_custom_font_family: "",
+
+    // Typography - Special Delivery text styling
+    special_delivery_use_theme_text_styling: true,
+    special_delivery_text_color: "#374151",
+    special_delivery_font_size: "medium",
+    special_delivery_font_weight: "normal",
+
     // Block spacing
     messages_margin_top: 0,
     messages_margin_bottom: 0,
     eta_margin_top: 0,
     eta_margin_bottom: 0,
+    special_delivery_margin_top: 0,
+    special_delivery_margin_bottom: 0,
 
     // Block alignment
     messages_alignment: "left",
     eta_alignment: "left",
+    special_delivery_alignment: "left",
 
     // ETA Timeline vertical spacing
     eta_gap_icon_label: 2,
@@ -336,9 +351,24 @@ export default function SettingsPage() {
   const [newCustomHoliday, setNewCustomHoliday] = useState("");
   const [newCustomHolidayLabel, setNewCustomHolidayLabel] = useState("");
 
-  // Handle save/reset responses
+  // Auto-save refs
+  const autoSaveTimerRef = useRef(null);
+  const initialSettingsRef = useRef(JSON.stringify(settings));
+  const initialConfigRef = useRef(JSON.stringify(config));
+
+  // Track previous fetcher state to detect save completion
+  const prevFetcherStateRef = useRef(fetcher.state);
+
+  // Handle save/reset responses - only when transitioning from loading to idle
   useEffect(() => {
-    if (fetcher.state === "idle" && fetcher.data?.reset === true) {
+    const wasSubmitting = prevFetcherStateRef.current === "submitting" || prevFetcherStateRef.current === "loading";
+    const isNowIdle = fetcher.state === "idle";
+    prevFetcherStateRef.current = fetcher.state;
+
+    // Only process when we just finished a submission
+    if (!wasSubmitting || !isNowIdle) return;
+
+    if (fetcher.data?.reset === true) {
       if (fetcher.data?.ok === true) {
         window.location.reload();
       } else {
@@ -346,34 +376,58 @@ export default function SettingsPage() {
       }
       return;
     }
-    if (fetcher.state === "idle" && fetcher.data?.ok === true) {
+    if (fetcher.data?.ok === true) {
+      // Update initial refs so we don't re-save the same data
+      initialSettingsRef.current = JSON.stringify(settings);
+      initialConfigRef.current = JSON.stringify(config);
       setSaveStatus("Saved!");
       const timer = setTimeout(() => setSaveStatus(""), 2000);
       return () => clearTimeout(timer);
     }
-  }, [fetcher.state, fetcher.data]);
+  }, [fetcher.state, fetcher.data, settings, config]);
+
+  // Auto-save settings after 2 seconds of inactivity
+  useEffect(() => {
+    if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
+
+    const settingsChanged = JSON.stringify(settings) !== initialSettingsRef.current;
+    const configChanged = JSON.stringify(config) !== initialConfigRef.current;
+
+    // Don't auto-save if unchanged from initial load
+    if (!settingsChanged && !configChanged) return;
+
+    // Don't auto-save while already saving
+    if (fetcher.state !== "idle") return;
+
+    autoSaveTimerRef.current = setTimeout(() => {
+      setSaveStatus("Saving...");
+      // Submit both settings and config if either changed
+      const submitData = { shopId };
+      if (settingsChanged) submitData.settings = JSON.stringify(settings);
+      if (configChanged) submitData.config = JSON.stringify(config);
+      fetcher.submit(submitData, { method: "POST" });
+    }, 2000);
+
+    return () => {
+      if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
+    };
+  }, [settings, config, shopId, fetcher.state]);
 
   const handleSave = () => {
+    if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
     setSaveStatus("Saving...");
-    fetcher.submit(
-      { settings: JSON.stringify(settings), shopId },
-      { method: "POST" }
-    );
-  };
-
-  // Profile management functions
-  const handleSaveConfig = (newConfig) => {
-    setSaveStatus("Saving...");
-    fetcher.submit(
-      { config: JSON.stringify(newConfig), shopId },
-      { method: "POST" }
-    );
+    const settingsChanged = JSON.stringify(settings) !== initialSettingsRef.current;
+    const configChanged = JSON.stringify(config) !== initialConfigRef.current;
+    const submitData = { shopId };
+    if (settingsChanged) submitData.settings = JSON.stringify(settings);
+    if (configChanged) submitData.config = JSON.stringify(config);
+    fetcher.submit(submitData, { method: "POST" });
   };
 
   const setActiveProfileId = (id) => {
     const newConfig = { ...config, activeProfileId: id };
     setConfig(newConfig);
-    handleSaveConfig(newConfig);
+    // Auto-save will handle saving after 2 seconds
   };
 
   const addProfile = () => {
@@ -382,7 +436,7 @@ export default function SettingsPage() {
     const newProfiles = [...profiles, newProfile];
     const newConfig = { ...config, profiles: newProfiles, activeProfileId: newId };
     setConfig(newConfig);
-    handleSaveConfig(newConfig);
+    // Auto-save will handle saving after 2 seconds
   };
 
   const copyProfile = () => {
@@ -396,7 +450,7 @@ export default function SettingsPage() {
     const newProfiles = [...profiles, copiedProfile];
     const newConfig = { ...config, profiles: newProfiles, activeProfileId: newId };
     setConfig(newConfig);
-    handleSaveConfig(newConfig);
+    // Auto-save will handle saving after 2 seconds
   };
 
   const deleteProfileWithUndo = () => {
@@ -407,7 +461,7 @@ export default function SettingsPage() {
     const newActiveId = newProfiles[Math.min(idx, newProfiles.length - 1)]?.id;
     const newConfig = { ...config, profiles: newProfiles, activeProfileId: newActiveId };
     setConfig(newConfig);
-    handleSaveConfig(newConfig);
+    // Auto-save will handle saving after 2 seconds
   };
 
   const undoDeleteProfile = () => {
@@ -418,7 +472,7 @@ export default function SettingsPage() {
     const newConfig = { ...config, profiles: newProfiles, activeProfileId: profile.id };
     setConfig(newConfig);
     setLastDeletedProfile(null);
-    handleSaveConfig(newConfig);
+    // Auto-save will handle saving after 2 seconds
   };
 
   const renameProfile = (newName) => {
@@ -427,11 +481,12 @@ export default function SettingsPage() {
     );
     const newConfig = { ...config, profiles: newProfiles };
     setConfig(newConfig);
-    // Don't auto-save on every keystroke, just update state
+    // Auto-save will handle saving after 2 seconds
   };
 
   const saveProfileName = () => {
-    handleSaveConfig(config);
+    // Trigger manual save immediately
+    handleSave();
   };
 
   const toggleClosedDay = (day) => {
@@ -499,35 +554,24 @@ export default function SettingsPage() {
 
         {/* Top Action Row: Save + Dev Reset */}
         <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
-          <s-button variant="primary" onClick={handleSave}>
-            Save Settings
-          </s-button>
-          <span style={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: "4px",
-            color: "var(--p-color-text-success, #16a34a)",
-            fontSize: "14px",
-            fontWeight: 500,
-            visibility: saveStatus === "Saved!" ? "visible" : "hidden",
-            minWidth: 60,
+          <s-button variant="primary" onClick={() => {
+            if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
+            handleSave();
           }}>
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 20 20"
-              fill="currentColor"
-              width="16"
-              height="16"
-              aria-hidden="true"
-            >
-              <path
-                fillRule="evenodd"
-                d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z"
-                clipRule="evenodd"
-              />
-            </svg>
-            Saved
-          </span>
+            Save
+          </s-button>
+          {/* Cloud save indicator */}
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 20 20"
+            fill="currentColor"
+            width="18"
+            height="18"
+            style={{ color: saveStatus === "Saving..." ? "#60a5fa" : "#9ca3af" }}
+            aria-hidden="true"
+          >
+            <path d="M5.5 16a3.5 3.5 0 01-.369-6.98 4 4 0 117.753-1.977A4.5 4.5 0 1113.5 16h-8z" />
+          </svg>
           {isDev && (
             <s-button
               variant="destructive"
@@ -1566,6 +1610,228 @@ export default function SettingsPage() {
             )}
           </div>
 
+          {/* Special Delivery Font */}
+          <div style={{ borderTop: "1px solid var(--p-color-border, #e5e7eb)", marginTop: 8, paddingTop: 12 }}>
+            <s-heading>Special Delivery Font</s-heading>
+            <s-text size="small" style={{ color: "var(--p-color-text-subdued, #6b7280)", marginTop: 4, marginBottom: 8, display: "block" }}>
+              Font family for Special Delivery block text
+            </s-text>
+
+            <label style={{ display: "flex", gap: 8, alignItems: "center" }}>
+              <input
+                type="checkbox"
+                checked={settings.special_delivery_use_theme_font !== false}
+                onChange={(e) => setSettings({ ...settings, special_delivery_use_theme_font: e.target.checked, special_delivery_match_messages_font: false })}
+              />
+              <s-text>Use theme font (inherits from your Shopify theme)</s-text>
+            </label>
+
+            {settings.special_delivery_use_theme_font === false && (
+              <>
+                {/* Show "Match messages font" option only when messages has custom font */}
+                {!settings.use_theme_font && settings.custom_font_family && (
+                  <label style={{ display: "flex", gap: 8, alignItems: "center", marginTop: 8 }}>
+                    <input
+                      type="checkbox"
+                      checked={settings.special_delivery_match_messages_font === true}
+                      onChange={(e) => setSettings({ ...settings, special_delivery_match_messages_font: e.target.checked })}
+                    />
+                    <s-text>Match messages font ({extractFontName(settings.custom_font_family)})</s-text>
+                  </label>
+                )}
+
+                {/* Only show font picker if not matching messages font */}
+                {!settings.special_delivery_match_messages_font && (
+                  <>
+                    <label style={{ marginTop: 8 }}>
+                      <s-text>Custom font family</s-text>
+                      <select
+                        value={settings.special_delivery_custom_font_family || ""}
+                        onChange={(e) => setSettings({ ...settings, special_delivery_custom_font_family: e.target.value })}
+                        style={{ width: "100%", marginTop: 4 }}
+                      >
+                        <option value="">— Select a font —</option>
+                        <optgroup label="System Fonts">
+                          <option value="Arial, sans-serif">Arial</option>
+                          <option value="Helvetica, Arial, sans-serif">Helvetica</option>
+                          <option value="Georgia, serif">Georgia</option>
+                          <option value="'Times New Roman', Times, serif">Times New Roman</option>
+                          <option value="Verdana, sans-serif">Verdana</option>
+                          <option value="Tahoma, sans-serif">Tahoma</option>
+                          <option value="'Trebuchet MS', sans-serif">Trebuchet MS</option>
+                          <option value="'Courier New', monospace">Courier New</option>
+                        </optgroup>
+                        <optgroup label="Google Fonts">
+                          <option value="'Assistant', sans-serif">Assistant (Dawn default)</option>
+                          <option value="'Open Sans', sans-serif">Open Sans</option>
+                          <option value="'Roboto', sans-serif">Roboto</option>
+                          <option value="'Lato', sans-serif">Lato</option>
+                          <option value="'Montserrat', sans-serif">Montserrat</option>
+                          <option value="'Poppins', sans-serif">Poppins</option>
+                          <option value="'Raleway', sans-serif">Raleway</option>
+                        </optgroup>
+                      </select>
+                    </label>
+
+                    {/* Special Delivery Font Preview */}
+                    {settings.special_delivery_custom_font_family && (
+                      <>
+                        {/* Load Google Font if selected */}
+                        {settings.special_delivery_custom_font_family.includes("'") &&
+                         !settings.special_delivery_custom_font_family.includes("Times") &&
+                         !settings.special_delivery_custom_font_family.includes("Courier") &&
+                         !settings.special_delivery_custom_font_family.includes("Trebuchet") && (
+                          <link
+                            href={`https://fonts.googleapis.com/css2?family=${extractFontName(settings.special_delivery_custom_font_family).replace(/ /g, '+')}:wght@400;500;600&display=swap`}
+                            rel="stylesheet"
+                          />
+                        )}
+                        <div
+                          style={{
+                            padding: "12px 16px",
+                            background: "var(--p-color-bg-surface-secondary, #f9fafb)",
+                            borderRadius: 6,
+                            border: "1px solid var(--p-color-border, #e5e7eb)",
+                            marginTop: 8,
+                          }}
+                        >
+                          <s-text size="small" style={{ color: "var(--p-color-text-subdued, #6b7280)", marginBottom: 4, display: "block" }}>
+                            Preview:
+                          </s-text>
+                          <div
+                            style={{
+                              fontFamily: settings.special_delivery_custom_font_family,
+                              fontSize: 16,
+                              lineHeight: 1.4,
+                            }}
+                          >
+                            This product requires special delivery arrangements.
+                          </div>
+                        </div>
+                      </>
+                    )}
+                  </>
+                )}
+
+                {/* Preview when matching messages font */}
+                {settings.special_delivery_match_messages_font && settings.custom_font_family && (
+                  <div
+                    style={{
+                      padding: "12px 16px",
+                      background: "var(--p-color-bg-surface-secondary, #f9fafb)",
+                      borderRadius: 6,
+                      border: "1px solid var(--p-color-border, #e5e7eb)",
+                      marginTop: 8,
+                    }}
+                  >
+                    <s-text size="small" style={{ color: "var(--p-color-text-subdued, #6b7280)", marginBottom: 4, display: "block" }}>
+                      Preview (using messages font):
+                    </s-text>
+                    <div
+                      style={{
+                        fontFamily: settings.custom_font_family,
+                        fontSize: 16,
+                        lineHeight: 1.4,
+                      }}
+                    >
+                      This product requires special delivery arrangements.
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+
+          {/* Special Delivery Text Styling */}
+          <div style={{ borderTop: "1px solid var(--p-color-border, #e5e7eb)", marginTop: 8, paddingTop: 12 }}>
+            <s-heading>Special Delivery Text Styling</s-heading>
+            <s-text size="small" style={{ color: "var(--p-color-text-subdued, #6b7280)", marginTop: 4, marginBottom: 8, display: "block" }}>
+              Default text color, size, and weight (can be overridden per-rule)
+            </s-text>
+
+            <label style={{ display: "flex", gap: 8, alignItems: "center" }}>
+              <input
+                type="checkbox"
+                checked={settings.special_delivery_use_theme_text_styling !== false}
+                onChange={(e) => setSettings({ ...settings, special_delivery_use_theme_text_styling: e.target.checked })}
+              />
+              <s-text>Match theme text styling</s-text>
+            </label>
+
+            {settings.special_delivery_use_theme_text_styling === false && (
+              <div style={{ display: "grid", gap: 12, marginTop: 12 }}>
+                <s-color-field
+                  label="Text color"
+                  value={settings.special_delivery_text_color || "#374151"}
+                  onInput={(e) => {
+                    const val = e.detail?.value || e.target?.value;
+                    if (val) setSettings({ ...settings, special_delivery_text_color: val });
+                  }}
+                  onChange={(e) => {
+                    const val = e.detail?.value || e.target?.value;
+                    if (val) setSettings({ ...settings, special_delivery_text_color: val });
+                  }}
+                />
+
+                <label>
+                  <s-text>Font size</s-text>
+                  <select
+                    value={settings.special_delivery_font_size || "medium"}
+                    onChange={(e) => setSettings({ ...settings, special_delivery_font_size: e.target.value })}
+                    style={{ width: "100%", marginTop: 4 }}
+                  >
+                    <option value="xsmall">X-Small (12px)</option>
+                    <option value="small">Small (14px)</option>
+                    <option value="medium">Medium (16px)</option>
+                    <option value="large">Large (18px)</option>
+                    <option value="xlarge">X-Large (20px)</option>
+                  </select>
+                </label>
+
+                <label>
+                  <s-text>Font weight</s-text>
+                  <select
+                    value={settings.special_delivery_font_weight || "normal"}
+                    onChange={(e) => setSettings({ ...settings, special_delivery_font_weight: e.target.value })}
+                    style={{ width: "100%", marginTop: 4 }}
+                  >
+                    <option value="normal">Normal (400)</option>
+                    <option value="medium">Medium (500)</option>
+                    <option value="semibold">Semi-bold (600)</option>
+                    <option value="bold">Bold (700)</option>
+                  </select>
+                </label>
+
+                {/* Special Delivery Text Styling Preview */}
+                <div
+                  style={{
+                    padding: "12px 16px",
+                    background: "var(--p-color-bg-surface-secondary, #f9fafb)",
+                    borderRadius: 6,
+                    border: "1px solid var(--p-color-border, #e5e7eb)",
+                  }}
+                >
+                  <s-text size="small" style={{ color: "var(--p-color-text-subdued, #6b7280)", marginBottom: 4, display: "block" }}>
+                    Preview:
+                  </s-text>
+                  <div
+                    style={{
+                      fontFamily: settings.special_delivery_use_theme_font === false
+                        ? (settings.special_delivery_match_messages_font ? settings.custom_font_family : settings.special_delivery_custom_font_family) || "inherit"
+                        : "inherit",
+                      color: settings.special_delivery_text_color || "#374151",
+                      fontSize: settings.special_delivery_font_size === "xsmall" ? 12 : settings.special_delivery_font_size === "small" ? 14 : settings.special_delivery_font_size === "large" ? 18 : settings.special_delivery_font_size === "xlarge" ? 20 : 16,
+                      fontWeight: settings.special_delivery_font_weight === "medium" ? 500 : settings.special_delivery_font_weight === "semibold" ? 600 : settings.special_delivery_font_weight === "bold" ? 700 : 400,
+                      lineHeight: 1.4,
+                    }}
+                  >
+                    This product requires special delivery arrangements.
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
           {/* Theme Preview Settings */}
           <div style={{ borderTop: "1px solid var(--p-color-border, #e5e7eb)", marginTop: 8, paddingTop: 12 }}>
             <s-heading>Theme Preview Settings</s-heading>
@@ -1576,18 +1842,10 @@ export default function SettingsPage() {
             <label>
               <s-text>Theme font (for preview)</s-text>
               <select
-                value={settings.eta_preview_theme_font || ""}
+                value={settings.eta_preview_theme_font || "'Assistant', sans-serif"}
                 onChange={(e) => setSettings({ ...settings, eta_preview_theme_font: e.target.value })}
                 style={{ width: "100%", marginTop: 4 }}
               >
-                <option value="">— Select your theme font —</option>
-                <optgroup label="Common Theme Fonts">
-                  <option value="system-ui, -apple-system, sans-serif">System Default</option>
-                  <option value="Arial, sans-serif">Arial</option>
-                  <option value="Helvetica, Arial, sans-serif">Helvetica</option>
-                  <option value="Georgia, serif">Georgia</option>
-                  <option value="'Times New Roman', Times, serif">Times New Roman</option>
-                </optgroup>
                 <optgroup label="Google Fonts">
                   <option value="'Assistant', sans-serif">Assistant (Dawn default)</option>
                   <option value="'Open Sans', sans-serif">Open Sans</option>
@@ -1601,6 +1859,13 @@ export default function SettingsPage() {
                   <option value="'Nunito', sans-serif">Nunito</option>
                   <option value="'Work Sans', sans-serif">Work Sans</option>
                 </optgroup>
+                <optgroup label="System Fonts">
+                  <option value="system-ui, -apple-system, sans-serif">System Default</option>
+                  <option value="Arial, sans-serif">Arial</option>
+                  <option value="Helvetica, Arial, sans-serif">Helvetica</option>
+                  <option value="Georgia, serif">Georgia</option>
+                  <option value="'Times New Roman', Times, serif">Times New Roman</option>
+                </optgroup>
               </select>
             </label>
 
@@ -1612,6 +1877,8 @@ export default function SettingsPage() {
                 style={{ width: "100%", marginTop: 4 }}
               >
                 <option value="">100% (default)</option>
+                <option value="80">80%</option>
+                <option value="90">90%</option>
                 <option value="100">100%</option>
                 <option value="105">105%</option>
                 <option value="110">110%</option>
@@ -1619,6 +1886,22 @@ export default function SettingsPage() {
                 <option value="120">120%</option>
                 <option value="125">125%</option>
                 <option value="130">130%</option>
+              </select>
+            </label>
+
+            <label style={{ marginTop: 12 }}>
+              <s-text>Font weight</s-text>
+              <select
+                value={settings.eta_preview_font_weight || ""}
+                onChange={(e) => setSettings({ ...settings, eta_preview_font_weight: e.target.value })}
+                style={{ width: "100%", marginTop: 4 }}
+              >
+                <option value="">Normal (default)</option>
+                <option value="300">Light (300)</option>
+                <option value="400">Normal (400)</option>
+                <option value="500">Medium (500)</option>
+                <option value="600">Semi-bold (600)</option>
+                <option value="700">Bold (700)</option>
               </select>
             </label>
             <s-text size="small" style={{ color: "var(--p-color-text-subdued, #6b7280)", marginTop: 4 }}>
@@ -1634,7 +1917,7 @@ export default function SettingsPage() {
             Adjust margins and alignment for each block. Use negative margin values to pull blocks closer together.
           </s-text>
 
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 16 }}>
             <div style={{ display: "grid", gap: 12 }}>
               <s-text fontWeight="bold">Messages</s-text>
               <label>
@@ -1696,6 +1979,39 @@ export default function SettingsPage() {
                   type="number"
                   value={settings.eta_margin_bottom ?? 0}
                   onChange={(e) => setSettings({ ...settings, eta_margin_bottom: safeParseNumber(e.target.value, 0) })}
+                  style={{ width: "100%" }}
+                />
+              </label>
+            </div>
+
+            <div style={{ display: "grid", gap: 12 }}>
+              <s-text fontWeight="bold">Special Delivery</s-text>
+              <label>
+                <s-text>Alignment</s-text>
+                <select
+                  value={settings.special_delivery_alignment || "left"}
+                  onChange={(e) => setSettings({ ...settings, special_delivery_alignment: e.target.value })}
+                  style={{ width: "100%", marginTop: 4 }}
+                >
+                  <option value="left">Left</option>
+                  <option value="center">Center</option>
+                </select>
+              </label>
+              <label>
+                <s-text>Top margin (px)</s-text>
+                <input
+                  type="number"
+                  value={settings.special_delivery_margin_top ?? 0}
+                  onChange={(e) => setSettings({ ...settings, special_delivery_margin_top: safeParseNumber(e.target.value, 0) })}
+                  style={{ width: "100%" }}
+                />
+              </label>
+              <label>
+                <s-text>Bottom margin (px)</s-text>
+                <input
+                  type="number"
+                  value={settings.special_delivery_margin_bottom ?? 0}
+                  onChange={(e) => setSettings({ ...settings, special_delivery_margin_bottom: safeParseNumber(e.target.value, 0) })}
                   style={{ width: "100%" }}
                 />
               </label>
@@ -1776,35 +2092,24 @@ export default function SettingsPage() {
 
         {/* Save Button */}
         <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
-          <s-button variant="primary" onClick={handleSave}>
-            Save Settings
-          </s-button>
-          <span style={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: "4px",
-            color: "var(--p-color-text-success, #16a34a)",
-            fontSize: "14px",
-            fontWeight: 500,
-            visibility: saveStatus === "Saved!" ? "visible" : "hidden",
-            minWidth: 60,
+          <s-button variant="primary" onClick={() => {
+            if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
+            handleSave();
           }}>
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 20 20"
-              fill="currentColor"
-              width="16"
-              height="16"
-              aria-hidden="true"
-            >
-              <path
-                fillRule="evenodd"
-                d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z"
-                clipRule="evenodd"
-              />
-            </svg>
-            Saved
-          </span>
+            Save
+          </s-button>
+          {/* Cloud save indicator */}
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 20 20"
+            fill="currentColor"
+            width="18"
+            height="18"
+            style={{ color: saveStatus === "Saving..." ? "#60a5fa" : "#9ca3af" }}
+            aria-hidden="true"
+          >
+            <path d="M5.5 16a3.5 3.5 0 01-.369-6.98 4 4 0 117.753-1.977A4.5 4.5 0 1113.5 16h-8z" />
+          </svg>
           {fetcher.data?.error && (
             <s-text style={{ color: "var(--p-color-text-critical, #dc2626)" }}>
               {fetcher.data.error}

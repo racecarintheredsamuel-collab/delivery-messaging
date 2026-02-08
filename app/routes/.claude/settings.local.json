@@ -1,7 +1,22 @@
 {
   "permissions": {
     "allow": [
-      "Bash(npm run build:*)"
+      "Bash(npm run build:*)",
+      "Bash(powershell -Command \"Remove-Item ''c:\\\\projects\\\\delivery-info-block\\\\app\\\\routes\\\\app.getting-started.jsx''\")",
+      "Bash(powershell -Command \"cd ''c:\\\\projects\\\\delivery-info-block''; npm run build\")",
+      "Bash(powershell -Command \"cd ''c:\\\\projects\\\\delivery-info-block''; npm run build 2>&1 | Select-Object -Last 15\")",
+      "Bash(powershell -Command \"cd ''c:\\\\projects\\\\delivery-info-block''; npm run build 2>&1 | Select-Object -Last 10\")",
+      "Bash(powershell -Command:*)",
+      "Bash(findstr:*)",
+      "Bash(git -C \"c:/projects/delivery-info-block\" log --oneline -10)",
+      "Bash(git checkout:*)",
+      "Bash(Get-Content \"c:\\\\projects\\\\delivery-info-block\\\\extensions\\\\delivery-info-block\\\\blocks\\\\delivery_messages.liquid\")",
+      "Bash(Select-String -Pattern \"schema\" -Context 0,5)",
+      "Bash(npx eslint:*)",
+      "mcp__shopify-dev-mcp__learn_shopify_api",
+      "mcp__shopify-dev-mcp__search_docs_chunks",
+      "mcp__shopify-dev-mcp__fetch_full_docs",
+      "mcp__shopify-dev-mcp__introspect_graphql_schema"
     ]
   }
 }

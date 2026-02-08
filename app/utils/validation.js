@@ -134,7 +134,7 @@ export const settingsSchema = z.object({
   eta_padding_horizontal: z.number().optional(),
   eta_padding_vertical: z.number().optional(),
   // Custom icons (global)
-  custom_icons: z.array(customIconSchema).max(6).optional(),
+  custom_icons: z.array(customIconSchema).max(8).optional(),
   // Custom connector SVG for ETA Timeline
   custom_connector_svg: z.string().optional(),
 }).passthrough();
@@ -145,12 +145,16 @@ export const settingsSchema = z.object({
  * @returns {string} - Formatted error message
  */
 function formatZodError(error) {
-  const messages = error.errors.slice(0, 3).map(e => {
+  const errors = error?.errors || [];
+  if (errors.length === 0) {
+    return error?.message || 'Validation failed';
+  }
+  const messages = errors.slice(0, 3).map(e => {
     const path = e.path.join('.');
     return path ? `${path}: ${e.message}` : e.message;
   });
-  if (error.errors.length > 3) {
-    messages.push(`...and ${error.errors.length - 3} more`);
+  if (errors.length > 3) {
+    messages.push(`...and ${errors.length - 3} more`);
   }
   return messages.join('; ');
 }

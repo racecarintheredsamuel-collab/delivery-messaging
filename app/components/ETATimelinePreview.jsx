@@ -35,8 +35,7 @@ function parseTimeString(timeStr, defaultHour = 14, defaultMin = 0) {
  * @param {Object} props.globalSettings - Global settings for the app
  */
 export function ETATimelinePreview({ rule, globalSettings }) {
-  const iconSize = rule.settings?.eta_icon_size || "medium";
-  const iconPx = iconSize === "large" ? 48 : iconSize === "small" ? 24 : 36; // small=24, medium=36, large=48
+  const iconPx = rule.settings?.eta_icon_size || 36;
   const mainIconColor = rule.settings?.icon_color || "#111827";
   // Use custom ETA color only if the "use main" flag is explicitly false
   const iconColor = rule.settings?.eta_use_main_icon_color === false
@@ -483,7 +482,7 @@ export function ETATimelinePreview({ rule, globalSettings }) {
     return "solid";
   };
 
-  const Stage = ({ label, date, icon }) => {
+  const Stage = ({ label, date, icon, extraMarginRight = 0 }) => {
     const iconName = getStageIconName(icon);
     const iconStyle = getStageIconStyle(icon);
 
@@ -512,7 +511,7 @@ export function ETATimelinePreview({ rule, globalSettings }) {
     }
 
     return (
-      <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center" }}>
+      <div style={{ flex: 1, minWidth: 0, marginRight: extraMarginRight, display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center" }}>
         <div style={{ width: iconPx, height: iconPx, marginBottom: gapIconLabel, color: iconColor }}>
           {isCustomIcon ? (
             customIconContent
@@ -552,7 +551,12 @@ export function ETATimelinePreview({ rule, globalSettings }) {
       <Connector />
       <Stage label={rule.settings?.eta_label_shipping || "Shipped"} date={formatDate(shippingDate)} icon="shipping" />
       <Connector />
-      <Stage label={rule.settings?.eta_label_delivery || "Delivered"} date={deliveryDateStr} icon="delivery" />
+      <Stage
+        label={rule.settings?.eta_label_delivery || "Delivered"}
+        date={deliveryDateStr}
+        icon="delivery"
+        extraMarginRight={minDays !== maxDays && deliveryMinDate.getMonth() !== deliveryMaxDate.getMonth() ? paddingHorizontal : 0}
+      />
     </div>
   );
 }

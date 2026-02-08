@@ -3,7 +3,7 @@
 // ============================================================================
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useFetcher, useLoaderData, useRouteError } from "react-router";
+import { useFetcher, useLoaderData, useRouteError, redirect, useSearchParams } from "react-router";
 import { boundary } from "@shopify/shopify-app-react-router/server";
 import { authenticate } from "../shopify.server";
 import { ensureDeliveryRulesDefinition } from "../models/deliveryRules.server";
@@ -54,7 +54,8 @@ function defaultGlobalSettings() {
     eta_match_messages_font: false,
     eta_custom_font_family: "",
     eta_preview_theme_font: "",
-    eta_preview_font_size_scale: "", // Font size scale for admin preview (100-130%)
+    eta_preview_font_size_scale: "", // Font size scale for admin preview (80-130%)
+    eta_preview_font_weight: "", // Font weight for admin preview
     // Typography - ETA Timeline text styling
     eta_use_theme_text_styling: true,
     eta_text_color: "var(--p-color-text, #374151)",
@@ -149,6 +150,29 @@ export const loader = async ({ request }) => {
       globalSettings = { ...globalSettings, ...JSON.parse(settingsMf.value) };
     } catch (error) {
       safeLogError("Failed to parse global settings, using defaults", error);
+    }
+  }
+
+  // Check if user has any rules - if not, redirect to Getting Started
+  // (but only for first-time users, not if they deleted all rules)
+  const url = new URL(request.url);
+  const skipOnboarding = url.searchParams.get("skip_onboarding") === "true";
+
+  if (!skipOnboarding) {
+    let hasRules = false;
+    try {
+      const configToCheck = configMf?.value ? JSON.parse(configMf.value) : null;
+      if (configToCheck?.version === 2 && configToCheck.profiles) {
+        hasRules = configToCheck.profiles.some(p => p.rules && p.rules.length > 0);
+      } else if (configToCheck?.rules) {
+        hasRules = configToCheck.rules.length > 0;
+      }
+    } catch (e) {
+      // Ignore parse errors
+    }
+
+    if (!hasRules) {
+      return redirect("/app/dashboard");
     }
   }
 
@@ -531,7 +555,7 @@ function defaultRule() {
       // ETA Timeline
       show_eta_timeline: false,
       eta_left_padding: 0,
-      eta_icon_size: "medium",
+      eta_icon_size: 36,
       eta_connector_style: "arrows",
       eta_connector_color: "#111827",
       eta_connector_use_main_color: true,
@@ -574,6 +598,28 @@ function defaultRule() {
 
       // Cart message (text to show under items in cart, use {arrival} for delivery date)
       cart_message: "",
+
+      // Special Delivery block
+      show_special_delivery: false,
+      special_delivery_message: "",
+      special_delivery_icon_size: "medium",
+      special_delivery_icon_color: "#111827",
+      special_delivery_use_main_icon_color: true,
+      // Special Delivery - Border Styling
+      special_delivery_show_border: false,
+      special_delivery_border_thickness: 1,
+      special_delivery_border_color: "#e5e7eb",
+      special_delivery_border_radius: 8,
+      special_delivery_match_eta_border: false,
+      special_delivery_match_eta_width: false,
+      special_delivery_max_width: 600,
+      // Special Delivery - Text Styling (per-rule override)
+      special_delivery_override_global_text_styling: false,
+      special_delivery_text_color: "#374151",
+      special_delivery_font_size: "medium",
+      special_delivery_font_weight: "normal",
+      // Special Delivery - Icon selection from Icons page
+      special_delivery_icon: "",
     },
   };
 }
@@ -585,6 +631,29 @@ function defaultRule() {
 // Validation helpers moved to app/utils/validation.js
 // Icon SVG helpers moved to app/utils/icons.js
 // Text styling helpers moved to app/utils/styling.js
+
+// ============================================================================
+// COLLAPSED STATE HELPERS (localStorage)
+// ============================================================================
+
+const getCollapsedState = (ruleId, section) => {
+  if (typeof window === 'undefined') return true;
+  try {
+    const stored = localStorage.getItem(`collapsed_${ruleId}_${section}`);
+    return stored === null ? true : stored === 'true';
+  } catch (e) {
+    return true;
+  }
+};
+
+const setCollapsedState = (ruleId, section, collapsed) => {
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.setItem(`collapsed_${ruleId}_${section}`, String(collapsed));
+  } catch (e) {
+    // Ignore localStorage errors
+  }
+};
 
 // ============================================================================
 // MAIN COMPONENT
@@ -682,12 +751,22 @@ export default function Index() {
   }, []);
 
   // Measure ETA timeline width for "Match ETA timeline width" feature
+  // Uses ResizeObserver for proper measurement without feedback loops
   useEffect(() => {
-    if (etaTimelineRef.current) {
-      const width = etaTimelineRef.current.offsetWidth;
-      setEtaTimelineWidth(width);
-    }
-  });
+    const measureWidth = () => {
+      if (etaTimelineRef.current) {
+        const width = etaTimelineRef.current.offsetWidth;
+        // Only update if width actually changed to prevent re-render loops
+        setEtaTimelineWidth((prev) => (prev !== width ? width : prev));
+      }
+    };
+
+    // Check periodically since the ref target may change
+    const interval = setInterval(measureWidth, 500);
+    measureWidth();
+
+    return () => clearInterval(interval);
+  }, []);
 
   // Refs for tags/handles inputs to enable programmatic blur before rule switch
   const tagsInputRef = useRef(null);
@@ -701,6 +780,8 @@ export default function Index() {
 
   const [justSaved, setJustSaved] = useState(false);
   const savedTimerRef = useRef(null);
+  const autoSaveTimerRef = useRef(null);
+  const initialDraftRef = useRef(JSON.stringify(initialConfig));
 
   useEffect(() => {
     // Handle dev reset - reload page to get fresh state
@@ -732,6 +813,42 @@ export default function Index() {
       if (savedTimerRef.current) clearTimeout(savedTimerRef.current);
     };
   }, []);
+
+  // Auto-save after 2 seconds of inactivity
+  useEffect(() => {
+    if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
+
+    // Don't auto-save if unchanged from initial load
+    if (draft === initialDraftRef.current) return;
+
+    // Don't auto-save while already saving
+    if (fetcher.state !== "idle") return;
+
+    autoSaveTimerRef.current = setTimeout(() => {
+      fetcher.submit({ config: draft, shopId }, { method: "POST" });
+    }, 2000);
+
+    return () => {
+      if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
+    };
+  }, [draft, shopId, fetcher.state]);
+
+  // Track previous fetcher state to detect save completion
+  const prevFetcherStateRef = useRef(fetcher.state);
+
+  // Update initial ref after successful save (so we don't re-save the same data)
+  useEffect(() => {
+    const wasSubmitting = prevFetcherStateRef.current === "submitting" || prevFetcherStateRef.current === "loading";
+    const isNowIdle = fetcher.state === "idle";
+    prevFetcherStateRef.current = fetcher.state;
+
+    // Only process when we just finished a submission
+    if (!wasSubmitting || !isNowIdle) return;
+
+    if (fetcher.data?.ok === true) {
+      initialDraftRef.current = draft;
+    }
+  }, [fetcher.state, fetcher.data, draft]);
 
   // --------------------------------------------------------------------------
   // Derived state from parsed config (memoized to avoid re-parsing on every render)
@@ -769,6 +886,21 @@ export default function Index() {
     prevActiveProfileIdRef.current = activeProfileId;
   }, [activeProfileId]);
 
+  // Handle selectRule query parameter (from wizard redirect)
+  const [searchParams, setSearchParams] = useSearchParams();
+  useEffect(() => {
+    const selectRuleId = searchParams.get("selectRule");
+    if (selectRuleId && rules.length > 0) {
+      const ruleIndex = rules.findIndex(r => r.id === selectRuleId);
+      if (ruleIndex !== -1) {
+        setSelectedIndex(ruleIndex);
+      }
+      // Clear the param from URL after handling
+      searchParams.delete("selectRule");
+      setSearchParams(searchParams, { replace: true });
+    }
+  }, [rules, searchParams, setSearchParams]);
+
   const invalidRuleIndexes = rules
     .map((r, idx) => (ruleHasMatch(r) ? null : idx))
     .filter((x) => x !== null);
@@ -779,6 +911,38 @@ export default function Index() {
   const safeSelectedIndex =
     rules.length === 0 ? 0 : Math.min(selectedIndex, rules.length - 1);
   const rule = rules[safeSelectedIndex] ?? null;
+
+  // Collapsed panel state (stored in localStorage, not metafield)
+  const [collapsedPanels, setCollapsedPanels] = useState({
+    product_matching: true,
+    dispatch_settings: true,
+    countdown_messages: true,
+    countdown_icon: true,
+    eta_timeline: true,
+    special_delivery: true,
+  });
+
+  // Initialize collapsed state from localStorage when rule changes
+  useEffect(() => {
+    if (rule?.id) {
+      setCollapsedPanels({
+        product_matching: getCollapsedState(rule.id, 'product_matching'),
+        dispatch_settings: getCollapsedState(rule.id, 'dispatch_settings'),
+        countdown_messages: getCollapsedState(rule.id, 'countdown_messages'),
+        countdown_icon: getCollapsedState(rule.id, 'countdown_icon'),
+        eta_timeline: getCollapsedState(rule.id, 'eta_timeline'),
+        special_delivery: getCollapsedState(rule.id, 'special_delivery'),
+      });
+    }
+  }, [rule?.id]);
+
+  // Helper to toggle a panel's collapsed state
+  const togglePanel = (section) => {
+    if (!rule?.id) return;
+    const newCollapsed = !collapsedPanels[section];
+    setCollapsedPanels(prev => ({ ...prev, [section]: newCollapsed }));
+    setCollapsedState(rule.id, section, newCollapsed);
+  };
 
   // Keep a ref to current rules for use in blur handlers (avoids stale closures)
   const rulesRef = useRef(rules);
@@ -1098,40 +1262,28 @@ export default function Index() {
                 </svg>
               </div>
 
-              {/* Save all button - RIGHT */}
+              {/* Save button with cloud indicator - RIGHT */}
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                <span style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: "4px",
-                  color: "var(--p-color-text-success, #16a34a)",
-                  fontSize: "14px",
-                  fontWeight: 500,
-                  visibility: justSaved ? "visible" : "hidden",
-                }}>
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    viewBox="0 0 20 20"
-                    fill="currentColor"
-                    width="16"
-                    height="16"
-                    aria-hidden="true"
-                  >
-                    <path
-                      fillRule="evenodd"
-                      d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
-                  Saved
-                </span>
+                {/* Cloud save indicator */}
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                  width="18"
+                  height="18"
+                  style={{ color: isLoading ? "#60a5fa" : "#9ca3af" }}
+                  aria-hidden="true"
+                >
+                  <path d="M5.5 16a3.5 3.5 0 01-.369-6.98 4 4 0 117.753-1.977A4.5 4.5 0 1113.5 16h-8z" />
+                </svg>
                 <s-button
                   variant="primary"
-                  {...(isLoading ? { loading: true } : {})}
-                  disabled={isLoading}
-                  onClick={() => fetcher.submit({ config: draft, shopId }, { method: "POST" })}
+                  onClick={() => {
+                    if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
+                    fetcher.submit({ config: draft, shopId }, { method: "POST" });
+                  }}
                 >
-                  Save all
+                  Save
                 </s-button>
               </div>
             </div>
@@ -1143,57 +1295,54 @@ export default function Index() {
                 <div style={{ display: "flex", gap: 8 }}>
                   <s-button
                     onClick={() => {
-                      const next = [...rules];
-                      next[safeSelectedIndex] = {
-                        ...rule,
-                        settings: {
-                          ...rule.settings,
-                          collapsed_product_matching: true,
-                          collapsed_dispatch_settings: true,
-                          collapsed_countdown_messages: true,
-                          collapsed_countdown_icon: true,
-                          collapsed_eta_timeline: true,
-                        },
+                      if (!rule?.id) return;
+                      const allCollapsed = {
+                        product_matching: true,
+                        dispatch_settings: true,
+                        countdown_messages: true,
+                        countdown_icon: true,
+                        eta_timeline: true,
                       };
-                      setRules(next);
+                      setCollapsedPanels(allCollapsed);
+                      Object.entries(allCollapsed).forEach(([key, val]) => {
+                        setCollapsedState(rule.id, key, val);
+                      });
                     }}
                   >
                     Collapse all
                   </s-button>
                   <s-button
                     onClick={() => {
-                      const next = [...rules];
-                      next[safeSelectedIndex] = {
-                        ...rule,
-                        settings: {
-                          ...rule.settings,
-                          collapsed_product_matching: false,
-                          collapsed_dispatch_settings: false,
-                          collapsed_countdown_messages: false,
-                          collapsed_countdown_icon: false,
-                          collapsed_eta_timeline: false,
-                        },
+                      if (!rule?.id) return;
+                      const allExpanded = {
+                        product_matching: false,
+                        dispatch_settings: false,
+                        countdown_messages: false,
+                        countdown_icon: false,
+                        eta_timeline: false,
                       };
-                      setRules(next);
+                      setCollapsedPanels(allExpanded);
+                      Object.entries(allExpanded).forEach(([key, val]) => {
+                        setCollapsedState(rule.id, key, val);
+                      });
                     }}
                   >
                     Expand all
                   </s-button>
                   <s-button
                     onClick={() => {
-                      const next = [...rules];
-                      next[safeSelectedIndex] = {
-                        ...rule,
-                        settings: {
-                          ...rule.settings,
-                          collapsed_product_matching: false,
-                          collapsed_dispatch_settings: false,
-                          collapsed_countdown_messages: !rule.settings?.show_messages,
-                          collapsed_countdown_icon: rule.settings?.show_icon === false,
-                          collapsed_eta_timeline: !rule.settings?.show_eta_timeline,
-                        },
+                      if (!rule?.id) return;
+                      const smartCollapse = {
+                        product_matching: false,
+                        dispatch_settings: false,
+                        countdown_messages: !rule.settings?.show_messages,
+                        countdown_icon: rule.settings?.show_icon === false,
+                        eta_timeline: !rule.settings?.show_eta_timeline,
                       };
-                      setRules(next);
+                      setCollapsedPanels(smartCollapse);
+                      Object.entries(smartCollapse).forEach(([key, val]) => {
+                        setCollapsedState(rule.id, key, val);
+                      });
                     }}
                   >
                     Show enabled
@@ -1250,53 +1399,35 @@ export default function Index() {
                   <div
                     role="button"
                     tabIndex={0}
-                    aria-expanded={!rule.settings?.collapsed_product_matching}
+                    aria-expanded={!collapsedPanels.product_matching}
                     style={{
                       padding: "12px 16px",
                       display: "flex",
                       alignItems: "center",
-                      background: !rule.settings?.collapsed_product_matching ? "var(--p-color-bg-surface-hover, #f8fafc)" : "var(--p-color-bg-surface, #ffffff)",
-                      borderBottom: !rule.settings?.collapsed_product_matching ? "1px solid var(--p-color-border, #e5e7eb)" : "none",
+                      background: !collapsedPanels.product_matching ? "var(--p-color-bg-surface-hover, #f8fafc)" : "var(--p-color-bg-surface, #ffffff)",
+                      borderBottom: !collapsedPanels.product_matching ? "1px solid var(--p-color-border, #e5e7eb)" : "none",
                       cursor: "pointer",
                       outline: "none",
                       borderRadius: "8px 8px 0 0",
                     }}
-                    onClick={() => {
-                      const next = [...rules];
-                      next[safeSelectedIndex] = {
-                        ...rule,
-                        settings: {
-                          ...rule.settings,
-                          collapsed_product_matching: !rule.settings?.collapsed_product_matching,
-                        },
-                      };
-                      setRules(next);
-                    }}
+                    onClick={() => togglePanel('product_matching')}
                     onKeyDown={(e) => {
                       if (e.key === "Enter" || e.key === " ") {
                         e.preventDefault();
-                        const next = [...rules];
-                        next[safeSelectedIndex] = {
-                          ...rule,
-                          settings: {
-                            ...rule.settings,
-                            collapsed_product_matching: !rule.settings?.collapsed_product_matching,
-                          },
-                        };
-                        setRules(next);
+                        togglePanel('product_matching');
                       }
                     }}
                   >
                     <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                       <span style={{ color: "var(--p-color-text-subdued, #6b7280)" }} aria-hidden="true">
-                        {rule.settings?.collapsed_product_matching ? <ChevronRightIcon /> : <ChevronDownIcon />}
+                        {collapsedPanels.product_matching ? <ChevronRightIcon /> : <ChevronDownIcon />}
                       </span>
                       <s-heading>Product Matching</s-heading>
                     </div>
                   </div>
 
                   {/* Content - only show when not collapsed */}
-                  {!rule.settings?.collapsed_product_matching && (
+                  {!collapsedPanels.product_matching && (
                     <div style={{ padding: "16px", display: "grid", gap: 12 }}>
                       {!rule.match?.is_fallback && (<>
                       <label>
@@ -1441,53 +1572,35 @@ export default function Index() {
                   <div
                     role="button"
                     tabIndex={0}
-                    aria-expanded={!rule.settings?.collapsed_dispatch_settings}
+                    aria-expanded={!collapsedPanels.dispatch_settings}
                     style={{
                       padding: "12px 16px",
                       display: "flex",
                       alignItems: "center",
-                      background: !rule.settings?.collapsed_dispatch_settings ? "var(--p-color-bg-surface-hover, #f8fafc)" : "var(--p-color-bg-surface, #ffffff)",
-                      borderBottom: !rule.settings?.collapsed_dispatch_settings ? "1px solid var(--p-color-border, #e5e7eb)" : "none",
+                      background: !collapsedPanels.dispatch_settings ? "var(--p-color-bg-surface-hover, #f8fafc)" : "var(--p-color-bg-surface, #ffffff)",
+                      borderBottom: !collapsedPanels.dispatch_settings ? "1px solid var(--p-color-border, #e5e7eb)" : "none",
                       cursor: "pointer",
                       outline: "none",
                       borderRadius: "8px 8px 0 0",
                     }}
-                    onClick={() => {
-                      const next = [...rules];
-                      next[safeSelectedIndex] = {
-                        ...rule,
-                        settings: {
-                          ...rule.settings,
-                          collapsed_dispatch_settings: !rule.settings?.collapsed_dispatch_settings,
-                        },
-                      };
-                      setRules(next);
-                    }}
+                    onClick={() => togglePanel('dispatch_settings')}
                     onKeyDown={(e) => {
                       if (e.key === "Enter" || e.key === " ") {
                         e.preventDefault();
-                        const next = [...rules];
-                        next[safeSelectedIndex] = {
-                          ...rule,
-                          settings: {
-                            ...rule.settings,
-                            collapsed_dispatch_settings: !rule.settings?.collapsed_dispatch_settings,
-                          },
-                        };
-                        setRules(next);
+                        togglePanel('dispatch_settings');
                       }
                     }}
                   >
                     <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                       <span style={{ color: "var(--p-color-text-subdued, #6b7280)" }} aria-hidden="true">
-                        {rule.settings?.collapsed_dispatch_settings ? <ChevronRightIcon /> : <ChevronDownIcon />}
+                        {collapsedPanels.dispatch_settings ? <ChevronRightIcon /> : <ChevronDownIcon />}
                       </span>
                       <s-heading>Dispatch Settings</s-heading>
                     </div>
                   </div>
 
                   {/* Content - only show when not collapsed */}
-                  {!rule.settings?.collapsed_dispatch_settings && (
+                  {!collapsedPanels.dispatch_settings && (
                     <div style={{ padding: "16px", display: "grid", gap: 16 }}>
 
                       {/* ===== 1. CUTOFF TIMES ===== */}
@@ -1796,46 +1909,28 @@ export default function Index() {
                   <div
                     role="button"
                     tabIndex={0}
-                    aria-expanded={!rule.settings?.collapsed_countdown_messages}
+                    aria-expanded={!collapsedPanels.countdown_messages}
                     style={{
                       padding: "12px 16px",
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "space-between",
-                      background: !rule.settings?.collapsed_countdown_messages ? "var(--p-color-bg-surface-hover, #f8fafc)" : "var(--p-color-bg-surface, #ffffff)",
-                      borderBottom: !rule.settings?.collapsed_countdown_messages ? "1px solid var(--p-color-border, #e5e7eb)" : "none",
+                      background: !collapsedPanels.countdown_messages ? "var(--p-color-bg-surface-hover, #f8fafc)" : "var(--p-color-bg-surface, #ffffff)",
+                      borderBottom: !collapsedPanels.countdown_messages ? "1px solid var(--p-color-border, #e5e7eb)" : "none",
                       cursor: "pointer",
                       outline: "none",
                     }}
-                    onClick={() => {
-                      const next = [...rules];
-                      next[safeSelectedIndex] = {
-                        ...rule,
-                        settings: {
-                          ...rule.settings,
-                          collapsed_countdown_messages: !rule.settings?.collapsed_countdown_messages,
-                        },
-                      };
-                      setRules(next);
-                    }}
+                    onClick={() => togglePanel('countdown_messages')}
                     onKeyDown={(e) => {
                       if (e.key === "Enter" || e.key === " ") {
                         e.preventDefault();
-                        const next = [...rules];
-                        next[safeSelectedIndex] = {
-                          ...rule,
-                          settings: {
-                            ...rule.settings,
-                            collapsed_countdown_messages: !rule.settings?.collapsed_countdown_messages,
-                          },
-                        };
-                        setRules(next);
+                        togglePanel('countdown_messages');
                       }
                     }}
                   >
                     <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                       <span style={{ color: "var(--p-color-text-subdued, #6b7280)" }} aria-hidden="true">
-                        {rule.settings?.collapsed_countdown_messages ? <ChevronRightIcon /> : <ChevronDownIcon />}
+                        {collapsedPanels.countdown_messages ? <ChevronRightIcon /> : <ChevronDownIcon />}
                       </span>
                       <s-heading>Messages</s-heading>
                     </div>
@@ -1853,11 +1948,15 @@ export default function Index() {
                             settings: {
                               ...rule.settings,
                               show_messages: e.target.checked,
-                              // Auto-expand when enabled, auto-collapse when disabled
-                              collapsed_countdown_messages: !e.target.checked,
                             },
                           };
                           setRules(next);
+                          // Auto-expand when enabled, auto-collapse when disabled
+                          if (rule?.id) {
+                            const newCollapsed = !e.target.checked;
+                            setCollapsedPanels(prev => ({ ...prev, countdown_messages: newCollapsed }));
+                            setCollapsedState(rule.id, 'countdown_messages', newCollapsed);
+                          }
                         }}
                       />
                       <s-text size="small">{rule.settings?.show_messages ? "Enabled" : "Disabled"}</s-text>
@@ -1865,7 +1964,7 @@ export default function Index() {
                   </div>
 
                   {/* Content - only show when not collapsed */}
-                  {!rule.settings?.collapsed_countdown_messages && (
+                  {!collapsedPanels.countdown_messages && (
                   <div style={{ padding: "16px", display: "grid", gap: 12 }}>
                     <div style={{ display: "grid", gap: 2, color: "var(--p-color-text-subdued, #6b7280)", fontSize: 12 }}>
                       <span>💡 Use &#123;countdown&#125; for live countdown timer.</span>
@@ -1952,7 +2051,8 @@ export default function Index() {
                     <div style={{ borderTop: "1px solid var(--p-color-border, #e5e7eb)", paddingTop: 16, display: "grid", gap: 12 }}>
                       <s-heading>Border Styling</s-heading>
 
-                      {rule.settings?.show_eta_timeline && (
+                      {/* Only show "Match ETA border" when ETA Timeline is enabled AND has border enabled */}
+                      {rule.settings?.show_eta_timeline && rule.settings?.show_eta_border !== false && (
                         <label style={{ display: "flex", gap: 8, alignItems: "center" }}>
                           <input
                             type="checkbox"
@@ -1970,8 +2070,8 @@ export default function Index() {
                         </label>
                       )}
 
-                      {/* Hide "Show border" when Match ETA timeline border is selected */}
-                      {!(rule.settings?.show_eta_timeline && rule.settings?.match_eta_border) && (
+                      {/* Hide "Show border" when Match ETA timeline border is selected (and ETA has border) */}
+                      {!(rule.settings?.show_eta_timeline && rule.settings?.show_eta_border !== false && rule.settings?.match_eta_border) && (
                         <label style={{ display: "flex", gap: 8, alignItems: "center" }}>
                           <input
                             type="checkbox"
@@ -1989,23 +2089,24 @@ export default function Index() {
                         </label>
                       )}
 
-                      {(!rule.settings?.show_eta_timeline || !rule.settings?.match_eta_border) && rule.settings?.show_border && (
+                      {(!rule.settings?.show_eta_timeline || rule.settings?.show_eta_border === false || !rule.settings?.match_eta_border) && rule.settings?.show_border && (
                         <>
                           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
                             <label>
                               <s-text>Border thickness (px)</s-text>
                               <input
                                 type="number"
-                                min="0"
+                                min="1"
+                                max="10"
                                 value={String(rule.settings?.border_thickness ?? 1)}
                                 onChange={(e) => {
-                                  const n = Number(e.target.value);
+                                  const n = Math.max(1, Number(e.target.value) || 1);
                                   const next = [...rules];
                                   next[safeSelectedIndex] = {
                                     ...rule,
                                     settings: {
                                       ...rule.settings,
-                                      border_thickness: Number.isFinite(n) ? n : 0,
+                                      border_thickness: Number.isFinite(n) ? n : 1,
                                     },
                                   };
                                   setRules(next);
@@ -2058,10 +2159,19 @@ export default function Index() {
                             type="checkbox"
                             checked={!!rule.settings?.match_eta_width}
                             onChange={(e) => {
+                              const checked = e.target.checked;
                               const next = [...rules];
+                              // Capture ETA width when enabling to avoid feedback loops
+                              const capturedWidth = checked && etaTimelineRef.current
+                                ? etaTimelineRef.current.offsetWidth
+                                : rule.settings?._captured_eta_width;
                               next[safeSelectedIndex] = {
                                 ...rule,
-                                settings: { ...rule.settings, match_eta_width: e.target.checked },
+                                settings: {
+                                  ...rule.settings,
+                                  match_eta_width: checked,
+                                  _captured_eta_width: capturedWidth,
+                                },
                               };
                               setRules(next);
                             }}
@@ -2120,7 +2230,7 @@ export default function Index() {
                       </label>
 
                       {rule.settings?.override_global_text_styling === true && (
-                      <div style={{ display: "grid", gap: 12, marginTop: 12 }}>
+                      <div style={{ display: "grid", gap: 12 }}>
                         <s-color-field
                           label="Text color"
                           value={rule.settings?.text_color || "#374151"}
@@ -2208,46 +2318,28 @@ export default function Index() {
                   <div
                     role="button"
                     tabIndex={0}
-                    aria-expanded={!rule.settings?.collapsed_countdown_icon}
+                    aria-expanded={!collapsedPanels.countdown_icon}
                     style={{
                       padding: "12px 16px",
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "space-between",
-                      background: !rule.settings?.collapsed_countdown_icon ? "var(--p-color-bg-surface-hover, #f8fafc)" : "var(--p-color-bg-surface, #ffffff)",
-                      borderBottom: !rule.settings?.collapsed_countdown_icon ? "1px solid var(--p-color-border, #e5e7eb)" : "none",
+                      background: !collapsedPanels.countdown_icon ? "var(--p-color-bg-surface-hover, #f8fafc)" : "var(--p-color-bg-surface, #ffffff)",
+                      borderBottom: !collapsedPanels.countdown_icon ? "1px solid var(--p-color-border, #e5e7eb)" : "none",
                       cursor: "pointer",
                       outline: "none",
                     }}
-                    onClick={() => {
-                      const next = [...rules];
-                      next[safeSelectedIndex] = {
-                        ...rule,
-                        settings: {
-                          ...rule.settings,
-                          collapsed_countdown_icon: !rule.settings?.collapsed_countdown_icon,
-                        },
-                      };
-                      setRules(next);
-                    }}
+                    onClick={() => togglePanel('countdown_icon')}
                     onKeyDown={(e) => {
                       if (e.key === "Enter" || e.key === " ") {
                         e.preventDefault();
-                        const next = [...rules];
-                        next[safeSelectedIndex] = {
-                          ...rule,
-                          settings: {
-                            ...rule.settings,
-                            collapsed_countdown_icon: !rule.settings?.collapsed_countdown_icon,
-                          },
-                        };
-                        setRules(next);
+                        togglePanel('countdown_icon');
                       }
                     }}
                   >
                     <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                       <span style={{ color: "var(--p-color-text-subdued, #6b7280)" }} aria-hidden="true">
-                        {rule.settings?.collapsed_countdown_icon ? <ChevronRightIcon /> : <ChevronDownIcon />}
+                        {collapsedPanels.countdown_icon ? <ChevronRightIcon /> : <ChevronDownIcon />}
                       </span>
                       <s-heading>Messages Icon</s-heading>
                     </div>
@@ -2265,11 +2357,15 @@ export default function Index() {
                             settings: {
                               ...rule.settings,
                               show_icon: e.target.checked,
-                              // Auto-expand when enabled, auto-collapse when disabled
-                              collapsed_countdown_icon: !e.target.checked,
                             },
                           };
                           setRules(next);
+                          // Auto-expand when enabled, auto-collapse when disabled
+                          if (rule?.id) {
+                            const newCollapsed = !e.target.checked;
+                            setCollapsedPanels(prev => ({ ...prev, countdown_icon: newCollapsed }));
+                            setCollapsedState(rule.id, 'countdown_icon', newCollapsed);
+                          }
                         }}
                       />
                       <s-text size="small">{rule.settings?.show_icon !== false ? "Enabled" : "Disabled"}</s-text>
@@ -2277,7 +2373,7 @@ export default function Index() {
                   </div>
 
                   {/* Content - only show when not collapsed */}
-                  {!rule.settings?.collapsed_countdown_icon && (
+                  {!collapsedPanels.countdown_icon && (
                   <div style={{ padding: "16px", display: "grid", gap: 12 }}>
                     <label>
                     <s-text>Icon</s-text>
@@ -2431,46 +2527,28 @@ export default function Index() {
                   <div
                     role="button"
                     tabIndex={0}
-                    aria-expanded={!rule.settings?.collapsed_eta_timeline}
+                    aria-expanded={!collapsedPanels.eta_timeline}
                     style={{
                       padding: "12px 16px",
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "space-between",
-                      background: !rule.settings?.collapsed_eta_timeline ? "var(--p-color-bg-surface-hover, #f8fafc)" : "var(--p-color-bg-surface, #ffffff)",
-                      borderBottom: !rule.settings?.collapsed_eta_timeline ? "1px solid var(--p-color-border, #e5e7eb)" : "none",
+                      background: !collapsedPanels.eta_timeline ? "var(--p-color-bg-surface-hover, #f8fafc)" : "var(--p-color-bg-surface, #ffffff)",
+                      borderBottom: !collapsedPanels.eta_timeline ? "1px solid var(--p-color-border, #e5e7eb)" : "none",
                       cursor: "pointer",
                       outline: "none",
                     }}
-                    onClick={() => {
-                      const next = [...rules];
-                      next[safeSelectedIndex] = {
-                        ...rule,
-                        settings: {
-                          ...rule.settings,
-                          collapsed_eta_timeline: !rule.settings?.collapsed_eta_timeline,
-                        },
-                      };
-                      setRules(next);
-                    }}
+                    onClick={() => togglePanel('eta_timeline')}
                     onKeyDown={(e) => {
                       if (e.key === "Enter" || e.key === " ") {
                         e.preventDefault();
-                        const next = [...rules];
-                        next[safeSelectedIndex] = {
-                          ...rule,
-                          settings: {
-                            ...rule.settings,
-                            collapsed_eta_timeline: !rule.settings?.collapsed_eta_timeline,
-                          },
-                        };
-                        setRules(next);
+                        togglePanel('eta_timeline');
                       }
                     }}
                   >
                     <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                       <span style={{ color: "var(--p-color-text-subdued, #6b7280)" }} aria-hidden="true">
-                        {rule.settings?.collapsed_eta_timeline ? <ChevronRightIcon /> : <ChevronDownIcon />}
+                        {collapsedPanels.eta_timeline ? <ChevronRightIcon /> : <ChevronDownIcon />}
                       </span>
                       <s-heading>ETA Timeline</s-heading>
                     </div>
@@ -2483,16 +2561,30 @@ export default function Index() {
                         checked={!!rule.settings?.show_eta_timeline}
                         onChange={(e) => {
                           const next = [...rules];
+                          const isFirstActivation = e.target.checked && !rule.settings?.eta_timeline_initialized;
+
                           next[safeSelectedIndex] = {
                             ...rule,
                             settings: {
                               ...rule.settings,
                               show_eta_timeline: e.target.checked,
-                              // Auto-expand when enabled, auto-collapse when disabled
-                              collapsed_eta_timeline: !e.target.checked,
+                              // On first activation, inherit border settings from Messages
+                              ...(isFirstActivation ? {
+                                eta_timeline_initialized: true,
+                                show_eta_border: rule.settings?.show_border !== false,
+                                eta_border_width: rule.settings?.border_thickness ?? 1,
+                                eta_border_radius: rule.settings?.border_radius ?? 8,
+                                eta_border_color: rule.settings?.border_color || "#e5e7eb",
+                              } : {}),
                             },
                           };
                           setRules(next);
+                          // Auto-expand when enabled, auto-collapse when disabled
+                          if (rule?.id) {
+                            const newCollapsed = !e.target.checked;
+                            setCollapsedPanels(prev => ({ ...prev, eta_timeline: newCollapsed }));
+                            setCollapsedState(rule.id, 'eta_timeline', newCollapsed);
+                          }
                         }}
                       />
                       <s-text size="small">{rule.settings?.show_eta_timeline ? "Enabled" : "Disabled"}</s-text>
@@ -2500,7 +2592,7 @@ export default function Index() {
                   </div>
 
                   {/* Content - only show when not collapsed */}
-                  {!rule.settings?.collapsed_eta_timeline && (
+                  {!collapsedPanels.eta_timeline && (
                   <div style={{ padding: "16px", display: "grid", gap: 12 }}>
                     <s-text size="small" style={{ color: "var(--p-color-text-subdued, #6b7280)" }}>
                       Timeline shows: Order date (today) → Shipping date (based on cutoff) → Delivery date range
@@ -2873,23 +2965,23 @@ export default function Index() {
                   </div>
 
                   <label style={{ marginTop: 12 }}>
-                    <s-text>Icon size</s-text>
-                    <select
-                      value={rule.settings?.eta_icon_size || "medium"}
+                    <s-text>Icon size: {rule.settings?.eta_icon_size || 36}px</s-text>
+                    <input
+                      type="range"
+                      min="20"
+                      max="56"
+                      step="4"
+                      value={rule.settings?.eta_icon_size || 36}
                       onChange={(e) => {
                         const next = [...rules];
                         next[safeSelectedIndex] = {
                           ...rule,
-                          settings: { ...rule.settings, eta_icon_size: e.target.value },
+                          settings: { ...rule.settings, eta_icon_size: parseInt(e.target.value) },
                         };
                         setRules(next);
                       }}
                       style={{ width: "100%" }}
-                    >
-                      <option value="small">Small</option>
-                      <option value="medium">Medium</option>
-                      <option value="large">Large</option>
-                    </select>
+                    />
                   </label>
 
                   <label style={{ display: "flex", gap: 8, alignItems: "center", marginTop: 12 }}>
@@ -2934,19 +3026,41 @@ export default function Index() {
                     />
                   )}
 
+                  {/* Border Styling sub-section */}
+                  <div style={{ borderTop: "1px solid var(--p-color-border, #e5e7eb)", paddingTop: 16, display: "grid", gap: 12 }}>
+                    <s-heading>Border Styling</s-heading>
+
+                    <label style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                      <input
+                        type="checkbox"
+                        checked={rule.settings?.show_eta_border !== false}
+                        onChange={(e) => {
+                          const next = [...rules];
+                          next[safeSelectedIndex] = {
+                            ...rule,
+                            settings: { ...rule.settings, show_eta_border: e.target.checked },
+                          };
+                          setRules(next);
+                        }}
+                      />
+                      <s-text>Show border</s-text>
+                    </label>
+
+                  {rule.settings?.show_eta_border !== false && (
+                    <>
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
                     <label>
                       <s-text>Border thickness (px)</s-text>
                       <input
                         type="number"
-                        min="0"
+                        min="1"
                         max="10"
-                        value={String(rule.settings?.eta_border_width ?? 0)}
+                        value={String(rule.settings?.eta_border_width ?? 1)}
                         onChange={(e) => {
                           const next = [...rules];
                           next[safeSelectedIndex] = {
                             ...rule,
-                            settings: { ...rule.settings, eta_border_width: safeParseNumber(e.target.value, 0, 0) },
+                            settings: { ...rule.settings, eta_border_width: safeParseNumber(e.target.value, 1, 1) },
                           };
                           setRules(next);
                         }}
@@ -2985,6 +3099,9 @@ export default function Index() {
                       setRules(next);
                     }}
                   />
+                    </>
+                  )}
+                  </div>
 
                   {/* ETA Text Styling */}
                   <div style={{ borderTop: "1px solid var(--p-color-border, #e5e7eb)", marginTop: 8, paddingTop: 12 }}>
@@ -3147,6 +3264,507 @@ export default function Index() {
                   )}
                 </div>
 
+                {/* Special Delivery Section */}
+                <div
+                  style={{
+                    border: "1px solid var(--p-color-border, #e5e7eb)",
+                    borderRadius: "8px",
+                    background: "var(--p-color-bg-surface, #ffffff)",
+                    overflow: "hidden",
+                    borderLeft: "1px solid var(--p-color-border, #e5e7eb)",
+                  }}
+                >
+                  {/* Header with collapse toggle and enable toggle */}
+                  <div
+                    role="button"
+                    tabIndex={0}
+                    aria-expanded={!collapsedPanels.special_delivery}
+                    style={{
+                      padding: "12px 16px",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      background: !collapsedPanels.special_delivery ? "var(--p-color-bg-surface-hover, #f8fafc)" : "var(--p-color-bg-surface, #ffffff)",
+                      borderBottom: !collapsedPanels.special_delivery ? "1px solid var(--p-color-border, #e5e7eb)" : "none",
+                      cursor: "pointer",
+                      outline: "none",
+                    }}
+                    onClick={() => togglePanel('special_delivery')}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        togglePanel('special_delivery');
+                      }
+                    }}
+                  >
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <span style={{ color: "var(--p-color-text-subdued, #6b7280)" }} aria-hidden="true">
+                        {collapsedPanels.special_delivery ? <ChevronRightIcon /> : <ChevronDownIcon />}
+                      </span>
+                      <s-heading>Special Delivery</s-heading>
+                    </div>
+                    <label
+                      style={{ display: "flex", alignItems: "center", gap: 6 }}
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={!!rule.settings?.show_special_delivery}
+                        onChange={(e) => {
+                          const next = [...rules];
+                          next[safeSelectedIndex] = {
+                            ...rule,
+                            settings: {
+                              ...rule.settings,
+                              show_special_delivery: e.target.checked,
+                            },
+                          };
+                          setRules(next);
+                          // Auto-expand when enabled, auto-collapse when disabled
+                          if (rule?.id) {
+                            const newCollapsed = !e.target.checked;
+                            setCollapsedPanels(prev => ({ ...prev, special_delivery: newCollapsed }));
+                            setCollapsedState(rule.id, 'special_delivery', newCollapsed);
+                          }
+                        }}
+                      />
+                      <s-text size="small">{rule.settings?.show_special_delivery ? "Enabled" : "Disabled"}</s-text>
+                    </label>
+                  </div>
+
+                  {/* Content - only show when not collapsed */}
+                  {!collapsedPanels.special_delivery && (
+                  <div style={{ padding: "16px", display: "grid", gap: 12 }}>
+                    <s-text size="small" style={{ color: "var(--p-color-text-subdued, #6b7280)" }}>
+                      Display special delivery information for large items, palletised shipments, etc.
+                    </s-text>
+
+                    {/* Message textarea */}
+                    <label>
+                      <s-text>Message</s-text>
+                      <textarea
+                        value={rule.settings?.special_delivery_message || ""}
+                        onChange={(e) => {
+                          const next = [...rules];
+                          next[safeSelectedIndex] = {
+                            ...rule,
+                            settings: { ...rule.settings, special_delivery_message: e.target.value },
+                          };
+                          setRules(next);
+                        }}
+                        maxLength={500}
+                        rows={3}
+                        style={{ width: "100%", resize: "vertical" }}
+                        placeholder="e.g. **Large Item:** This product ships via pallet delivery.{lb}Please ensure access for delivery vehicle."
+                      />
+                    </label>
+                    <div style={{ display: "grid", gap: 2, color: "var(--p-color-text-subdued, #6b7280)", fontSize: 11 }}>
+                      <span>Use **double asterisks** for bold text.</span>
+                      <span>Use {"{lb}"} for line breaks.</span>
+                    </div>
+
+                    {/* Icon/Image section */}
+                    <div style={{ borderTop: "1px solid var(--p-color-border, #e5e7eb)", marginTop: 4, paddingTop: 12 }}>
+                      <s-text variant="headingXs" style={{ marginBottom: 8, display: "block" }}>Icon (optional)</s-text>
+
+                      {/* Icon selection dropdown - same options as Messages */}
+                      <label style={{ display: "block", marginBottom: 8 }}>
+                        <s-text>Select Icon</s-text>
+                        <select
+                          value={rule.settings?.special_delivery_icon || ""}
+                          onChange={(e) => {
+                            const next = [...rules];
+                            next[safeSelectedIndex] = {
+                              ...rule,
+                              settings: { ...rule.settings, special_delivery_icon: e.target.value },
+                            };
+                            setRules(next);
+                          }}
+                          style={{ width: "100%" }}
+                        >
+                          <option value="">None</option>
+                          <optgroup label="Preset Icons">
+                            <option value="truck">Truck</option>
+                            <option value="clock">Clock</option>
+                            <option value="home">Home</option>
+                            <option value="pin">Pin</option>
+                            <option value="gift">Gift</option>
+                            <option value="shopping-bag">Shopping bag</option>
+                            <option value="shopping-cart">Shopping cart</option>
+                            <option value="clipboard-document-check">Clipboard</option>
+                            <option value="bullet">Bullet</option>
+                            <option value="checkmark">Checkmark (badge)</option>
+                          </optgroup>
+                          {configuredCustomIcons.length > 0 && (
+                            <optgroup label="Custom Icons">
+                              {configuredCustomIcons.map((icon) => (
+                                <option key={icon.value} value={icon.value}>{icon.label}</option>
+                              ))}
+                            </optgroup>
+                          )}
+                        </select>
+                      </label>
+
+                      {/* Icon options - only show when icon is selected */}
+                      {rule.settings?.special_delivery_icon && (
+                        <div style={{ marginTop: 12, display: "grid", gap: 12 }}>
+                          {/* Icon style - only for preset icons */}
+                          {!rule.settings.special_delivery_icon.startsWith("custom-") && (
+                            <label>
+                              <s-text>Icon style</s-text>
+                              <select
+                                value={rule.settings?.special_delivery_icon_style || "solid"}
+                                onChange={(e) => {
+                                  const next = [...rules];
+                                  next[safeSelectedIndex] = {
+                                    ...rule,
+                                    settings: { ...rule.settings, special_delivery_icon_style: e.target.value },
+                                  };
+                                  setRules(next);
+                                }}
+                                style={{ width: "100%" }}
+                              >
+                                <option value="solid">Solid (filled)</option>
+                                <option value="outline">Outline</option>
+                              </select>
+                            </label>
+                          )}
+
+                          <label>
+                            <s-text>Icon Size: {rule.settings?.special_delivery_icon_size || 24}px</s-text>
+                            <input
+                              type="range"
+                              min="16"
+                              max="96"
+                              step="8"
+                              value={rule.settings?.special_delivery_icon_size || 24}
+                              onChange={(e) => {
+                                const next = [...rules];
+                                next[safeSelectedIndex] = {
+                                  ...rule,
+                                  settings: { ...rule.settings, special_delivery_icon_size: parseInt(e.target.value) },
+                                };
+                                setRules(next);
+                              }}
+                              style={{ width: "100%" }}
+                            />
+                          </label>
+
+                          <div>
+                            <label>
+                              <s-text>Vertical alignment</s-text>
+                              <select
+                                value={rule.settings?.special_delivery_icon_alignment || "top"}
+                                onChange={(e) => {
+                                  const next = [...rules];
+                                  next[safeSelectedIndex] = {
+                                    ...rule,
+                                    settings: { ...rule.settings, special_delivery_icon_alignment: e.target.value },
+                                  };
+                                  setRules(next);
+                                }}
+                                style={{ width: "100%" }}
+                              >
+                                <option value="top">Top</option>
+                                <option value="center">Center</option>
+                                <option value="bottom">Bottom</option>
+                              </select>
+                            </label>
+                            <div style={{ display: "flex", alignItems: "center", gap: 6, color: "var(--p-color-text-subdued, #6b7280)", marginTop: 4 }}>
+                              <span style={{ fontSize: 12, flexShrink: 0 }}>💡</span>
+                              <span style={{ fontSize: 12 }}>Aligns the shorter element (icon or text) within the row</span>
+                            </div>
+                          </div>
+
+                          {/* Icon color - for preset icons (always SVG) and custom SVG icons */}
+                          {(() => {
+                            const iconValue = rule.settings?.special_delivery_icon || "";
+                            const isPreset = !iconValue.startsWith("custom-");
+                            const isCustomSvg = iconValue.startsWith("custom-") && (() => {
+                              const idx = parseInt(iconValue.split("-")[1]) - 1;
+                              return globalSettings?.custom_icons?.[idx]?.svg;
+                            })();
+                            if (!isPreset && !isCustomSvg) return null;
+                            return (
+                              <>
+                                <label style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                                  <input
+                                    type="checkbox"
+                                    checked={rule.settings?.special_delivery_use_main_icon_color !== false}
+                                    onChange={(e) => {
+                                      const next = [...rules];
+                                      next[safeSelectedIndex] = {
+                                        ...rule,
+                                        settings: { ...rule.settings, special_delivery_use_main_icon_color: e.target.checked },
+                                      };
+                                      setRules(next);
+                                    }}
+                                  />
+                                  <s-text>Use main icon color</s-text>
+                                </label>
+                                {rule.settings?.special_delivery_use_main_icon_color === false && (
+                                  <s-color-field
+                                    label="SVG icon color"
+                                    value={rule.settings?.special_delivery_icon_color || "#111827"}
+                                    onInput={(e) => {
+                                      const next = [...rules];
+                                      next[safeSelectedIndex] = {
+                                        ...rule,
+                                        settings: { ...rule.settings, special_delivery_icon_color: e.target.value },
+                                      };
+                                      setRules(next);
+                                    }}
+                                  />
+                                )}
+                              </>
+                            );
+                          })()}
+
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Border Styling section */}
+                    <div style={{ borderTop: "1px solid var(--p-color-border, #e5e7eb)", paddingTop: 16, display: "grid", gap: 12 }}>
+                      <s-heading>Border Styling</s-heading>
+
+                      {/* Match ETA timeline border - only when ETA enabled with border */}
+                      {rule.settings?.show_eta_timeline && rule.settings?.show_eta_border !== false && (
+                        <label style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                          <input
+                            type="checkbox"
+                            checked={!!rule.settings?.special_delivery_match_eta_border}
+                            onChange={(e) => {
+                              const next = [...rules];
+                              next[safeSelectedIndex] = {
+                                ...rule,
+                                settings: { ...rule.settings, special_delivery_match_eta_border: e.target.checked },
+                              };
+                              setRules(next);
+                            }}
+                          />
+                          <s-text>Match ETA timeline border</s-text>
+                        </label>
+                      )}
+
+                      {/* Show border checkbox - hide when matching ETA */}
+                      {!(rule.settings?.show_eta_timeline && rule.settings?.show_eta_border !== false && rule.settings?.special_delivery_match_eta_border) && (
+                        <label style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                          <input
+                            type="checkbox"
+                            checked={!!rule.settings?.special_delivery_show_border}
+                            onChange={(e) => {
+                              const next = [...rules];
+                              next[safeSelectedIndex] = {
+                                ...rule,
+                                settings: { ...rule.settings, special_delivery_show_border: e.target.checked },
+                              };
+                              setRules(next);
+                            }}
+                          />
+                          <s-text>Show border</s-text>
+                        </label>
+                      )}
+
+                      {/* Border controls - show when border enabled and not matching ETA */}
+                      {rule.settings?.special_delivery_show_border && !rule.settings?.special_delivery_match_eta_border && (
+                        <div style={{ display: "grid", gap: 12, marginTop: 12 }}>
+                          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                            <label>
+                              <s-text>Thickness (px)</s-text>
+                              <input
+                                type="number"
+                                min="1"
+                                max="10"
+                                value={rule.settings?.special_delivery_border_thickness ?? 1}
+                                onChange={(e) => {
+                                  const next = [...rules];
+                                  next[safeSelectedIndex] = {
+                                    ...rule,
+                                    settings: { ...rule.settings, special_delivery_border_thickness: Number(e.target.value) || 1 },
+                                  };
+                                  setRules(next);
+                                }}
+                                style={{ width: "100%" }}
+                              />
+                            </label>
+                            <label>
+                              <s-text>Radius (px)</s-text>
+                              <input
+                                type="number"
+                                min="0"
+                                value={rule.settings?.special_delivery_border_radius ?? 8}
+                                onChange={(e) => {
+                                  const next = [...rules];
+                                  next[safeSelectedIndex] = {
+                                    ...rule,
+                                    settings: { ...rule.settings, special_delivery_border_radius: Number(e.target.value) || 0 },
+                                  };
+                                  setRules(next);
+                                }}
+                                style={{ width: "100%" }}
+                              />
+                            </label>
+                          </div>
+                          <s-color-field
+                            label="Border color"
+                            value={rule.settings?.special_delivery_border_color || "#e5e7eb"}
+                            onInput={(e) => {
+                              const val = e.detail?.value || e.target?.value;
+                              if (val) {
+                                const next = [...rules];
+                                next[safeSelectedIndex] = {
+                                  ...rule,
+                                  settings: { ...rule.settings, special_delivery_border_color: val },
+                                };
+                                setRules(next);
+                              }
+                            }}
+                          />
+                        </div>
+                      )}
+
+                      {/* Match ETA timeline width - only when ETA enabled */}
+                      {rule.settings?.show_eta_timeline && (
+                        <label style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                          <input
+                            type="checkbox"
+                            checked={!!rule.settings?.special_delivery_match_eta_width}
+                            onChange={(e) => {
+                              const checked = e.target.checked;
+                              const next = [...rules];
+                              // Capture ETA width when enabling to avoid feedback loops
+                              const capturedWidth = checked && etaTimelineRef.current
+                                ? etaTimelineRef.current.offsetWidth
+                                : rule.settings?._captured_special_delivery_eta_width;
+                              next[safeSelectedIndex] = {
+                                ...rule,
+                                settings: {
+                                  ...rule.settings,
+                                  special_delivery_match_eta_width: checked,
+                                  _captured_special_delivery_eta_width: capturedWidth,
+                                },
+                              };
+                              setRules(next);
+                            }}
+                          />
+                          <s-text>Match ETA timeline width</s-text>
+                        </label>
+                      )}
+
+                      {/* Max width - only when not matching ETA width */}
+                      {(!rule.settings?.show_eta_timeline || !rule.settings?.special_delivery_match_eta_width) && (
+                        <label>
+                          <s-text>Max width</s-text>
+                          <input
+                            type="number"
+                            min="0"
+                            value={rule.settings?.special_delivery_max_width ?? 600}
+                            onChange={(e) => {
+                              const next = [...rules];
+                              next[safeSelectedIndex] = {
+                                ...rule,
+                                settings: { ...rule.settings, special_delivery_max_width: Number(e.target.value) || 0 },
+                              };
+                              setRules(next);
+                            }}
+                            style={{ width: "100%" }}
+                          />
+                          <div style={{ display: "grid", gap: 2, color: "var(--p-color-text-subdued, #6b7280)", fontSize: 12, marginTop: 4 }}>
+                            <span>💡 Set to 0 for no maximum width (block sizes to fit content).</span>
+                            <span>💡 Actual width may be limited by container.</span>
+                          </div>
+                        </label>
+                      )}
+                    </div>
+
+                    {/* Text Styling section */}
+                    <div style={{ borderTop: "1px solid var(--p-color-border, #e5e7eb)", paddingTop: 16, display: "grid", gap: 12 }}>
+                      <s-heading>Text Styling</s-heading>
+
+                      <label style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                        <input
+                          type="checkbox"
+                          checked={rule.settings?.special_delivery_override_global_text_styling === true}
+                          onChange={(e) => {
+                            const next = [...rules];
+                            next[safeSelectedIndex] = {
+                              ...rule,
+                              settings: { ...rule.settings, special_delivery_override_global_text_styling: e.target.checked },
+                            };
+                            setRules(next);
+                          }}
+                        />
+                        <s-text>Use custom text styling for this rule</s-text>
+                      </label>
+
+                      {rule.settings?.special_delivery_override_global_text_styling === true && (
+                        <div style={{ display: "grid", gap: 12 }}>
+                          <s-color-field
+                            label="Text color"
+                            value={rule.settings?.special_delivery_text_color || "#374151"}
+                            onInput={(e) => {
+                              const val = e.detail?.value || e.target?.value;
+                              if (val) {
+                                const next = [...rules];
+                                next[safeSelectedIndex] = {
+                                  ...rule,
+                                  settings: { ...rule.settings, special_delivery_text_color: val },
+                                };
+                                setRules(next);
+                              }
+                            }}
+                          />
+                          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                            <label>
+                              <s-text>Font size</s-text>
+                              <select
+                                value={rule.settings?.special_delivery_font_size || "medium"}
+                                onChange={(e) => {
+                                  const next = [...rules];
+                                  next[safeSelectedIndex] = {
+                                    ...rule,
+                                    settings: { ...rule.settings, special_delivery_font_size: e.target.value },
+                                  };
+                                  setRules(next);
+                                }}
+                                style={{ width: "100%", marginTop: 4 }}
+                              >
+                                <option value="xsmall">X-Small (12px)</option>
+                                <option value="small">Small (14px)</option>
+                                <option value="medium">Medium (16px)</option>
+                                <option value="large">Large (18px)</option>
+                                <option value="xlarge">X-Large (20px)</option>
+                              </select>
+                            </label>
+                            <label>
+                              <s-text>Font weight</s-text>
+                              <select
+                                value={rule.settings?.special_delivery_font_weight || "normal"}
+                                onChange={(e) => {
+                                  const next = [...rules];
+                                  next[safeSelectedIndex] = {
+                                    ...rule,
+                                    settings: { ...rule.settings, special_delivery_font_weight: e.target.value },
+                                  };
+                                  setRules(next);
+                                }}
+                                style={{ width: "100%", marginTop: 4 }}
+                              >
+                                <option value="normal">Normal (400)</option>
+                                <option value="medium">Medium (500)</option>
+                                <option value="semibold">Semi-bold (600)</option>
+                                <option value="bold">Bold (700)</option>
+                              </select>
+                            </label>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  )}
+                </div>
+
                 {fetcher.data?.error && (
                   <s-text style={{ color: "var(--p-color-text-critical, #dc2626)" }}>
                     {fetcher.data.error}
@@ -3161,7 +3779,7 @@ export default function Index() {
             )}
 
             {/* RIGHT column: preview, rules list */}
-            <div className="dib-right-column" style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            <div className="dib-right-column" style={{ display: "flex", flexDirection: "column", gap: 12, minWidth: 0 }}>
               {/* Preview */}
               {/* Load Google Font for preview if custom font is selected for messages */}
               {globalSettings?.use_theme_font === false &&
@@ -3211,11 +3829,12 @@ export default function Index() {
                   display: "flex",
                   flexDirection: "column",
                   gap: 8,
+                  overflow: "hidden",
                 }}
               >
                 <s-heading>Preview</s-heading>
 
-                <div style={{ minHeight: 80, overflowY: "auto", overscrollBehavior: "contain", padding: "8px 0" }}>
+                <div style={{ minHeight: 80, overflow: "hidden", overscrollBehavior: "contain", padding: "8px 0", minWidth: 0 }}>
                   <div
                     style={{
                       minHeight: "100%",
@@ -3231,12 +3850,10 @@ export default function Index() {
                         style={{
                           display: "inline-grid",
                           gap: 12,
-                          width: rule.settings?.match_eta_width && rule.settings?.show_eta_timeline
-                            ? "auto"
-                            : "100%",
-                          gridTemplateColumns: rule.settings?.match_eta_width && rule.settings?.show_eta_timeline
-                            ? "min-content"
-                            : "auto",
+                          width: "100%",
+                          maxWidth: "100%",
+                          justifyItems: "start",
+                          alignItems: "start",
                         }}
                       >
                         {/* Only show messages container if there's content */}
@@ -3259,11 +3876,21 @@ export default function Index() {
                             borderRadius: Number(rule.settings?.show_eta_timeline && rule.settings?.match_eta_border
                               ? (rule.settings?.eta_border_radius ?? 8)
                               : (rule.settings?.border_radius ?? 8)),
-                            maxWidth: rule.settings?.match_eta_width && rule.settings?.show_eta_timeline && etaTimelineWidth
-                              ? etaTimelineWidth
-                              : (rule.settings?.max_width && rule.settings.max_width > 0
-                                  ? Number(rule.settings.max_width)
-                                  : "fit-content"),
+                            // Width constraint: match ETA timeline width or use custom max_width
+                            // Case 1: match_eta_width ON - force exact ETA width (content wraps)
+                            // Case 2: max_width = 0 - fit to content
+                            // Case 3: max_width > 0 - expand TO that width
+                            ...(rule.settings?.match_eta_width && rule.settings?.show_eta_timeline && etaTimelineWidth > 0
+                              ? {
+                                  width: etaTimelineWidth,
+                                  minWidth: etaTimelineWidth,
+                                  maxWidth: etaTimelineWidth,
+                                }
+                              : rule.settings?.max_width && rule.settings.max_width > 0
+                                ? { width: `min(${rule.settings.max_width}px, 100%)` }
+                                : { width: "fit-content" }),
+                            justifySelf: "start",
+                            alignSelf: "start",
                             overflowWrap: "break-word",
                             display: rule.settings?.icon_layout === "single" ? "flex" : "grid",
                             gap: rule.settings?.icon_layout === "single"
@@ -3279,7 +3906,7 @@ export default function Index() {
                               ? getTextFontWeight(rule.settings?.font_weight)
                               : globalSettings?.use_theme_text_styling === false
                                 ? getTextFontWeight(globalSettings?.font_weight)
-                                : "normal",
+                                : globalSettings?.eta_preview_font_weight || "normal",
                             color: rule.settings?.override_global_text_styling
                               ? (rule.settings?.text_color || "#374151")
                               : globalSettings?.use_theme_text_styling === false
@@ -3287,7 +3914,7 @@ export default function Index() {
                                 : "inherit",
                             fontFamily: globalSettings?.use_theme_font === false && globalSettings?.custom_font_family
                               ? globalSettings.custom_font_family
-                              : globalSettings?.eta_preview_theme_font || "inherit",
+                              : globalSettings?.eta_preview_theme_font || "'Assistant', sans-serif",
                           }}
                         >
                           {rule.settings?.icon_layout === "single" && rule.settings?.show_icon !== false && (
@@ -3391,6 +4018,120 @@ export default function Index() {
                         {rule.settings?.show_eta_timeline && (
                           <div ref={etaTimelineRef} style={{ display: "inline-block" }}>
                             <ETATimelinePreview rule={rule} globalSettings={globalSettings} />
+                          </div>
+                        )}
+
+                        {/* Special Delivery Preview - shown below timeline when enabled */}
+                        {rule.settings?.show_special_delivery && rule.settings?.special_delivery_message && (
+                          <div style={{ width: "100%", maxWidth: "100%" }}>
+                            {(() => {
+                              const message = rule.settings.special_delivery_message || "";
+
+                              // Get icon - preset or custom
+                              const iconSelection = rule.settings.special_delivery_icon || "";
+                              const iconStyle = rule.settings.special_delivery_icon_style || "solid";
+                              const isPresetIcon = iconSelection && !iconSelection.startsWith("custom-");
+                              const customIconIdx = iconSelection.startsWith("custom-") ? parseInt(iconSelection.split("-")[1]) - 1 : -1;
+                              const customIcon = customIconIdx >= 0 ? (globalSettings?.custom_icons || [])[customIconIdx] : null;
+                              const svgCode = isPresetIcon ? getIconSvg(iconSelection, iconStyle) : (customIcon?.svg || "");
+                              const imageUrl = customIcon?.url || "";
+
+                              const sizePx = rule.settings.special_delivery_icon_size || 24;
+                              const iconColor = rule.settings.special_delivery_use_main_icon_color !== false
+                                ? (globalSettings?.icon_color || "#111827")
+                                : (rule.settings.special_delivery_icon_color || "#111827");
+                              const parsedMessage = parseMarkdownBold(message);
+
+                              // Border styling
+                              const showBorder = rule.settings.special_delivery_show_border ||
+                                (rule.settings.show_eta_timeline && rule.settings.special_delivery_match_eta_border);
+                              const borderThickness = rule.settings.special_delivery_match_eta_border
+                                ? (rule.settings.eta_border_width ?? 1)
+                                : (rule.settings.special_delivery_border_thickness ?? 1);
+                              const borderColor = rule.settings.special_delivery_match_eta_border
+                                ? (rule.settings.eta_border_color ?? "#e5e7eb")
+                                : (rule.settings.special_delivery_border_color ?? "#e5e7eb");
+                              const borderRadius = rule.settings.special_delivery_match_eta_border
+                                ? (rule.settings.eta_border_radius ?? 8)
+                                : (rule.settings.special_delivery_border_radius ?? 8);
+
+                              // Width constraint: match ETA timeline width or use custom max_width
+                              const matchEtaWidth = rule.settings.special_delivery_match_eta_width && rule.settings.show_eta_timeline && etaTimelineWidth > 0;
+                              const sdMaxWidth = rule.settings.special_delivery_max_width;
+                              // For special delivery: match ETA = exact width (with box-sizing), max_width > 0 = expand TO width, 0 = fit content
+                              const widthStyle = matchEtaWidth
+                                ? { width: etaTimelineWidth, minWidth: etaTimelineWidth, maxWidth: etaTimelineWidth, boxSizing: "border-box" }
+                                : (sdMaxWidth > 0 ? { width: `min(${sdMaxWidth}px, 100%)` } : { width: "fit-content" });
+
+                              // Text styling
+                              const textColor = rule.settings.special_delivery_override_global_text_styling
+                                ? (rule.settings.special_delivery_text_color || "#374151")
+                                : globalSettings?.special_delivery_use_theme_text_styling === false
+                                  ? (globalSettings?.special_delivery_text_color || "#374151")
+                                  : "inherit";
+                              const fontSize = rule.settings.special_delivery_override_global_text_styling
+                                ? getTextFontSize(rule.settings.special_delivery_font_size)
+                                : globalSettings?.special_delivery_use_theme_text_styling === false
+                                  ? getTextFontSize(globalSettings?.special_delivery_font_size)
+                                  : "inherit";
+                              const fontWeight = rule.settings.special_delivery_override_global_text_styling
+                                ? getTextFontWeight(rule.settings.special_delivery_font_weight)
+                                : globalSettings?.special_delivery_use_theme_text_styling === false
+                                  ? getTextFontWeight(globalSettings?.special_delivery_font_weight)
+                                  : "inherit";
+                              const fontFamily = globalSettings?.special_delivery_use_theme_font === false
+                                ? (globalSettings?.special_delivery_match_messages_font && globalSettings?.custom_font_family
+                                    ? globalSettings.custom_font_family
+                                    : globalSettings?.special_delivery_custom_font_family || "inherit")
+                                : "inherit";
+
+                              const iconAlignment = { top: "flex-start", center: "center", bottom: "flex-end" }[rule.settings.special_delivery_icon_alignment] || "flex-start";
+
+                              return (
+                                <div style={{
+                                  display: "inline-flex",
+                                  alignItems: iconAlignment,
+                                  gap: 12,
+                                  boxSizing: "border-box",
+                                  overflowWrap: "break-word",
+                                  wordBreak: "break-word",
+                                  ...(showBorder ? {
+                                    padding: "10px 12px",
+                                    border: `${borderThickness}px solid ${borderColor}`,
+                                    borderRadius: borderRadius,
+                                  } : {}),
+                                  // Width constraint: match ETA or custom max_width
+                                  ...widthStyle,
+                                  color: textColor,
+                                  fontSize,
+                                  fontWeight,
+                                  fontFamily,
+                                }}>
+                                  {/* SVG icon (inherits color) */}
+                                  {svgCode && (
+                                    <div
+                                      style={{ width: sizePx, height: sizePx, flexShrink: 0, color: iconColor }}
+                                      dangerouslySetInnerHTML={{ __html: svgCode }}
+                                    />
+                                  )}
+                                  {/* Image URL (no color inheritance) */}
+                                  {!svgCode && imageUrl && (
+                                    <img
+                                      src={imageUrl}
+                                      alt=""
+                                      style={{ width: sizePx, height: sizePx, flexShrink: 0, objectFit: "contain" }}
+                                    />
+                                  )}
+                                  <div style={{ minWidth: 0 }}>
+                                    {parsedMessage.map((seg, i) => (
+                                      seg.bold
+                                        ? <strong key={i}>{renderWithLineBreaks(seg.text, `sp-${i}`)}</strong>
+                                        : <span key={i}>{renderWithLineBreaks(seg.text, `sp-${i}`)}</span>
+                                    ))}
+                                  </div>
+                                </div>
+                              );
+                            })()}
                           </div>
                         )}
                       </div>

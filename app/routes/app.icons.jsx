@@ -2,7 +2,7 @@
 // IMPORTS
 // ============================================================================
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useFetcher, useLoaderData, useRouteError } from "react-router";
 import { boundary } from "@shopify/shopify-app-react-router/server";
 import { authenticate } from "../shopify.server";
@@ -29,6 +29,8 @@ function defaultCustomIcons() {
     { name: "Custom 4", svg: "", url: "" },
     { name: "Custom 5", svg: "", url: "" },
     { name: "Custom 6", svg: "", url: "" },
+    { name: "Custom 7", svg: "", url: "" },
+    { name: "Custom 8", svg: "", url: "" },
   ];
 }
 
@@ -137,8 +139,8 @@ export default function IconsPage() {
   const [settings, setSettings] = useState(() => {
     try {
       const parsed = JSON.parse(settingsRaw);
-      // Ensure custom_icons array exists with 6 slots
-      if (!parsed.custom_icons || parsed.custom_icons.length < 6) {
+      // Ensure custom_icons array exists with 8 slots
+      if (!parsed.custom_icons || parsed.custom_icons.length < 8) {
         parsed.custom_icons = defaultCustomIcons();
       }
       return parsed;
@@ -151,14 +153,50 @@ export default function IconsPage() {
   const [saveStatus, setSaveStatus] = useState("");
   const [hoverDeleteIdx, setHoverDeleteIdx] = useState(null); // Track which delete button is hovered
 
-  // Handle save responses
+  // Auto-save refs
+  const autoSaveTimerRef = useRef(null);
+  const initialSettingsRef = useRef(JSON.stringify(settings));
+
+  // Track previous fetcher state to detect save completion
+  const prevFetcherStateRef = useRef(fetcher.state);
+
+  // Handle save responses - only when transitioning from loading to idle
   useEffect(() => {
-    if (fetcher.state === "idle" && fetcher.data?.ok === true) {
+    const wasSubmitting = prevFetcherStateRef.current === "submitting" || prevFetcherStateRef.current === "loading";
+    const isNowIdle = fetcher.state === "idle";
+    prevFetcherStateRef.current = fetcher.state;
+
+    // Only process when we just finished a submission
+    if (!wasSubmitting || !isNowIdle) return;
+
+    if (fetcher.data?.ok === true) {
+      // Update initial ref so we don't re-save the same data
+      initialSettingsRef.current = JSON.stringify(settings);
       setSaveStatus("Saved!");
       const timer = setTimeout(() => setSaveStatus(""), 2000);
       return () => clearTimeout(timer);
     }
-  }, [fetcher.state, fetcher.data]);
+  }, [fetcher.state, fetcher.data, settings]);
+
+  // Auto-save after 2 seconds of inactivity
+  useEffect(() => {
+    if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
+
+    // Don't auto-save if unchanged from initial load
+    if (JSON.stringify(settings) === initialSettingsRef.current) return;
+
+    // Don't auto-save while already saving
+    if (fetcher.state !== "idle") return;
+
+    autoSaveTimerRef.current = setTimeout(() => {
+      setSaveStatus("Saving...");
+      fetcher.submit({ settings: JSON.stringify(settings), shopId }, { method: "POST" });
+    }, 2000);
+
+    return () => {
+      if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
+    };
+  }, [settings, shopId, fetcher.state]);
 
   const handleSave = () => {
     setSaveStatus("Saving...");
@@ -199,10 +237,12 @@ export default function IconsPage() {
             background: "var(--p-color-bg-surface, #ffffff)",
           }}
         >
-          <s-heading>Available Preset Icons</s-heading>
-          <s-text size="small" style={{ color: "var(--p-color-text-subdued, #6b7280)", marginTop: 4, marginBottom: 12, display: "block" }}>
-            These icons are available in all icon dropdowns throughout the app
-          </s-text>
+          <div style={{ marginBottom: 16 }}>
+            <s-heading>Available Preset Icons</s-heading>
+            <s-text size="small" style={{ color: "var(--p-color-text-subdued, #6b7280)", marginTop: 4, display: "block" }}>
+              These icons are available in all icon dropdowns throughout the app
+            </s-text>
+          </div>
 
           <div
             style={{
@@ -249,10 +289,12 @@ export default function IconsPage() {
             background: "var(--p-color-bg-surface, #ffffff)",
           }}
         >
-          <s-heading>Emoji Reference</s-heading>
-          <s-text size="small" style={{ color: "var(--p-color-text-subdued, #6b7280)", marginTop: 4, marginBottom: 12, display: "block" }}>
-            Click any emoji to copy it, then paste into your message boxes
-          </s-text>
+          <div style={{ marginBottom: 16 }}>
+            <s-heading>Emoji Reference</s-heading>
+            <s-text size="small" style={{ color: "var(--p-color-text-subdued, #6b7280)", marginTop: 4, display: "block" }}>
+              Click any emoji to copy it, then paste into your message boxes
+            </s-text>
+          </div>
 
           <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
             {["📦", "🚚", "✅", "⏰", "🏠", "📍", "🎁", "⭐", "💡", "🔥", "⚡", "✨", "🛒", "📬", "📮", "🚀", "💨", "🎯", "👍", "❤️"].map((emoji) => (
@@ -291,10 +333,12 @@ export default function IconsPage() {
             background: "var(--p-color-bg-surface, #ffffff)",
           }}
         >
-          <s-heading>Icon Resources</s-heading>
-          <s-text size="small" style={{ color: "var(--p-color-text-subdued, #6b7280)", marginTop: 4, marginBottom: 12, display: "block" }}>
-            These libraries use scalable SVGs with color inheritance. Click an icon to copy its SVG code.
-          </s-text>
+          <div style={{ marginBottom: 16 }}>
+            <s-heading>Icon Resources</s-heading>
+            <s-text size="small" style={{ color: "var(--p-color-text-subdued, #6b7280)", marginTop: 4, display: "block" }}>
+              These libraries use scalable SVGs with color inheritance. Click an icon to copy its SVG code.
+            </s-text>
+          </div>
 
           <div style={{ display: "flex", flexWrap: "wrap", gap: 12 }}>
             <a
@@ -348,35 +392,24 @@ export default function IconsPage() {
 
         {/* Save Button */}
         <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
-          <s-button variant="primary" onClick={handleSave}>
-            Save Icons
-          </s-button>
-          <span style={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: "4px",
-            color: "var(--p-color-text-success, #16a34a)",
-            fontSize: "14px",
-            fontWeight: 500,
-            visibility: saveStatus === "Saved!" ? "visible" : "hidden",
-            minWidth: 60,
+          <s-button variant="primary" onClick={() => {
+            if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
+            handleSave();
           }}>
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 20 20"
-              fill="currentColor"
-              width="16"
-              height="16"
-              aria-hidden="true"
-            >
-              <path
-                fillRule="evenodd"
-                d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z"
-                clipRule="evenodd"
-              />
-            </svg>
-            Saved
-          </span>
+            Save
+          </s-button>
+          {/* Cloud save indicator */}
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 20 20"
+            fill="currentColor"
+            width="18"
+            height="18"
+            style={{ color: saveStatus === "Saving..." ? "#60a5fa" : "#9ca3af" }}
+            aria-hidden="true"
+          >
+            <path d="M5.5 16a3.5 3.5 0 01-.369-6.98 4 4 0 117.753-1.977A4.5 4.5 0 1113.5 16h-8z" />
+          </svg>
           {fetcher.data?.error && (
             <s-text style={{ color: "var(--p-color-text-critical, #dc2626)" }}>
               {fetcher.data.error}
@@ -384,7 +417,7 @@ export default function IconsPage() {
           )}
         </div>
 
-        {/* Custom SVG Icons (slots 1-3) */}
+        {/* Custom SVG Icons (slots 1-4) */}
         <div
           style={{
             border: "1px solid var(--p-color-border, #e5e7eb)",
@@ -402,7 +435,7 @@ export default function IconsPage() {
             </s-text>
           </div>
 
-          {[0, 1, 2].map((index) => (
+          {[0, 1, 2, 3].map((index) => (
             <div
               key={index}
               style={{
@@ -511,7 +544,7 @@ export default function IconsPage() {
           ))}
         </div>
 
-        {/* Custom Icon URLs (slots 4-6) */}
+        {/* Custom Icon URLs (slots 5-8) */}
         <div
           style={{
             border: "1px solid var(--p-color-border, #e5e7eb)",
@@ -529,7 +562,7 @@ export default function IconsPage() {
             </s-text>
           </div>
 
-          {[3, 4, 5].map((index) => (
+          {[4, 5, 6, 7].map((index) => (
             <div
               key={index}
               style={{
@@ -718,35 +751,24 @@ export default function IconsPage() {
 
         {/* Save Button (bottom) */}
         <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
-          <s-button variant="primary" onClick={handleSave}>
-            Save Icons
-          </s-button>
-          <span style={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: "4px",
-            color: "var(--p-color-text-success, #16a34a)",
-            fontSize: "14px",
-            fontWeight: 500,
-            visibility: saveStatus === "Saved!" ? "visible" : "hidden",
-            minWidth: 60,
+          <s-button variant="primary" onClick={() => {
+            if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
+            handleSave();
           }}>
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 20 20"
-              fill="currentColor"
-              width="16"
-              height="16"
-              aria-hidden="true"
-            >
-              <path
-                fillRule="evenodd"
-                d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z"
-                clipRule="evenodd"
-              />
-            </svg>
-            Saved
-          </span>
+            Save
+          </s-button>
+          {/* Cloud save indicator */}
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 20 20"
+            fill="currentColor"
+            width="18"
+            height="18"
+            style={{ color: saveStatus === "Saving..." ? "#60a5fa" : "#9ca3af" }}
+            aria-hidden="true"
+          >
+            <path d="M5.5 16a3.5 3.5 0 01-.369-6.98 4 4 0 117.753-1.977A4.5 4.5 0 1113.5 16h-8z" />
+          </svg>
         </div>
 
       </div>
