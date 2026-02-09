@@ -398,17 +398,17 @@ export default function IconsPage() {
           }}>
             Save
           </s-button>
-          {/* Cloud save indicator */}
           <svg
             xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 20 20"
-            fill="currentColor"
-            width="18"
-            height="18"
-            style={{ color: saveStatus === "Saving..." ? "#60a5fa" : "#9ca3af" }}
+            viewBox="0 0 24 24"
+            width="24"
+            height="24"
             aria-hidden="true"
           >
-            <path d="M5.5 16a3.5 3.5 0 01-.369-6.98 4 4 0 117.753-1.977A4.5 4.5 0 1113.5 16h-8z" />
+            <g fill={saveStatus === "Saving..." ? "#22c55e" : "#9ca3af"} fillRule="evenodd" clipRule="evenodd">
+              <path d="M5 3a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V7.414A2 2 0 0 0 20.414 6L18 3.586A2 2 0 0 0 16.586 3zm3 11a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v6H8zm1-7V5h6v2a1 1 0 0 1-1 1h-4a1 1 0 0 1-1-1" />
+              <path d="M14 17h-4v-2h4z" />
+            </g>
           </svg>
           {fetcher.data?.error && (
             <s-text style={{ color: "var(--p-color-text-critical, #dc2626)" }}>
@@ -757,17 +757,17 @@ export default function IconsPage() {
           }}>
             Save
           </s-button>
-          {/* Cloud save indicator */}
           <svg
             xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 20 20"
-            fill="currentColor"
-            width="18"
-            height="18"
-            style={{ color: saveStatus === "Saving..." ? "#60a5fa" : "#9ca3af" }}
+            viewBox="0 0 24 24"
+            width="24"
+            height="24"
             aria-hidden="true"
           >
-            <path d="M5.5 16a3.5 3.5 0 01-.369-6.98 4 4 0 117.753-1.977A4.5 4.5 0 1113.5 16h-8z" />
+            <g fill={saveStatus === "Saving..." ? "#22c55e" : "#9ca3af"} fillRule="evenodd" clipRule="evenodd">
+              <path d="M5 3a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V7.414A2 2 0 0 0 20.414 6L18 3.586A2 2 0 0 0 16.586 3zm3 11a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v6H8zm1-7V5h6v2a1 1 0 0 1-1 1h-4a1 1 0 0 1-1-1" />
+              <path d="M14 17h-4v-2h4z" />
+            </g>
           </svg>
         </div>
 

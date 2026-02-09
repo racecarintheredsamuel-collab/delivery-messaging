@@ -4,6 +4,7 @@
 // ============================================================================
 
 import { getEtaIconPaths } from "../utils/icons";
+import { normalizeEtaLabelFontSize, normalizeEtaDateFontSize } from "../utils/styling";
 
 /**
  * Safely parse a HH:MM time string with validation
@@ -70,20 +71,7 @@ export function ETATimelinePreview({ rule, globalSettings }) {
   }
 
   // Determine ETA text styling - per-rule override takes precedence
-  const getEtaLabelFontSize = (size) => {
-    switch (size) {
-      case "xsmall": return 11;
-      case "medium": return 14;
-      default: return 12; // small
-    }
-  };
-  const getEtaDateFontSize = (size) => {
-    switch (size) {
-      case "xxsmall": return 10;
-      case "small": return 12;
-      default: return 11; // xsmall
-    }
-  };
+  // Use normalize functions to handle both string keywords and numeric px values
   const getEtaFontWeight = (weight) => {
     switch (weight) {
       case "normal": return 400;
@@ -115,18 +103,18 @@ export function ETATimelinePreview({ rule, globalSettings }) {
   if (rule.settings?.override_eta_text_styling) {
     // Per-rule override
     etaLabelColor = rule.settings?.eta_label_color || "#374151";
-    etaLabelFontSize = getEtaLabelFontSize(rule.settings?.eta_label_font_size);
+    etaLabelFontSize = normalizeEtaLabelFontSize(rule.settings?.eta_label_font_size, 12);
     etaLabelFontWeight = getEtaFontWeight(rule.settings?.eta_label_font_weight);
     etaDateColor = rule.settings?.eta_date_color || "#6b7280";
-    etaDateFontSize = getEtaDateFontSize(rule.settings?.eta_date_font_size);
+    etaDateFontSize = normalizeEtaDateFontSize(rule.settings?.eta_date_font_size, 11);
     etaDateFontWeight = getEtaFontWeight(rule.settings?.eta_date_font_weight);
   } else if (globalSettings?.eta_use_theme_text_styling === false) {
     // Global custom styling
     etaLabelColor = globalSettings?.eta_label_color || "#374151";
-    etaLabelFontSize = getEtaLabelFontSize(globalSettings?.eta_label_font_size);
+    etaLabelFontSize = normalizeEtaLabelFontSize(globalSettings?.eta_label_font_size, 12);
     etaLabelFontWeight = getEtaFontWeight(globalSettings?.eta_label_font_weight);
     etaDateColor = globalSettings?.eta_date_color || "#6b7280";
-    etaDateFontSize = getEtaDateFontSize(globalSettings?.eta_date_font_size);
+    etaDateFontSize = normalizeEtaDateFontSize(globalSettings?.eta_date_font_size, 11);
     etaDateFontWeight = getEtaFontWeight(globalSettings?.eta_date_font_weight);
   }
 

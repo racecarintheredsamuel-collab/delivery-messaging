@@ -11,6 +11,7 @@ export const GET_SHOP_DELIVERY_DATA = `#graphql
   query GetShopDeliveryData($namespace: String!, $configKey: String!, $settingsKey: String!) {
     shop {
       id
+      currencyCode
       config: metafield(namespace: $namespace, key: $configKey) {
         id
         type
@@ -100,3 +101,4 @@ export const DELETE_METAFIELDS = `#graphql
 export const METAFIELD_NAMESPACE = "delivery_rules";
 export const CONFIG_KEY = "config";
 export const SETTINGS_KEY = "settings";
+export const ICONS_KEY = "icons";

@@ -8,7 +8,7 @@
 {%- assign special_delivery_icon_color_final = '#111827' -%}
 {%- assign special_delivery_use_main_icon_color_final = true -%}
 {%- assign icon_color = '#111827' -%}
-{%- comment -%}Special Delivery typography from global settings{%- endcomment -%}
+
 {%- assign special_delivery_use_theme_font_final = true -%}
 {%- assign special_delivery_match_messages_font_final = false -%}
 {%- assign special_delivery_custom_font_family_final = '' -%}
@@ -16,13 +16,18 @@
 {%- assign special_delivery_text_color_final = '#374151' -%}
 {%- assign special_delivery_font_size_final = 'medium' -%}
 {%- assign special_delivery_font_weight_final = 'normal' -%}
-{%- comment -%}Messages font (for matching){%- endcomment -%}
+
 {%- assign messages_custom_font_family = '' -%}
-{%- comment -%}Block spacing{%- endcomment -%}
+
 {%- assign special_delivery_margin_top = 0 -%}
 {%- assign special_delivery_margin_bottom = 0 -%}
 {%- assign special_delivery_alignment = 'left' -%}
-{%- comment -%}Border styling{%- endcomment -%}
+{%- assign special_delivery_text_alignment_final = 'left' -%}
+
+{%- assign special_delivery_padding_horizontal = 12 -%}
+{%- assign special_delivery_padding_vertical = 10 -%}
+{%- assign special_delivery_icon_gap = 12 -%}
+
 {%- assign special_delivery_show_border_final = false -%}
 {%- assign special_delivery_border_thickness_final = 1 -%}
 {%- assign special_delivery_border_color_final = '#e5e7eb' -%}
@@ -30,7 +35,7 @@
 {%- assign special_delivery_match_eta_border_final = false -%}
 {%- assign special_delivery_match_eta_width_final = false -%}
 {%- assign special_delivery_max_width_final = 600 -%}
-{%- comment -%}ETA border settings (for matching){%- endcomment -%}
+
 {%- assign eta_border_width = 1 -%}
 {%- assign eta_border_color = '#e5e7eb' -%}
 {%- assign eta_border_radius = 8 -%}
@@ -65,7 +70,7 @@
   {%- assign global_settings = global_settings_json | parse_json -%}
 {%- endif -%}
 {%- if global_settings != nil -%}
-  {%- comment -%}Special Delivery typography from global settings{%- endcomment -%}
+  
   {%- if global_settings.special_delivery_use_theme_font == false -%}{%- assign special_delivery_use_theme_font_final = false -%}{%- endif -%}
   {%- if global_settings.special_delivery_match_messages_font == true -%}{%- assign special_delivery_match_messages_font_final = true -%}{%- endif -%}
   {%- if global_settings.special_delivery_custom_font_family != blank -%}{%- assign special_delivery_custom_font_family_final = global_settings.special_delivery_custom_font_family -%}{%- endif -%}
@@ -73,12 +78,15 @@
   {%- if global_settings.special_delivery_text_color != blank -%}{%- assign special_delivery_text_color_final = global_settings.special_delivery_text_color -%}{%- endif -%}
   {%- if global_settings.special_delivery_font_size != blank -%}{%- assign special_delivery_font_size_final = global_settings.special_delivery_font_size -%}{%- endif -%}
   {%- if global_settings.special_delivery_font_weight != blank -%}{%- assign special_delivery_font_weight_final = global_settings.special_delivery_font_weight -%}{%- endif -%}
-  {%- comment -%}Messages font for matching{%- endcomment -%}
+  
   {%- if global_settings.custom_font_family != blank -%}{%- assign messages_custom_font_family = global_settings.custom_font_family -%}{%- endif -%}
-  {%- comment -%}Block spacing{%- endcomment -%}
+  
   {%- if global_settings.special_delivery_margin_top != blank -%}{%- assign special_delivery_margin_top = global_settings.special_delivery_margin_top -%}{%- endif -%}
   {%- if global_settings.special_delivery_margin_bottom != blank -%}{%- assign special_delivery_margin_bottom = global_settings.special_delivery_margin_bottom -%}{%- endif -%}
   {%- if global_settings.special_delivery_alignment != blank -%}{%- assign special_delivery_alignment = global_settings.special_delivery_alignment -%}{%- endif -%}
+  {%- if global_settings.special_delivery_padding_horizontal != blank -%}{%- assign special_delivery_padding_horizontal = global_settings.special_delivery_padding_horizontal -%}{%- endif -%}
+  {%- if global_settings.special_delivery_padding_vertical != blank -%}{%- assign special_delivery_padding_vertical = global_settings.special_delivery_padding_vertical -%}{%- endif -%}
+  {%- if global_settings.special_delivery_icon_gap != blank -%}{%- assign special_delivery_icon_gap = global_settings.special_delivery_icon_gap -%}{%- endif -%}
 {%- endif -%}
 {%- assign any_rule_matched = false -%}
 {%- if product and rules and rules.size > 0 -%}
@@ -143,13 +151,13 @@
       {%- assign any_rule_matched = true -%}
       {%- assign s = r.settings -%}
       {%- if s.icon_color != blank -%}{%- assign icon_color = s.icon_color -%}{%- endif -%}
-      {%- comment -%}ETA settings for matching{%- endcomment -%}
+      
       {%- if s.show_eta_timeline == true or s.show_eta_timeline == 'true' -%}{%- assign show_eta_timeline = true -%}{%- endif -%}
       {%- if s.show_eta_border == true or s.show_eta_border == 'true' -%}{%- assign show_eta_border = true -%}{%- endif -%}
       {%- if s.eta_border_width != blank -%}{%- assign eta_border_width = s.eta_border_width -%}{%- endif -%}
       {%- if s.eta_border_color != blank -%}{%- assign eta_border_color = s.eta_border_color -%}{%- endif -%}
       {%- if s.eta_border_radius != blank -%}{%- assign eta_border_radius = s.eta_border_radius -%}{%- endif -%}
-      {%- comment -%}Special Delivery settings{%- endcomment -%}
+      
       {%- if s.show_special_delivery == true or s.show_special_delivery == 'true' -%}{%- assign show_special_delivery_final = true -%}{%- endif -%}
       {%- if s.show_special_delivery == false or s.show_special_delivery == 'false' -%}{%- assign show_special_delivery_final = false -%}{%- endif -%}
       {%- if s.special_delivery_message != blank -%}{%- assign special_delivery_message_final = s.special_delivery_message -%}{%- endif -%}
@@ -160,7 +168,7 @@
       {%- if s.special_delivery_icon_color != blank -%}{%- assign special_delivery_icon_color_final = s.special_delivery_icon_color -%}{%- endif -%}
       {%- if s.special_delivery_use_main_icon_color == true or s.special_delivery_use_main_icon_color == 'true' -%}{%- assign special_delivery_use_main_icon_color_final = true -%}{%- endif -%}
       {%- if s.special_delivery_use_main_icon_color == false or s.special_delivery_use_main_icon_color == 'false' -%}{%- assign special_delivery_use_main_icon_color_final = false -%}{%- endif -%}
-      {%- comment -%}Border styling{%- endcomment -%}
+      
       {%- if s.special_delivery_show_border == true or s.special_delivery_show_border == 'true' -%}{%- assign special_delivery_show_border_final = true -%}{%- endif -%}
       {%- if s.special_delivery_border_thickness != blank -%}{%- assign special_delivery_border_thickness_final = s.special_delivery_border_thickness -%}{%- endif -%}
       {%- if s.special_delivery_border_color != blank -%}{%- assign special_delivery_border_color_final = s.special_delivery_border_color -%}{%- endif -%}
@@ -174,24 +182,25 @@
       {%- endif -%}
       {%- if s.special_delivery_match_eta_width == true or s.special_delivery_match_eta_width == 'true' -%}{%- assign special_delivery_match_eta_width_final = true -%}{%- endif -%}
       {%- if s.special_delivery_max_width != blank -%}{%- assign special_delivery_max_width_final = s.special_delivery_max_width -%}{%- endif -%}
-      {%- comment -%}Per-rule text styling override{%- endcomment -%}
+      
       {%- if s.special_delivery_override_global_text_styling == true or s.special_delivery_override_global_text_styling == 'true' -%}
         {%- assign special_delivery_use_theme_text_styling_final = false -%}
         {%- if s.special_delivery_text_color != blank -%}{%- assign special_delivery_text_color_final = s.special_delivery_text_color -%}{%- endif -%}
         {%- if s.special_delivery_font_size != blank -%}{%- assign special_delivery_font_size_final = s.special_delivery_font_size -%}{%- endif -%}
         {%- if s.special_delivery_font_weight != blank -%}{%- assign special_delivery_font_weight_final = s.special_delivery_font_weight -%}{%- endif -%}
       {%- endif -%}
+      {%- if s.special_delivery_text_alignment != blank -%}{%- assign special_delivery_text_alignment_final = s.special_delivery_text_alignment -%}{%- endif -%}
       {% break %}
     {%- endif -%}
   {%- endfor -%}
 {%- endif -%}
-{%- comment -%}Resolve icon - supports preset icons and custom icons{%- endcomment -%}
+
 {%- assign special_delivery_svg_resolved = '' -%}
 {%- assign special_delivery_url_resolved = '' -%}
 {%- assign special_delivery_is_preset = false -%}
 {%- if special_delivery_icon_final != blank -%}
   {%- if special_delivery_icon_final contains 'custom-' -%}
-    {%- comment -%}Custom icon from global_settings.custom_icons{%- endcomment -%}
+    
     {%- assign custom_idx_str = special_delivery_icon_final | remove: 'custom-' -%}
     {%- assign custom_idx = custom_idx_str | minus: 1 -%}
     {%- if global_settings != nil and global_settings.custom_icons != blank and global_settings.custom_icons.size > custom_idx -%}
@@ -203,24 +212,24 @@
       {%- endif -%}
     {%- endif -%}
   {%- else -%}
-    {%- comment -%}Preset icon - render using icon snippet{%- endcomment -%}
+    
     {%- assign special_delivery_is_preset = true -%}
   {%- endif -%}
 {%- endif -%}
-{%- comment -%}Icon size is now stored as numeric px value (16-96){%- endcomment -%}
+
 {%- assign icon_px = special_delivery_icon_size_final | default: 24 -%}
-{%- comment -%}Icon alignment (top/center/bottom to flex-start/center/flex-end){%- endcomment -%}
+
 {%- assign icon_align_css = 'flex-start' -%}
 {%- case special_delivery_icon_alignment_final -%}
   {%- when 'center' -%}{%- assign icon_align_css = 'center' -%}
   {%- when 'bottom' -%}{%- assign icon_align_css = 'flex-end' -%}
 {%- endcase -%}
-{%- comment -%}Determine icon color{%- endcomment -%}
+
 {%- assign final_icon_color = icon_color -%}
 {%- if special_delivery_use_main_icon_color_final == false -%}
   {%- assign final_icon_color = special_delivery_icon_color_final -%}
 {%- endif -%}
-{%- comment -%}Determine font family{%- endcomment -%}
+
 {%- assign final_font_family = '' -%}
 {%- if special_delivery_use_theme_font_final == false -%}
   {%- if special_delivery_match_messages_font_final and messages_custom_font_family != blank -%}
@@ -229,7 +238,7 @@
     {%- assign final_font_family = special_delivery_custom_font_family_final -%}
   {%- endif -%}
 {%- endif -%}
-{%- comment -%}Parse bold and line breaks{%- endcomment -%}
+
 {%- assign message_with_lb = special_delivery_message_final | replace: '{lb}', '<br>' -%}
 {%- capture message_html -%}
   {%- if message_with_lb contains '**' -%}
@@ -255,13 +264,17 @@
 #{{ uid }} .dib-special-text{
   {%- if special_delivery_use_theme_text_styling_final == false -%}
     {%- if special_delivery_text_color_final != blank %}color:{{ special_delivery_text_color_final }};{%- endif %}
-    {%- case special_delivery_font_size_final -%}
-      {%- when 'xsmall' %}font-size:12px;
-      {%- when 'small' %}font-size:14px;
-      {%- when 'large' %}font-size:18px;
-      {%- when 'xlarge' %}font-size:20px;
-      {%- else %}font-size:16px;
-    {%- endcase %}
+    {%- assign sd_font_size_num = special_delivery_font_size_final | plus: 0 -%}
+    {%- if sd_font_size_num > 0 -%}font-size:{{ special_delivery_font_size_final }}px;
+    {%- else -%}
+      {%- case special_delivery_font_size_final -%}
+        {%- when 'xsmall' %}font-size:12px;
+        {%- when 'small' %}font-size:14px;
+        {%- when 'large' %}font-size:18px;
+        {%- when 'xlarge' %}font-size:20px;
+        {%- else %}font-size:16px;
+      {%- endcase %}
+    {%- endif -%}
     {%- case special_delivery_font_weight_final -%}
       {%- when 'medium' %}font-weight:500;
       {%- when 'semibold' %}font-weight:600;
@@ -275,7 +288,7 @@
 {%- endif %}
 </style>
 <div id="{{ uid }}" class="dib-special-delivery-block" {% if special_delivery_match_eta_width_final %}data-match-eta-width="true"{% endif %} style="text-align:{{ special_delivery_alignment }};{% if special_delivery_margin_top != 0 %}margin-top:{{ special_delivery_margin_top }}px;{% endif %}{% if special_delivery_margin_bottom != 0 %}margin-bottom:{{ special_delivery_margin_bottom }}px;{% endif %}">
-  <div class="dib-special-delivery dib-container" style="display:inline-flex;align-items:{{ icon_align_css }};gap:12px;box-sizing:border-box;overflow-wrap:break-word;word-break:break-word;{%- if special_delivery_show_border_final -%}padding:10px 12px;border:{{ special_delivery_border_thickness_final }}px solid {{ special_delivery_border_color_final }};border-radius:{{ special_delivery_border_radius_final }}px;{%- endif -%}{%- if special_delivery_max_width_final > 0 and special_delivery_match_eta_width_final == false -%}width:min({{ special_delivery_max_width_final }}px,100%);{%- endif -%}">
+  <div class="dib-special-delivery dib-container" style="display:inline-flex;align-items:{{ icon_align_css }};gap:{{ special_delivery_icon_gap }}px;box-sizing:border-box;overflow-wrap:break-word;word-break:break-word;text-align:{{ special_delivery_text_alignment_final }};padding:{{ special_delivery_padding_vertical }}px {{ special_delivery_padding_horizontal }}px;{%- if special_delivery_show_border_final -%}border:{{ special_delivery_border_thickness_final }}px solid {{ special_delivery_border_color_final }};border-radius:{{ special_delivery_border_radius_final }}px;{%- endif -%}{%- if special_delivery_max_width_final > 0 and special_delivery_match_eta_width_final == false -%}width:min({{ special_delivery_max_width_final }}px,100%);{%- endif -%}">
     {%- if special_delivery_is_preset -%}
       <div class="dib-special-icon" style="width:{{ icon_px }}px;height:{{ icon_px }}px;flex-shrink:0;color:{{ final_icon_color }};">{% render 'icon', icon: special_delivery_icon_final, style: special_delivery_icon_style_final %}</div>
     {%- elsif special_delivery_svg_resolved != blank -%}

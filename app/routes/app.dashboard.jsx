@@ -234,14 +234,20 @@ function MessagePreview({ text }) {
 // Icon options for the wizard dropdown
 const WIZARD_ICON_OPTIONS = [
   { value: "truck", label: "Truck" },
+  { value: "truck-v2", label: "Truck v2" },
   { value: "clock", label: "Clock" },
   { value: "pin", label: "Pin" },
+  { value: "pin-v2", label: "Pin v2" },
   { value: "gift", label: "Gift" },
   { value: "checkmark", label: "Checkmark" },
   { value: "home", label: "Home" },
   { value: "shopping-bag", label: "Shopping Bag" },
+  { value: "shopping-bag-v2", label: "Shopping Bag v2" },
   { value: "shopping-cart", label: "Shopping Cart" },
+  { value: "shopping-cart-v2", label: "Shopping Cart v2" },
+  { value: "shopping-basket", label: "Shopping Basket" },
   { value: "clipboard-document-check", label: "Clipboard" },
+  { value: "clipboard-v2", label: "Clipboard v2" },
   { value: "bullet", label: "Bullet" },
 ];
 
@@ -286,6 +292,10 @@ export default function DashboardPage() {
 
   const themeEditorUrl = shopDomain
     ? `https://${shopDomain}/admin/themes/current/editor?template=product`
+    : "#";
+
+  const freeDeliveryEditorUrl = shopDomain
+    ? `https://${shopDomain}/admin/themes/current/editor?context=apps`
     : "#";
 
   const handleSettingsChange = (field, value) => {
@@ -423,8 +433,6 @@ export default function DashboardPage() {
         eta_date_color: "var(--p-color-text-subdued, #6b7280)",
         eta_date_font_size: "xsmall",
         eta_date_font_weight: "normal",
-
-        cart_message: "",
       },
     };
 
@@ -466,7 +474,7 @@ export default function DashboardPage() {
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 24, flexWrap: "wrap" }}>
             {/* Left: Welcome text */}
             <div style={{ flex: "1 1 300px" }}>
-              <s-text variant="headingLg">Welcome to Delivery Messaging!</s-text>
+              <s-text variant="headingLg"><strong>Welcome to Delivery Messaging!</strong></s-text>
               <s-box paddingBlockStart="base">
                 <s-text>
                   Display dynamic delivery information on your product pages to boost customer confidence
@@ -482,73 +490,87 @@ export default function DashboardPage() {
         </s-box>
       </s-section>
 
-      {/* Step 1: Theme Block Instructions */}
-      <s-section heading="Step 1: Add the Block to Your Theme">
-        <s-box padding="base" background="surface" borderWidth="base" borderRadius="base">
-          <s-text variant="headingMd">Install the Delivery Info block</s-text>
-          <s-box paddingBlockStart="base">
-            <s-text>
-              1. Open your Theme Editor<br />
-              2. Navigate to a Product page template<br />
-              3. Click "Add block" and search for "Delivery Info"<br />
-              4. Position the block where you want it to appear<br />
-              5. Save your theme
-            </s-text>
-          </s-box>
-          <s-box paddingBlockStart="large">
-            <div style={{ display: "flex", gap: 12 }}>
-              <s-button variant="primary" href={themeEditorUrl} target="_blank">
-                Open Theme Editor
-              </s-button>
-            </div>
-          </s-box>
-        </s-box>
-      </s-section>
+      {/* Step Tiles - 2x2 Grid */}
+      <s-section>
+        <div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
+          {/* Step 1: Add Block to Theme */}
+          <div style={{ flex: "1 1 calc(50% - 8px)", minWidth: 300 }}>
+            <s-box padding="base" background="surface" borderWidth="base" borderRadius="base" style={{ height: "100%" }}>
+              <s-text variant="headingMd"><strong>Step 1: Add the Block to Your Theme</strong></s-text>
+              <s-box paddingBlockStart="base">
+                <s-text>
+                  Install the Delivery Info block on your product pages to show countdown timers, messages, and ETA timelines.
+                </s-text>
+              </s-box>
+              <s-box paddingBlockStart="large">
+                <s-button variant="primary" href={themeEditorUrl} target="_blank">
+                  Open Theme Editor
+                </s-button>
+              </s-box>
+            </s-box>
+          </div>
 
-      {/* Step 2: Store Settings */}
-      <s-section heading="Step 2: Set Up Your Store Settings">
-        <s-box padding="base" background="surface" borderWidth="base" borderRadius="base">
-          <s-text variant="headingMd">Configure global delivery settings</s-text>
-          <s-box paddingBlockStart="base">
-            <s-text>
-              Set your business hours, cutoff times, and bank holidays. These settings apply
-              to all rules unless overridden.
-            </s-text>
-          </s-box>
-          <s-box paddingBlockStart="large">
-            <div style={{ display: "flex", gap: 12 }}>
-              <s-button variant="primary" onClick={() => setShowSettingsWizard(true)}>
-                Configure Settings
-              </s-button>
-              <s-button href="/app/settings">
-                Go to Settings
-              </s-button>
-            </div>
-          </s-box>
-        </s-box>
-      </s-section>
+          {/* Step 2: Free Delivery Bar */}
+          <div style={{ flex: "1 1 calc(50% - 8px)", minWidth: 300 }}>
+            <s-box padding="base" background="surface" borderWidth="base" borderRadius="base" style={{ height: "100%" }}>
+              <s-text variant="headingMd"><strong>Step 2: Add Free Delivery Bar</strong></s-text>
+              <s-box paddingBlockStart="base">
+                <s-text>
+                  Install the Free Delivery Bar app embed to show progress messaging in the cart and mini-cart.
+                </s-text>
+              </s-box>
+              <s-box paddingBlockStart="large">
+                <s-button variant="primary" href={freeDeliveryEditorUrl} target="_blank">
+                  Open Theme Editor (Apps)
+                </s-button>
+              </s-box>
+            </s-box>
+          </div>
 
-      {/* Step 3: Create a Rule */}
-      <s-section heading="Step 3: Create a Rule">
-        <s-box padding="base" background="surface" borderWidth="base" borderRadius="base">
-          <s-text variant="headingMd">Set up your delivery messages</s-text>
-          <s-box paddingBlockStart="base">
-            <s-text>
-              Rules determine what delivery information is shown for different products.
-              Create your first rule to start displaying delivery messages.
-            </s-text>
-          </s-box>
-          <s-box paddingBlockStart="large">
-            <div style={{ display: "flex", gap: 12 }}>
-              <s-button variant="primary" onClick={() => setShowRuleWizard(true)}>
-                Create Rule
-              </s-button>
-              <s-button href="/app">
-                Go to Editor
-              </s-button>
-            </div>
-          </s-box>
-        </s-box>
+          {/* Step 3: Store Settings */}
+          <div style={{ flex: "1 1 calc(50% - 8px)", minWidth: 300 }}>
+            <s-box padding="base" background="surface" borderWidth="base" borderRadius="base" style={{ height: "100%" }}>
+              <s-text variant="headingMd"><strong>Step 3: Set Up Your Store Settings</strong></s-text>
+              <s-box paddingBlockStart="base">
+                <s-text>
+                  Configure your business hours, cutoff times, and bank holidays. These settings apply to all rules.
+                </s-text>
+              </s-box>
+              <s-box paddingBlockStart="large">
+                <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+                  <s-button variant="primary" onClick={() => setShowSettingsWizard(true)}>
+                    Configure Settings
+                  </s-button>
+                  <s-button href="/app/settings">
+                    Go to Settings
+                  </s-button>
+                </div>
+              </s-box>
+            </s-box>
+          </div>
+
+          {/* Step 4: Create a Rule */}
+          <div style={{ flex: "1 1 calc(50% - 8px)", minWidth: 300 }}>
+            <s-box padding="base" background="surface" borderWidth="base" borderRadius="base" style={{ height: "100%" }}>
+              <s-text variant="headingMd"><strong>Step 4: Create a Rule</strong></s-text>
+              <s-box paddingBlockStart="base">
+                <s-text>
+                  Rules determine what delivery information is shown for different products. Create your first rule to get started.
+                </s-text>
+              </s-box>
+              <s-box paddingBlockStart="large">
+                <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+                  <s-button variant="primary" onClick={() => setShowRuleWizard(true)}>
+                    Create Rule
+                  </s-button>
+                  <s-button href="/app">
+                    Go to Editor
+                  </s-button>
+                </div>
+              </s-box>
+            </s-box>
+          </div>
+        </div>
       </s-section>
 
       {/* Settings Wizard Modal */}

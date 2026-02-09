@@ -29,7 +29,7 @@
 {%- assign border_radius_final = block.settings.border_radius | default: 8 -%}
 {%- assign max_width_final = 600 -%}
 {%- assign icon_layout_final = 'per-line' -%}
-{%- assign single_icon_size_final = 'medium' -%}
+{%- assign single_icon_size_final = 36 -%}
 {%- assign icon_vertical_align_final = 'top' -%}
 {%- assign use_theme_text_styling_final = true -%}
 {%- assign text_color_final = '' -%}
@@ -94,6 +94,12 @@
   {%- if global_settings.messages_margin_bottom != blank -%}{%- assign messages_margin_bottom = global_settings.messages_margin_bottom -%}{%- endif -%}
   {%- if global_settings.messages_alignment != blank -%}{%- assign messages_alignment = global_settings.messages_alignment -%}{%- endif -%}
 {%- endif -%}
+{%- assign fd_threshold_val = global_settings.fd_threshold | default: 5000 -%}
+{%- assign fd_message_progress_val = global_settings.fd_message_progress -%}
+{%- if fd_message_progress_val == blank -%}{%- capture fd_message_progress_val -%}Spend {remaining} more for free delivery{%- endcapture -%}{%- endif -%}
+{%- assign fd_message_unlocked_val = global_settings.fd_message_unlocked -%}
+{%- if fd_message_unlocked_val == blank -%}{%- capture fd_message_unlocked_val -%}You have unlocked free delivery!{%- endcapture -%}{%- endif -%}
+{%- assign fd_message_empty_val = global_settings.fd_message_empty | default: '' -%}
 {%- assign any_rule_matched = false -%}
 {%- if product and rules and rules.size > 0 -%}
   {%- assign product_handle = product.handle -%}
@@ -219,7 +225,7 @@
 <style>
 .dib-messages .dib-icon{width:1.3em;height:1.3em;flex:0 0 auto;display:inline-flex;overflow:hidden}.dib-messages .dib-icon svg,.dib-messages .dib-icon img{width:1.3em!important;height:1.3em!important;max-width:1.3em!important;max-height:1.3em!important;display:block}.dib-messages.icon-layout-single .dib-icon-single{flex:0 0 auto;display:inline-flex}.dib-messages.icon-layout-single .dib-icon-single svg,.dib-messages.icon-layout-single .dib-icon-single img{width:24px!important;height:24px!important}.dib-messages.icon-layout-single .dib-icon{display:none}.dib-messages.icon-layout-single.single-icon-size-small .dib-icon-single svg,.dib-messages.icon-layout-single.single-icon-size-small .dib-icon-single img{width:16px!important;height:16px!important}.dib-messages.icon-layout-single.single-icon-size-large .dib-icon-single svg,.dib-messages.icon-layout-single.single-icon-size-large .dib-icon-single img{width:32px!important;height:32px!important}.dib-messages.icon-layout-single.single-icon-size-x-large .dib-icon-single svg,.dib-messages.icon-layout-single.single-icon-size-x-large .dib-icon-single img{width:40px!important;height:40px!important}.dib-messages.icon-layout-single.single-icon-size-xx-large .dib-icon-single svg,.dib-messages.icon-layout-single.single-icon-size-xx-large .dib-icon-single img{width:48px!important;height:48px!important}
 {%- if icon_vertical_align_final == 'center' %}#{{ uid }} .dib-line{align-items:center}{% endif -%}
-{%- if use_theme_text_styling_final == false %}#{{ uid }} .dib-text{ {%- if text_color_final != blank %}color:{{ text_color_final }};{%- endif %}{%- case font_size_final -%}{%- when 'xsmall' %}font-size:12px;{%- when 'small' %}font-size:14px;{%- when 'large' %}font-size:18px;{%- when 'xlarge' %}font-size:20px;{%- else %}font-size:16px;{%- endcase %}{%- case font_weight_final -%}{%- when 'medium' %}font-weight:500;{%- when 'semibold' %}font-weight:600;{%- when 'bold' %}font-weight:700;{%- else %}font-weight:400;{%- endcase %}}{% endif -%}
+{%- if use_theme_text_styling_final == false %}#{{ uid }} .dib-text{ {%- if text_color_final != blank %}color:{{ text_color_final }};{%- endif %}{%- assign font_size_num = font_size_final | plus: 0 -%}{%- if font_size_num > 0 -%}font-size:{{ font_size_final }}px;{%- else -%}{%- case font_size_final -%}{%- when 'xsmall' %}font-size:12px;{%- when 'small' %}font-size:14px;{%- when 'large' %}font-size:18px;{%- when 'xlarge' %}font-size:20px;{%- else %}font-size:16px;{%- endcase %}{%- endif -%}{%- case font_weight_final -%}{%- when 'medium' %}font-weight:500;{%- when 'semibold' %}font-weight:600;{%- when 'bold' %}font-weight:700;{%- else %}font-weight:400;{%- endcase %}}{% endif -%}
 {%- if use_theme_font_final == false and custom_font_family_final != blank %}#{{ uid }} .dib-text{font-family:{{ custom_font_family_final }}}{% endif -%}
 {%- if max_width_final and max_width_final > 0 and match_eta_width_final != true %}#{{ uid }} .dib-container{max-width:{{ max_width_final }}px}{% endif -%}
 {%- if match_eta_width_final == true and show_eta_timeline_final == true %}#{{ uid }}{display:block}{% endif -%}
@@ -247,24 +253,28 @@
     {%- assign should_show_block = true -%}
   {%- endif -%}
 {%- endif -%}
-{%- comment -%}Track which lines have countdown for hiding after cutoff{%- endcomment -%}
 {%- assign line_1_has_countdown = false -%}
 {%- assign line_2_has_countdown = false -%}
 {%- assign line_3_has_countdown = false -%}
 {%- if message_line_1_final contains '{countdown}' -%}{%- assign line_1_has_countdown = true -%}{%- endif -%}
 {%- if message_line_2_final contains '{countdown}' -%}{%- assign line_2_has_countdown = true -%}{%- endif -%}
 {%- if message_line_3_final contains '{countdown}' -%}{%- assign line_3_has_countdown = true -%}{%- endif -%}
-{%- comment -%}Track which lines have {lb} for icon vertical centering{%- endcomment -%}
 {%- assign line_1_has_multiline = false -%}
 {%- assign line_2_has_multiline = false -%}
 {%- assign line_3_has_multiline = false -%}
 {%- if message_line_1_final contains '{lb}' -%}{%- assign line_1_has_multiline = true -%}{%- endif -%}
 {%- if message_line_2_final contains '{lb}' -%}{%- assign line_2_has_multiline = true -%}{%- endif -%}
 {%- if message_line_3_final contains '{lb}' -%}{%- assign line_3_has_multiline = true -%}{%- endif -%}
-{%- comment -%}Replace placeholders with spans that JS will fill in{%- endcomment -%}
 {%- assign message_line_1_final = message_line_1_final | replace: '{arrival}', '<span class="dib-arrival-placeholder" data-uid="ARRIVAL_PLACEHOLDER"></span>' | replace: '{express}', '<span class="dib-express-placeholder" data-uid="EXPRESS_PLACEHOLDER"></span>' | replace: '{countdown}', '<span class="dib-countdown-placeholder" data-uid="COUNTDOWN_PLACEHOLDER"></span>' | replace: '{lb}', '<br>' -%}
 {%- assign message_line_2_final = message_line_2_final | replace: '{arrival}', '<span class="dib-arrival-placeholder" data-uid="ARRIVAL_PLACEHOLDER"></span>' | replace: '{express}', '<span class="dib-express-placeholder" data-uid="EXPRESS_PLACEHOLDER"></span>' | replace: '{countdown}', '<span class="dib-countdown-placeholder" data-uid="COUNTDOWN_PLACEHOLDER"></span>' | replace: '{lb}', '<br>' -%}
 {%- assign message_line_3_final = message_line_3_final | replace: '{arrival}', '<span class="dib-arrival-placeholder" data-uid="ARRIVAL_PLACEHOLDER"></span>' | replace: '{express}', '<span class="dib-express-placeholder" data-uid="EXPRESS_PLACEHOLDER"></span>' | replace: '{countdown}', '<span class="dib-countdown-placeholder" data-uid="COUNTDOWN_PLACEHOLDER"></span>' | replace: '{lb}', '<br>' -%}
+{%- assign message_line_1_final = message_line_1_final | replace: '{threshold}', '<span class="dib-fd-threshold"></span>' -%}
+{%- assign message_line_2_final = message_line_2_final | replace: '{threshold}', '<span class="dib-fd-threshold"></span>' -%}
+{%- assign message_line_3_final = message_line_3_final | replace: '{threshold}', '<span class="dib-fd-threshold"></span>' -%}
+{%- assign uses_fd_placeholders = false -%}
+{%- if message_line_1_final contains 'dib-fd-' or message_line_2_final contains 'dib-fd-' or message_line_3_final contains 'dib-fd-' -%}
+  {%- assign uses_fd_placeholders = true -%}
+{%- endif -%}
 {%- capture message_1_html -%}{%- if message_line_1_final contains '**' -%}{%- assign parts = message_line_1_final | split: '**' -%}{%- for part in parts -%}{%- assign mod = forloop.index | modulo: 2 -%}{%- if mod == 0 -%}<strong>{{ part }}</strong>{%- else -%}{{ part }}{%- endif -%}{%- endfor -%}{%- else -%}{{ message_line_1_final }}{%- endif -%}{%- endcapture -%}
 {%- capture message_2_html -%}{%- if message_line_2_final contains '**' -%}{%- assign parts = message_line_2_final | split: '**' -%}{%- for part in parts -%}{%- assign mod = forloop.index | modulo: 2 -%}{%- if mod == 0 -%}<strong>{{ part }}</strong>{%- else -%}{{ part }}{%- endif -%}{%- endfor -%}{%- else -%}{{ message_line_2_final }}{%- endif -%}{%- endcapture -%}
 {%- capture message_3_html -%}{%- if message_line_3_final contains '**' -%}{%- assign parts = message_line_3_final | split: '**' -%}{%- for part in parts -%}{%- assign mod = forloop.index | modulo: 2 -%}{%- if mod == 0 -%}<strong>{{ part }}</strong>{%- else -%}{{ part }}{%- endif -%}{%- endfor -%}{%- else -%}{{ message_line_3_final }}{%- endif -%}{%- endcapture -%}
@@ -274,9 +284,20 @@
 {% elsif should_show_block %}
 <style>.dib-messages-block-{{ uid }}{display:block!important;width:100%!important;text-align:{{ messages_alignment }}!important}.dib-messages-block-{{ uid }} #{{ uid }}{display:inline-block!important;text-align:left!important}</style>
 <div class="dib-messages-block-{{ uid }}" style="{% if messages_margin_top != 0 %}margin-top:{{ messages_margin_top }}px;{% endif %}{% if messages_margin_bottom != 0 %}margin-bottom:{{ messages_margin_bottom }}px;{% endif %}">
-<div id="{{ uid }}" class="dib-messages{% if icon_layout_final == 'single' %} icon-layout-single single-icon-size-{{ single_icon_size_final }}{% endif %}" data-delivery-min="{{ delivery_min_final }}" data-delivery-max="{{ delivery_max_final }}" data-courier-no-delivery="{{ courier_no_delivery_days_final }}"{% if match_eta_width_final == true and show_eta_timeline_final == true %} data-match-eta-width="true"{% endif %}>
+{%- comment -%}Compute single icon size in pixels - handle both numeric and legacy string values{%- endcomment -%}
+{%- assign single_icon_size_px = single_icon_size_final | plus: 0 -%}
+{%- if single_icon_size_px == 0 -%}
+  {%- case single_icon_size_final -%}
+    {%- when 'small' -%}{%- assign single_icon_size_px = 20 -%}
+    {%- when 'large' -%}{%- assign single_icon_size_px = 36 -%}
+    {%- when 'x-large' -%}{%- assign single_icon_size_px = 44 -%}
+    {%- when 'xx-large' -%}{%- assign single_icon_size_px = 52 -%}
+    {%- else -%}{%- assign single_icon_size_px = 28 -%}
+  {%- endcase -%}
+{%- endif -%}
+<div id="{{ uid }}" class="dib-messages{% if icon_layout_final == 'single' %} icon-layout-single{% endif %}" data-delivery-min="{{ delivery_min_final }}" data-delivery-max="{{ delivery_max_final }}" data-courier-no-delivery="{{ courier_no_delivery_days_final }}"{% if match_eta_width_final == true and show_eta_timeline_final == true %} data-match-eta-width="true"{% endif %}>
 <div class="dib-container {% if show_border_final %}has-border{% endif %}" style="{% if show_border_final %}border-width:{{ border_thickness_final }}px;border-color:{{ border_color_final }};border-radius:{{ border_radius_final }}px;{% endif %}">
-{%- if icon_layout_final == 'single' and show_icon_final -%}<span class="dib-icon-single" aria-hidden="true" style="color:{{ icon_color }};">{{ dib_icon_markup }}</span>{%- endif -%}
+{%- if icon_layout_final == 'single' and show_icon_final -%}<span class="dib-icon-single" aria-hidden="true" style="color:{{ icon_color }};width:{{ single_icon_size_px }}px;height:{{ single_icon_size_px }}px;flex-shrink:0;">{{ dib_icon_markup }}</span>{%- endif -%}
 <span class="dib-config" style="display:none" data-dib-js data-uid="{{ uid }}" data-shop-offset="{{ 'now' | date: '%z' }}" data-cutoff="{{ cutoff_time_final }}" data-cutoff-sat="{{ cutoff_time_sat_final }}" data-cutoff-sun="{{ cutoff_time_sun_final }}" data-closed-days="{{ closed_days_final }}" data-lead-time="{{ lead_time_final }}" data-courier-no-delivery="{{ courier_no_delivery_days_final }}" data-bank-holiday-country="{{ bank_holiday_country_final }}" data-custom-holidays="{{ custom_holidays_final }}"></span>
 <div class="dib-lines dib-text">
 {% if show_messages_final and message_line_1_final != blank %}<div class="dib-line{% if line_1_has_countdown %} dib-has-countdown{% endif %}{% if line_1_has_multiline %} dib-multiline{% endif %}"{% if line_1_has_countdown %} data-has-countdown="true"{% endif %}>{%- if show_icon_final and icon_layout_final != 'single' -%}<span class="dib-icon" aria-hidden="true" style="color:{{ icon_color }};">{{ dib_icon_markup }}</span>{%- endif -%}<div class="dib-line-text">{{ message_1_html }}</div></div>{% endif %}
@@ -285,6 +306,18 @@
 </div></div></div></div>
 {% endif %}
 <script>(function(){if(window.__DIB_COUNTDOWN_LOADED__)return;if(!document.querySelector('[data-dib-js]'))return;window.__DIB_COUNTDOWN_LOADED__=true;var s=document.createElement("script");s.src="{{ 'dib-countdown.js' | asset_url }}";s.defer=true;document.head.appendChild(s)})();</script>
+{%- if uses_fd_placeholders and global_settings.fd_enabled -%}
+<div data-dm-config
+     data-threshold="{{ fd_threshold_val }}"
+     data-currency="{{ shop.currency }}"
+     data-locale="{{ request.locale.iso_code | default: 'en-GB' }}"
+     data-message-progress="{{ fd_message_progress_val | escape }}"
+     data-message-unlocked="{{ fd_message_unlocked_val | escape }}"
+     data-message-empty="{{ fd_message_empty_val | escape }}"
+     style="display:none;">
+</div>
+<script>(function(){if(window.__DM_LOADED__)return;window.__DM_LOADED__=true;var s=document.createElement("script");s.src="{{ 'delivery-messaging.js' | asset_url }}";s.defer=true;document.head.appendChild(s)})();</script>
+{%- endif -%}
 {% schema %}
 {"name":"Delivery Messaging","target":"section","settings":[{"type":"paragraph","content":"Configure delivery rules in the Delivery Messaging app. Place this block where you want delivery information to appear on the product page."}]}
 {% endschema %}

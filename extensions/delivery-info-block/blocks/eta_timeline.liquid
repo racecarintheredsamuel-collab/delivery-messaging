@@ -249,10 +249,10 @@
 {%- assign eta_date_font_weight_css = nil -%}
 {%- if eta_use_theme_text_styling_final == false -%}
   {%- if eta_label_color_final != blank -%}{%- assign eta_label_color_css = eta_label_color_final -%}{%- endif -%}
-  {%- case eta_label_font_size_final -%}{%- when 'xsmall' -%}{%- assign eta_label_font_size_css = '11px' -%}{%- when 'medium' -%}{%- assign eta_label_font_size_css = '14px' -%}{%- else -%}{%- assign eta_label_font_size_css = '12px' -%}{%- endcase -%}
+  {%- assign eta_label_fs_num = eta_label_font_size_final | plus: 0 -%}{%- if eta_label_fs_num > 0 -%}{%- assign eta_label_font_size_css = eta_label_font_size_final | append: 'px' -%}{%- else -%}{%- case eta_label_font_size_final -%}{%- when 'xsmall' -%}{%- assign eta_label_font_size_css = '11px' -%}{%- when 'medium' -%}{%- assign eta_label_font_size_css = '14px' -%}{%- when 'large' -%}{%- assign eta_label_font_size_css = '16px' -%}{%- else -%}{%- assign eta_label_font_size_css = '12px' -%}{%- endcase -%}{%- endif -%}
   {%- case eta_label_font_weight_final -%}{%- when 'normal' -%}{%- assign eta_label_font_weight_css = '400' -%}{%- when 'medium' -%}{%- assign eta_label_font_weight_css = '500' -%}{%- when 'bold' -%}{%- assign eta_label_font_weight_css = '700' -%}{%- else -%}{%- assign eta_label_font_weight_css = '600' -%}{%- endcase -%}
   {%- if eta_date_color_final != blank -%}{%- assign eta_date_color_css = eta_date_color_final -%}{%- endif -%}
-  {%- case eta_date_font_size_final -%}{%- when 'xxsmall' -%}{%- assign eta_date_font_size_css = '10px' -%}{%- when 'small' -%}{%- assign eta_date_font_size_css = '12px' -%}{%- else -%}{%- assign eta_date_font_size_css = '11px' -%}{%- endcase -%}
+  {%- assign eta_date_fs_num = eta_date_font_size_final | plus: 0 -%}{%- if eta_date_fs_num > 0 -%}{%- assign eta_date_font_size_css = eta_date_font_size_final | append: 'px' -%}{%- else -%}{%- case eta_date_font_size_final -%}{%- when 'xxsmall' -%}{%- assign eta_date_font_size_css = '10px' -%}{%- when 'small' -%}{%- assign eta_date_font_size_css = '12px' -%}{%- when 'medium' -%}{%- assign eta_date_font_size_css = '14px' -%}{%- else -%}{%- assign eta_date_font_size_css = '11px' -%}{%- endcase -%}{%- endif -%}
   {%- case eta_date_font_weight_final -%}{%- when 'medium' -%}{%- assign eta_date_font_weight_css = '500' -%}{%- when 'semibold' -%}{%- assign eta_date_font_weight_css = '600' -%}{%- else -%}{%- assign eta_date_font_weight_css = '400' -%}{%- endcase -%}
 {%- endif -%}
 {%- if request.design_mode -%}
@@ -274,10 +274,10 @@
     {%- assign connector_align_line = 'margin-top:' | append: mt_line | append: 'px;' -%}
     {%- assign connector_align_custom = 'margin-top:' | append: mt_custom | append: 'px;' -%}
   {%- endif -%}
-  {%- comment -%}Determine ETA icon color - use main icon color unless explicitly set to use custom{%- endcomment -%}
+  
   {%- assign eta_icon_color = icon_color -%}
   {%- if eta_use_main_icon_color_final == false -%}{%- assign eta_icon_color = eta_color_final -%}{%- endif -%}
-  {%- comment -%}Determine connector color - use main ETA icon color unless explicitly set to use custom{%- endcomment -%}
+  
   {%- assign eta_connector_color = eta_icon_color -%}
   {%- if eta_connector_use_main_color_final == false -%}{%- assign eta_connector_color = eta_connector_color_final -%}{%- endif -%}
   {%- if eta_use_theme_font_final == false -%}{%- assign font_to_load = nil -%}{%- if eta_match_messages_font_final and custom_font_family_final != blank -%}{%- assign font_to_load = custom_font_family_final -%}{%- elsif eta_custom_font_family_final != blank -%}{%- assign font_to_load = eta_custom_font_family_final -%}{%- endif -%}{%- if font_to_load != blank -%}<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family={{ font_to_load | replace: ' ', '+' }}:wght@400;500;600;700&display=swap" rel="stylesheet">{%- endif -%}{%- endif -%}

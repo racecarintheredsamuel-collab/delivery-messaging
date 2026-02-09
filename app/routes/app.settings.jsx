@@ -18,7 +18,9 @@ import {
   METAFIELD_NAMESPACE,
   CONFIG_KEY,
   SETTINGS_KEY,
+  ICONS_KEY,
 } from "../graphql/queries";
+import { generateIconsMetafield } from "../utils/icons";
 
 // ============================================================================
 // DEFAULT SETTINGS
@@ -98,9 +100,29 @@ function defaultSettings() {
     eta_alignment: "left",
     special_delivery_alignment: "left",
 
+    // Special Delivery spacing
+    special_delivery_padding_horizontal: 12,
+    special_delivery_padding_vertical: 10,
+    special_delivery_icon_gap: 12,
+
     // ETA Timeline vertical spacing
     eta_gap_icon_label: 2,
     eta_gap_label_date: 0,
+
+    // Free Delivery Threshold
+    fd_enabled: false,
+    fd_threshold: 5000,  // In minor units (pence/cents) - £50.00
+    fd_message_progress: "Spend {remaining} more for free delivery",
+    fd_message_unlocked: "You've unlocked free delivery!",
+    fd_message_empty: "",
+    fd_show_progress_bar: false,
+    fd_progress_bar_color: "#22c55e",
+    fd_progress_bar_bg: "#e5e7eb",
+
+    // Free Delivery Exclusions
+    fd_exclude_tags: [],
+    fd_exclude_handles: [],
+    fd_message_excluded: "Free delivery not available for some items in your cart",
   };
 }
 
@@ -129,7 +151,7 @@ export const loader = async ({ request }) => {
   const settingsMf = json?.data?.shop?.settings;
   const configMf = json?.data?.shop?.config;
 
-  // If no settings exist yet, create default
+  // If no settings exist yet, create default settings and sync icons
   if (!settingsMf?.value) {
     const setRes = await admin.graphql(SET_METAFIELDS, {
       variables: {
@@ -140,6 +162,13 @@ export const loader = async ({ request }) => {
             key: SETTINGS_KEY,
             type: "json",
             value: JSON.stringify(defaultSettings()),
+          },
+          {
+            ownerId: shopId,
+            namespace: METAFIELD_NAMESPACE,
+            key: ICONS_KEY,
+            type: "json",
+            value: JSON.stringify(generateIconsMetafield()),
           },
         ],
       },
@@ -272,6 +301,14 @@ export const action = async ({ request }) => {
       value: JSON.stringify(configValidation.data),
     });
   }
+
+  // Always sync built-in icons to metafield (they're used by Liquid blocks)
+  metafieldsToSave.push({
+    namespace: METAFIELD_NAMESPACE,
+    key: ICONS_KEY,
+    type: "json",
+    value: JSON.stringify(generateIconsMetafield()),
+  });
 
   if (metafieldsToSave.length === 0) {
     return { ok: false, error: "No data to save." };
@@ -550,7 +587,8 @@ export default function SettingsPage() {
 
   return (
     <s-page heading="Settings">
-      <div style={{ display: "grid", gap: 24, maxWidth: 700 }}>
+      <s-layout style={{ maxWidth: 700 }}>
+        <div style={{ display: "grid", gap: 24 }}>
 
         {/* Top Action Row: Save + Dev Reset */}
         <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
@@ -560,17 +598,17 @@ export default function SettingsPage() {
           }}>
             Save
           </s-button>
-          {/* Cloud save indicator */}
           <svg
             xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 20 20"
-            fill="currentColor"
-            width="18"
-            height="18"
-            style={{ color: saveStatus === "Saving..." ? "#60a5fa" : "#9ca3af" }}
+            viewBox="0 0 24 24"
+            width="24"
+            height="24"
             aria-hidden="true"
           >
-            <path d="M5.5 16a3.5 3.5 0 01-.369-6.98 4 4 0 117.753-1.977A4.5 4.5 0 1113.5 16h-8z" />
+            <g fill={saveStatus === "Saving..." ? "#22c55e" : "#9ca3af"} fillRule="evenodd" clipRule="evenodd">
+              <path d="M5 3a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V7.414A2 2 0 0 0 20.414 6L18 3.586A2 2 0 0 0 16.586 3zm3 11a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v6H8zm1-7V5h6v2a1 1 0 0 1-1 1h-4a1 1 0 0 1-1-1" />
+              <path d="M14 17h-4v-2h4z" />
+            </g>
           </svg>
           {isDev && (
             <s-button
@@ -1245,18 +1283,16 @@ export default function SettingsPage() {
                 />
 
                 <label>
-                  <s-text>Font size</s-text>
-                  <select
-                    value={settings.font_size || "medium"}
-                    onChange={(e) => setSettings({ ...settings, font_size: e.target.value })}
+                  <s-text>Font size: {settings.font_size || 16}px</s-text>
+                  <input
+                    type="range"
+                    min="10"
+                    max="22"
+                    step="1"
+                    value={settings.font_size || 16}
+                    onChange={(e) => setSettings({ ...settings, font_size: parseInt(e.target.value) })}
                     style={{ width: "100%", marginTop: 4 }}
-                  >
-                    <option value="xsmall">X-Small (12px)</option>
-                    <option value="small">Small (14px)</option>
-                    <option value="medium">Medium (16px)</option>
-                    <option value="large">Large (18px)</option>
-                    <option value="xlarge">X-Large (20px)</option>
-                  </select>
+                  />
                 </label>
 
                 <label>
@@ -1494,16 +1530,16 @@ export default function SettingsPage() {
                     />
 
                     <label>
-                      <s-text>Label font size</s-text>
-                      <select
-                        value={settings.eta_label_font_size || "small"}
-                        onChange={(e) => setSettings({ ...settings, eta_label_font_size: e.target.value })}
+                      <s-text>Label font size: {settings.eta_label_font_size || 12}px</s-text>
+                      <input
+                        type="range"
+                        min="10"
+                        max="18"
+                        step="1"
+                        value={settings.eta_label_font_size || 12}
+                        onChange={(e) => setSettings({ ...settings, eta_label_font_size: parseInt(e.target.value) })}
                         style={{ width: "100%", marginTop: 4 }}
-                      >
-                        <option value="xsmall">X-Small (11px)</option>
-                        <option value="small">Small (12px)</option>
-                        <option value="medium">Medium (14px)</option>
-                      </select>
+                      />
                     </label>
 
                     <label>
@@ -1540,16 +1576,16 @@ export default function SettingsPage() {
                     />
 
                     <label>
-                      <s-text>Date font size</s-text>
-                      <select
-                        value={settings.eta_date_font_size || "xsmall"}
-                        onChange={(e) => setSettings({ ...settings, eta_date_font_size: e.target.value })}
+                      <s-text>Date font size: {settings.eta_date_font_size || 11}px</s-text>
+                      <input
+                        type="range"
+                        min="10"
+                        max="18"
+                        step="1"
+                        value={settings.eta_date_font_size || 11}
+                        onChange={(e) => setSettings({ ...settings, eta_date_font_size: parseInt(e.target.value) })}
                         style={{ width: "100%", marginTop: 4 }}
-                      >
-                        <option value="xxsmall">XX-Small (10px)</option>
-                        <option value="xsmall">X-Small (11px)</option>
-                        <option value="small">Small (12px)</option>
-                      </select>
+                      />
                     </label>
 
                     <label>
@@ -1562,6 +1598,7 @@ export default function SettingsPage() {
                         <option value="normal">Normal (400)</option>
                         <option value="medium">Medium (500)</option>
                         <option value="semibold">Semi-bold (600)</option>
+                        <option value="bold">Bold (700)</option>
                       </select>
                     </label>
                   </div>
@@ -1774,18 +1811,16 @@ export default function SettingsPage() {
                 />
 
                 <label>
-                  <s-text>Font size</s-text>
-                  <select
-                    value={settings.special_delivery_font_size || "medium"}
-                    onChange={(e) => setSettings({ ...settings, special_delivery_font_size: e.target.value })}
+                  <s-text>Font size: {settings.special_delivery_font_size || 16}px</s-text>
+                  <input
+                    type="range"
+                    min="10"
+                    max="22"
+                    step="1"
+                    value={settings.special_delivery_font_size || 16}
+                    onChange={(e) => setSettings({ ...settings, special_delivery_font_size: parseInt(e.target.value) })}
                     style={{ width: "100%", marginTop: 4 }}
-                  >
-                    <option value="xsmall">X-Small (12px)</option>
-                    <option value="small">Small (14px)</option>
-                    <option value="medium">Medium (16px)</option>
-                    <option value="large">Large (18px)</option>
-                    <option value="xlarge">X-Large (20px)</option>
-                  </select>
+                  />
                 </label>
 
                 <label>
@@ -2019,6 +2054,49 @@ export default function SettingsPage() {
           </div>
         </div>
 
+        {/* Special Delivery Spacing */}
+        <div style={{ border: "1px solid var(--p-color-border, #e5e7eb)", borderRadius: 8, padding: 16, display: "grid", gap: 12, background: "var(--p-color-bg-surface, #ffffff)" }}>
+          <s-heading>Special Delivery Spacing</s-heading>
+          <s-text size="small" style={{ color: "var(--p-color-text-subdued, #6b7280)" }}>
+            Control the internal spacing of the Special Delivery block.
+          </s-text>
+          <div style={{ display: "grid", gap: 12 }}>
+            <label>
+              <s-text>Horizontal padding (px)</s-text>
+              <input
+                type="number"
+                min="0"
+                max="40"
+                value={settings.special_delivery_padding_horizontal ?? 12}
+                onChange={(e) => setSettings({ ...settings, special_delivery_padding_horizontal: safeParseNumber(e.target.value, 12, 0, 40) })}
+                style={{ width: "100%" }}
+              />
+            </label>
+            <label>
+              <s-text>Vertical padding (px)</s-text>
+              <input
+                type="number"
+                min="0"
+                max="40"
+                value={settings.special_delivery_padding_vertical ?? 10}
+                onChange={(e) => setSettings({ ...settings, special_delivery_padding_vertical: safeParseNumber(e.target.value, 10, 0, 40) })}
+                style={{ width: "100%" }}
+              />
+            </label>
+            <label>
+              <s-text>Icon to text gap (px)</s-text>
+              <input
+                type="number"
+                min="0"
+                max="40"
+                value={settings.special_delivery_icon_gap ?? 12}
+                onChange={(e) => setSettings({ ...settings, special_delivery_icon_gap: safeParseNumber(e.target.value, 12, 0, 40) })}
+                style={{ width: "100%" }}
+              />
+            </label>
+          </div>
+        </div>
+
         {/* ETA Timeline Spacing */}
         <div style={{ border: "1px solid var(--p-color-border, #e5e7eb)", borderRadius: 8, padding: 16, display: "grid", gap: 12, background: "var(--p-color-bg-surface, #ffffff)" }}>
           <s-heading>ETA Timeline Spacing</s-heading>
@@ -2098,17 +2176,17 @@ export default function SettingsPage() {
           }}>
             Save
           </s-button>
-          {/* Cloud save indicator */}
           <svg
             xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 20 20"
-            fill="currentColor"
-            width="18"
-            height="18"
-            style={{ color: saveStatus === "Saving..." ? "#60a5fa" : "#9ca3af" }}
+            viewBox="0 0 24 24"
+            width="24"
+            height="24"
             aria-hidden="true"
           >
-            <path d="M5.5 16a3.5 3.5 0 01-.369-6.98 4 4 0 117.753-1.977A4.5 4.5 0 1113.5 16h-8z" />
+            <g fill={saveStatus === "Saving..." ? "#22c55e" : "#9ca3af"} fillRule="evenodd" clipRule="evenodd">
+              <path d="M5 3a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V7.414A2 2 0 0 0 20.414 6L18 3.586A2 2 0 0 0 16.586 3zm3 11a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v6H8zm1-7V5h6v2a1 1 0 0 1-1 1h-4a1 1 0 0 1-1-1" />
+              <path d="M14 17h-4v-2h4z" />
+            </g>
           </svg>
           {fetcher.data?.error && (
             <s-text style={{ color: "var(--p-color-text-critical, #dc2626)" }}>
@@ -2117,7 +2195,8 @@ export default function SettingsPage() {
           )}
         </div>
 
-      </div>
+        </div>
+      </s-layout>
     </s-page>
   );
 }

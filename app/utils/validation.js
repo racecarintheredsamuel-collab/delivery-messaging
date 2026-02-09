@@ -50,8 +50,8 @@ const ruleSettingsSchema = z.object({
   show_eta_timeline: z.boolean().optional(),
   eta_delivery_days_min: z.number().optional(),
   eta_delivery_days_max: z.number().optional(),
-  // Cart message
-  cart_message: z.string().optional(),
+  // Special Delivery
+  special_delivery_text_alignment: z.enum(["left", "center", "right"]).optional(),
 }).passthrough();
 
 // Single rule schema
@@ -137,6 +137,20 @@ export const settingsSchema = z.object({
   custom_icons: z.array(customIconSchema).max(8).optional(),
   // Custom connector SVG for ETA Timeline
   custom_connector_svg: z.string().optional(),
+  // Free Delivery Threshold
+  fd_enabled: z.boolean().optional(),
+  fd_threshold: z.number().min(0).optional(),
+  fd_message_progress: z.string().optional(),
+  fd_message_unlocked: z.string().optional(),
+  fd_message_empty: z.string().optional(),
+  fd_show_progress_bar: z.boolean().optional(),
+  fd_progress_bar_color: z.string().optional(),
+  fd_progress_bar_bg: z.string().optional(),
+  fd_message_excluded: z.string().optional(),
+  fd_show_announcement_bar: z.boolean().optional(),
+  fd_announcement_excluded_message: z.string().optional(),
+  fd_announcement_text_size: z.string().optional(),
+  fd_announcement_bar_height: z.string().optional(),
 }).passthrough();
 
 /**

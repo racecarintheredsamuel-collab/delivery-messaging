@@ -10,7 +10,7 @@ import { ensureDeliveryRulesDefinition } from "../models/deliveryRules.server";
 import { ChevronDownIcon, ChevronRightIcon } from "../components/icons/ChevronIcons";
 import { newRuleId, newProfileId } from "../utils/idGenerators";
 import { isHHMM, ruleHasMatch, safeParseNumber, friendlyError, safeLogError, validateConfig } from "../utils/validation";
-import { getSingleIconSize, getTextFontSize, getTextFontWeight } from "../utils/styling";
+import { getSingleIconSize, getTextFontSize, getTextFontWeight, normalizeFontSize, normalizeEtaLabelFontSize, normalizeEtaDateFontSize, normalizeSingleIconSize } from "../utils/styling";
 import { getIconSvg, getConfiguredCustomIcons } from "../utils/icons";
 import { getHolidaysForYear } from "../utils/holidays";
 import { PreviewLine } from "../components/PreviewLine";
@@ -176,10 +176,13 @@ export const loader = async ({ request }) => {
     }
   }
 
+  const shopCurrency = json?.data?.shop?.currencyCode || 'GBP';
+
   return {
     config: configMf?.value ?? JSON.stringify({ version: 1, rules: [] }),
     globalSettings,
     shopId, // Pass to client for action
+    shopCurrency, // For preview formatting
   };
 };
 
@@ -316,8 +319,25 @@ function renderWithLineBreaks(text, keyPrefix = '') {
 }
 
 // Replace {arrival}, {express}, and {countdown} placeholders with computed strings for preview
-function replaceDatePlaceholders(text, rule, globalSettings) {
+function replaceDatePlaceholders(text, rule, globalSettings, shopCurrency = 'GBP') {
   if (!text) return text;
+
+  // Format currency helper
+  const formatCurrency = (amount) => {
+    return new Intl.NumberFormat('en-GB', {
+      style: 'currency',
+      currency: shopCurrency,
+    }).format(amount);
+  };
+
+  // Handle free delivery threshold placeholder (static value)
+  // Note: {remaining} and {cart_total} are NOT supported in Messages section
+  // as they cause confusing UX (e.g., "Spend £0 more..."). Use announcement bar or cart for dynamic messages.
+  if (text.includes('{threshold}')) {
+    const thresholdAmount = (globalSettings?.fd_threshold || 5000) / 100;
+    text = text.replace(/{threshold}/g, formatCurrency(thresholdAmount));
+  }
+
   if (!text.includes('{arrival}') && !text.includes('{express}') && !text.includes('{countdown}')) return text;
 
   // Import the same business day logic used by ETATimelinePreview
@@ -470,14 +490,6 @@ function migrateMessageFields(settings) {
     result.message_line_2 = line2.trim();
   }
 
-  // Migrate old cart_message format (none/line1/line2/custom) to simple text
-  if (settings.cart_message === "custom" && settings.cart_message_custom) {
-    result.cart_message = settings.cart_message_custom;
-  } else if (["none", "line1", "line2"].includes(settings.cart_message)) {
-    result.cart_message = "";
-  }
-  delete result.cart_message_custom;
-
   // Migrate old countdown settings (prefix/suffix) to {countdown} placeholder
   if (settings.show_countdown && (settings.countdown_prefix !== undefined || settings.countdown_suffix !== undefined)) {
     const prefix = settings.countdown_prefix || "Order within";
@@ -596,9 +608,6 @@ function defaultRule() {
       eta_date_font_size: "xsmall",
       eta_date_font_weight: "normal",
 
-      // Cart message (text to show under items in cart, use {arrival} for delivery date)
-      cart_message: "",
-
       // Special Delivery block
       show_special_delivery: false,
       special_delivery_message: "",
@@ -618,6 +627,7 @@ function defaultRule() {
       special_delivery_text_color: "#374151",
       special_delivery_font_size: "medium",
       special_delivery_font_weight: "normal",
+      special_delivery_text_alignment: "left",
       // Special Delivery - Icon selection from Icons page
       special_delivery_icon: "",
     },
@@ -660,7 +670,7 @@ const setCollapsedState = (ruleId, section, collapsed) => {
 // ============================================================================
 
 export default function Index() {
-  const { config, globalSettings, shopId } = useLoaderData();
+  const { config, globalSettings, shopId, shopCurrency } = useLoaderData();
 
   // Parse and migrate config to v2 format on initial load
   const initialConfig = (() => {
@@ -1262,19 +1272,19 @@ export default function Index() {
                 </svg>
               </div>
 
-              {/* Save button with cloud indicator - RIGHT */}
+              {/* Save button with floppy disk indicator - RIGHT */}
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                {/* Cloud save indicator */}
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 20 20"
-                  fill="currentColor"
-                  width="18"
-                  height="18"
-                  style={{ color: isLoading ? "#60a5fa" : "#9ca3af" }}
+                  viewBox="0 0 24 24"
+                  width="24"
+                  height="24"
                   aria-hidden="true"
                 >
-                  <path d="M5.5 16a3.5 3.5 0 01-.369-6.98 4 4 0 117.753-1.977A4.5 4.5 0 1113.5 16h-8z" />
+                  <g fill={isLoading ? "#22c55e" : "#9ca3af"} fillRule="evenodd" clipRule="evenodd">
+                    <path d="M5 3a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V7.414A2 2 0 0 0 20.414 6L18 3.586A2 2 0 0 0 16.586 3zm3 11a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v6H8zm1-7V5h6v2a1 1 0 0 1-1 1h-4a1 1 0 0 1-1-1" />
+                    <path d="M14 17h-4v-2h4z" />
+                  </g>
                 </svg>
                 <s-button
                   variant="primary"
@@ -1970,6 +1980,7 @@ export default function Index() {
                       <span>💡 Use &#123;countdown&#125; for live countdown timer.</span>
                       <span>💡 Use &#123;arrival&#125; for estimated delivery date.</span>
                       <span>💡 Use &#123;express&#125; for next-day delivery date.</span>
+                      <span>💡 Use &#123;threshold&#125; for free delivery threshold amount.</span>
                       <span>💡 Use &#123;lb&#125; for manual line breaks.</span>
                       <span>💡 Use **double asterisks** for bold text.</span>
                     </div>
@@ -2025,25 +2036,6 @@ export default function Index() {
                         maxLength={100}
                         style={{ width: "100%" }}
                         placeholder="Optional third line"
-                      />
-                    </label>
-
-                    <label>
-                      <s-text>Cart message</s-text>
-                      <input
-                        type="text"
-                        value={rule.settings?.cart_message || ""}
-                        onChange={(e) => {
-                          const next = [...rules];
-                          next[safeSelectedIndex] = {
-                            ...rule,
-                            settings: { ...rule.settings, cart_message: e.target.value },
-                          };
-                          setRules(next);
-                        }}
-                        maxLength={100}
-                        style={{ width: "100%" }}
-                        placeholder="Shows under items in cart"
                       />
                     </label>
 
@@ -2256,25 +2248,23 @@ export default function Index() {
 
                         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
                           <label>
-                            <s-text>Font size</s-text>
-                            <select
-                              value={rule.settings?.font_size || "medium"}
+                            <s-text>Font size: {normalizeFontSize(rule.settings?.font_size, 16)}px</s-text>
+                            <input
+                              type="range"
+                              min="10"
+                              max="22"
+                              step="1"
+                              value={normalizeFontSize(rule.settings?.font_size, 16)}
                               onChange={(e) => {
                                 const next = [...rules];
                                 next[safeSelectedIndex] = {
                                   ...rule,
-                                  settings: { ...rule.settings, font_size: e.target.value },
+                                  settings: { ...rule.settings, font_size: parseInt(e.target.value) },
                                 };
                                 setRules(next);
                               }}
                               style={{ width: "100%" }}
-                            >
-                              <option value="xsmall">X-Small (12px)</option>
-                              <option value="small">Small (14px)</option>
-                              <option value="medium">Medium (16px)</option>
-                              <option value="large">Large (18px)</option>
-                              <option value="xlarge">X-Large (20px)</option>
-                            </select>
+                            />
                           </label>
 
                           <label>
@@ -2291,9 +2281,10 @@ export default function Index() {
                               }}
                               style={{ width: "100%" }}
                             >
-                              <option value="normal">Normal</option>
-                              <option value="medium">Medium</option>
-                              <option value="bold">Bold</option>
+                              <option value="normal">Normal (400)</option>
+                              <option value="medium">Medium (500)</option>
+                              <option value="semibold">Semi-bold (600)</option>
+                              <option value="bold">Bold (700)</option>
                             </select>
                           </label>
                         </div>
@@ -2391,13 +2382,19 @@ export default function Index() {
                     >
                       <optgroup label="Preset Icons">
                         <option value="truck">Truck</option>
+                        <option value="truck-v2">Truck v2</option>
                         <option value="clock">Clock</option>
                         <option value="home">Home</option>
                         <option value="pin">Pin</option>
+                        <option value="pin-v2">Pin v2</option>
                         <option value="gift">Gift</option>
-                        <option value="shopping-bag">Shopping bag</option>
-                        <option value="shopping-cart">Shopping cart</option>
+                        <option value="shopping-bag">Shopping Bag</option>
+                        <option value="shopping-bag-v2">Shopping Bag v2</option>
+                        <option value="shopping-cart">Shopping Cart</option>
+                        <option value="shopping-cart-v2">Shopping Cart v2</option>
+                        <option value="shopping-basket">Shopping Basket</option>
                         <option value="clipboard-document-check">Clipboard</option>
+                        <option value="clipboard-v2">Clipboard v2</option>
                         <option value="bullet">Bullet</option>
                         <option value="checkmark">Checkmark (badge)</option>
                       </optgroup>
@@ -2474,25 +2471,23 @@ export default function Index() {
 
                   {rule.settings?.icon_layout === "single" && (
                     <label>
-                      <s-text>Single icon size</s-text>
-                      <select
-                        value={rule.settings?.single_icon_size || "medium"}
+                      <s-text>Icon size: {normalizeSingleIconSize(rule.settings?.single_icon_size, 36)}px</s-text>
+                      <input
+                        type="range"
+                        min="20"
+                        max="56"
+                        step="4"
+                        value={normalizeSingleIconSize(rule.settings?.single_icon_size, 36)}
                         onChange={(e) => {
                           const next = [...rules];
                           next[safeSelectedIndex] = {
                             ...rule,
-                            settings: { ...rule.settings, single_icon_size: e.target.value },
+                            settings: { ...rule.settings, single_icon_size: parseInt(e.target.value) },
                           };
                           setRules(next);
                         }}
                         style={{ width: "100%" }}
-                      >
-                        <option value="small">Small</option>
-                        <option value="medium">Medium</option>
-                        <option value="large">Large</option>
-                        <option value="x-large">Extra Large</option>
-                        <option value="xx-large">XX Large</option>
-                      </select>
+                      />
                     </label>
                   )}
 
@@ -2795,13 +2790,19 @@ export default function Index() {
                       >
                         <optgroup label="Preset">
                           <option value="truck">Truck</option>
+                          <option value="truck-v2">Truck v2</option>
                           <option value="clock">Clock</option>
                           <option value="home">Home</option>
                           <option value="pin">Pin</option>
+                          <option value="pin-v2">Pin v2</option>
                           <option value="gift">Gift</option>
-                          <option value="shopping-bag">Shopping bag</option>
-                          <option value="shopping-cart">Shopping cart</option>
+                          <option value="shopping-bag">Shopping Bag</option>
+                          <option value="shopping-bag-v2">Shopping Bag v2</option>
+                          <option value="shopping-cart">Shopping Cart</option>
+                          <option value="shopping-cart-v2">Shopping Cart v2</option>
+                          <option value="shopping-basket">Shopping Basket</option>
                           <option value="clipboard-document-check">Clipboard</option>
+                          <option value="clipboard-v2">Clipboard v2</option>
                           <option value="bullet">Bullet</option>
                           <option value="checkmark">Checkmark (badge)</option>
                         </optgroup>
@@ -2830,13 +2831,19 @@ export default function Index() {
                       >
                         <optgroup label="Preset">
                           <option value="truck">Truck</option>
+                          <option value="truck-v2">Truck v2</option>
                           <option value="clock">Clock</option>
                           <option value="home">Home</option>
                           <option value="pin">Pin</option>
+                          <option value="pin-v2">Pin v2</option>
                           <option value="gift">Gift</option>
-                          <option value="shopping-bag">Shopping bag</option>
-                          <option value="shopping-cart">Shopping cart</option>
+                          <option value="shopping-bag">Shopping Bag</option>
+                          <option value="shopping-bag-v2">Shopping Bag v2</option>
+                          <option value="shopping-cart">Shopping Cart</option>
+                          <option value="shopping-cart-v2">Shopping Cart v2</option>
+                          <option value="shopping-basket">Shopping Basket</option>
                           <option value="clipboard-document-check">Clipboard</option>
+                          <option value="clipboard-v2">Clipboard v2</option>
                           <option value="bullet">Bullet</option>
                           <option value="checkmark">Checkmark (badge)</option>
                         </optgroup>
@@ -2865,13 +2872,19 @@ export default function Index() {
                       >
                         <optgroup label="Preset">
                           <option value="truck">Truck</option>
+                          <option value="truck-v2">Truck v2</option>
                           <option value="clock">Clock</option>
                           <option value="home">Home</option>
                           <option value="pin">Pin</option>
+                          <option value="pin-v2">Pin v2</option>
                           <option value="gift">Gift</option>
-                          <option value="shopping-bag">Shopping bag</option>
-                          <option value="shopping-cart">Shopping cart</option>
+                          <option value="shopping-bag">Shopping Bag</option>
+                          <option value="shopping-bag-v2">Shopping Bag v2</option>
+                          <option value="shopping-cart">Shopping Cart</option>
+                          <option value="shopping-cart-v2">Shopping Cart v2</option>
+                          <option value="shopping-basket">Shopping Basket</option>
                           <option value="clipboard-document-check">Clipboard</option>
+                          <option value="clipboard-v2">Clipboard v2</option>
                           <option value="bullet">Bullet</option>
                           <option value="checkmark">Checkmark (badge)</option>
                         </optgroup>
@@ -3152,23 +3165,23 @@ export default function Index() {
                       </div>
                       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
                         <label>
-                          <s-text>Label font size</s-text>
-                          <select
-                            value={rule.settings?.eta_label_font_size || "small"}
+                          <s-text>Label font size: {normalizeEtaLabelFontSize(rule.settings?.eta_label_font_size, 12)}px</s-text>
+                          <input
+                            type="range"
+                            min="10"
+                            max="18"
+                            step="1"
+                            value={normalizeEtaLabelFontSize(rule.settings?.eta_label_font_size, 12)}
                             onChange={(e) => {
                               const next = [...rules];
                               next[safeSelectedIndex] = {
                                 ...rule,
-                                settings: { ...rule.settings, eta_label_font_size: e.target.value },
+                                settings: { ...rule.settings, eta_label_font_size: parseInt(e.target.value) },
                               };
                               setRules(next);
                             }}
                             style={{ width: "100%" }}
-                          >
-                            <option value="xsmall">X-Small (11px)</option>
-                            <option value="small">Small (12px)</option>
-                            <option value="medium">Medium (14px)</option>
-                          </select>
+                          />
                         </label>
                         <label>
                           <s-text>Label font weight</s-text>
@@ -3219,23 +3232,23 @@ export default function Index() {
                       </div>
                       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
                         <label>
-                          <s-text>Date font size</s-text>
-                          <select
-                            value={rule.settings?.eta_date_font_size || "xsmall"}
+                          <s-text>Date font size: {normalizeEtaDateFontSize(rule.settings?.eta_date_font_size, 11)}px</s-text>
+                          <input
+                            type="range"
+                            min="10"
+                            max="18"
+                            step="1"
+                            value={normalizeEtaDateFontSize(rule.settings?.eta_date_font_size, 11)}
                             onChange={(e) => {
                               const next = [...rules];
                               next[safeSelectedIndex] = {
                                 ...rule,
-                                settings: { ...rule.settings, eta_date_font_size: e.target.value },
+                                settings: { ...rule.settings, eta_date_font_size: parseInt(e.target.value) },
                               };
                               setRules(next);
                             }}
                             style={{ width: "100%" }}
-                          >
-                            <option value="xxsmall">XX-Small (10px)</option>
-                            <option value="xsmall">X-Small (11px)</option>
-                            <option value="small">Small (12px)</option>
-                          </select>
+                          />
                         </label>
                         <label>
                           <s-text>Date font weight</s-text>
@@ -3254,6 +3267,7 @@ export default function Index() {
                             <option value="normal">Normal (400)</option>
                             <option value="medium">Medium (500)</option>
                             <option value="semibold">Semi-bold (600)</option>
+                            <option value="bold">Bold (700)</option>
                           </select>
                         </label>
                       </div>
@@ -3385,13 +3399,19 @@ export default function Index() {
                           <option value="">None</option>
                           <optgroup label="Preset Icons">
                             <option value="truck">Truck</option>
+                            <option value="truck-v2">Truck v2</option>
                             <option value="clock">Clock</option>
                             <option value="home">Home</option>
                             <option value="pin">Pin</option>
+                            <option value="pin-v2">Pin v2</option>
                             <option value="gift">Gift</option>
-                            <option value="shopping-bag">Shopping bag</option>
-                            <option value="shopping-cart">Shopping cart</option>
+                            <option value="shopping-bag">Shopping Bag</option>
+                            <option value="shopping-bag-v2">Shopping Bag v2</option>
+                            <option value="shopping-cart">Shopping Cart</option>
+                            <option value="shopping-cart-v2">Shopping Cart v2</option>
+                            <option value="shopping-basket">Shopping Basket</option>
                             <option value="clipboard-document-check">Clipboard</option>
+                            <option value="clipboard-v2">Clipboard v2</option>
                             <option value="bullet">Bullet</option>
                             <option value="checkmark">Checkmark (badge)</option>
                           </optgroup>
@@ -3717,25 +3737,23 @@ export default function Index() {
                           />
                           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
                             <label>
-                              <s-text>Font size</s-text>
-                              <select
-                                value={rule.settings?.special_delivery_font_size || "medium"}
+                              <s-text>Font size: {normalizeFontSize(rule.settings?.special_delivery_font_size, 16)}px</s-text>
+                              <input
+                                type="range"
+                                min="10"
+                                max="22"
+                                step="1"
+                                value={normalizeFontSize(rule.settings?.special_delivery_font_size, 16)}
                                 onChange={(e) => {
                                   const next = [...rules];
                                   next[safeSelectedIndex] = {
                                     ...rule,
-                                    settings: { ...rule.settings, special_delivery_font_size: e.target.value },
+                                    settings: { ...rule.settings, special_delivery_font_size: parseInt(e.target.value) },
                                   };
                                   setRules(next);
                                 }}
                                 style={{ width: "100%", marginTop: 4 }}
-                              >
-                                <option value="xsmall">X-Small (12px)</option>
-                                <option value="small">Small (14px)</option>
-                                <option value="medium">Medium (16px)</option>
-                                <option value="large">Large (18px)</option>
-                                <option value="xlarge">X-Large (20px)</option>
-                              </select>
+                              />
                             </label>
                             <label>
                               <s-text>Font weight</s-text>
@@ -3758,6 +3776,25 @@ export default function Index() {
                               </select>
                             </label>
                           </div>
+                          <label>
+                            <s-text>Text alignment</s-text>
+                            <select
+                              value={rule.settings?.special_delivery_text_alignment || "left"}
+                              onChange={(e) => {
+                                const next = [...rules];
+                                next[safeSelectedIndex] = {
+                                  ...rule,
+                                  settings: { ...rule.settings, special_delivery_text_alignment: e.target.value },
+                                };
+                                setRules(next);
+                              }}
+                              style={{ width: "100%", marginTop: 4 }}
+                            >
+                              <option value="left">Left</option>
+                              <option value="center">Center</option>
+                              <option value="right">Right</option>
+                            </select>
+                          </label>
                         </div>
                       )}
                     </div>
@@ -3898,9 +3935,9 @@ export default function Index() {
                               : 6,
                             alignItems: rule.settings?.icon_layout === "single" ? "center" : "stretch",
                             fontSize: rule.settings?.override_global_text_styling
-                              ? getTextFontSize(rule.settings?.font_size)
+                              ? `${normalizeFontSize(rule.settings?.font_size, 16)}px`
                               : globalSettings?.use_theme_text_styling === false
-                                ? getTextFontSize(globalSettings?.font_size)
+                                ? `${normalizeFontSize(globalSettings?.font_size, 16)}px`
                                 : `${Math.round((globalSettings?.eta_preview_font_size_scale || 100) * 1.2)}%`,
                             fontWeight: rule.settings?.override_global_text_styling
                               ? getTextFontWeight(rule.settings?.font_weight)
@@ -3920,14 +3957,14 @@ export default function Index() {
                           {rule.settings?.icon_layout === "single" && rule.settings?.show_icon !== false && (
                             <span
                               style={{
-                                width: getSingleIconSize(rule.settings?.single_icon_size),
-                                height: getSingleIconSize(rule.settings?.single_icon_size),
+                                width: normalizeSingleIconSize(rule.settings?.single_icon_size, 36),
+                                height: normalizeSingleIconSize(rule.settings?.single_icon_size, 36),
                                 flexShrink: 0,
                                 display: "inline-flex",
                                 alignItems: "center",
                                 justifyContent: "center",
                                 color: rule.settings?.icon_color ?? "#111827",
-                                fontSize: getSingleIconSize(rule.settings?.single_icon_size),
+                                fontSize: normalizeSingleIconSize(rule.settings?.single_icon_size, 36),
                               }}
                               aria-hidden="true"
                             >
@@ -3972,8 +4009,8 @@ export default function Index() {
                                     <span
                                       dangerouslySetInnerHTML={{ __html: svg }}
                                       style={{
-                                        width: getSingleIconSize(rule.settings?.single_icon_size),
-                                        height: getSingleIconSize(rule.settings?.single_icon_size),
+                                        width: normalizeSingleIconSize(rule.settings?.single_icon_size, 36),
+                                        height: normalizeSingleIconSize(rule.settings?.single_icon_size, 36),
                                         display: "block",
                                       }}
                                     />
@@ -3987,7 +4024,7 @@ export default function Index() {
                                 <>
                                   {rule.settings?.message_line_1 && (
                                     <PreviewLine rule={rule} globalSettings={globalSettings}>
-                                      {parseMarkdownBold(replaceDatePlaceholders(rule.settings.message_line_1, rule, globalSettings)).map((seg, i) =>
+                                      {parseMarkdownBold(replaceDatePlaceholders(rule.settings.message_line_1, rule, globalSettings, shopCurrency)).map((seg, i) =>
                                         seg.bold ? <strong key={i}>{renderWithLineBreaks(seg.text, `l1-${i}`)}</strong> : <span key={i}>{renderWithLineBreaks(seg.text, `l1-${i}`)}</span>
                                       )}
                                     </PreviewLine>
@@ -3995,7 +4032,7 @@ export default function Index() {
 
                                   {rule.settings?.message_line_2 && (
                                     <PreviewLine rule={rule} globalSettings={globalSettings}>
-                                      {parseMarkdownBold(replaceDatePlaceholders(rule.settings.message_line_2, rule, globalSettings)).map((seg, i) =>
+                                      {parseMarkdownBold(replaceDatePlaceholders(rule.settings.message_line_2, rule, globalSettings, shopCurrency)).map((seg, i) =>
                                         seg.bold ? <strong key={i}>{renderWithLineBreaks(seg.text, `l2-${i}`)}</strong> : <span key={i}>{renderWithLineBreaks(seg.text, `l2-${i}`)}</span>
                                       )}
                                     </PreviewLine>
@@ -4003,7 +4040,7 @@ export default function Index() {
 
                                   {rule.settings?.message_line_3 && (
                                     <PreviewLine rule={rule} globalSettings={globalSettings}>
-                                      {parseMarkdownBold(replaceDatePlaceholders(rule.settings.message_line_3, rule, globalSettings)).map((seg, i) =>
+                                      {parseMarkdownBold(replaceDatePlaceholders(rule.settings.message_line_3, rule, globalSettings, shopCurrency)).map((seg, i) =>
                                         seg.bold ? <strong key={i}>{renderWithLineBreaks(seg.text, `l3-${i}`)}</strong> : <span key={i}>{renderWithLineBreaks(seg.text, `l3-${i}`)}</span>
                                       )}
                                     </PreviewLine>
@@ -4070,9 +4107,9 @@ export default function Index() {
                                   ? (globalSettings?.special_delivery_text_color || "#374151")
                                   : "inherit";
                               const fontSize = rule.settings.special_delivery_override_global_text_styling
-                                ? getTextFontSize(rule.settings.special_delivery_font_size)
+                                ? `${normalizeFontSize(rule.settings.special_delivery_font_size, 16)}px`
                                 : globalSettings?.special_delivery_use_theme_text_styling === false
-                                  ? getTextFontSize(globalSettings?.special_delivery_font_size)
+                                  ? `${normalizeFontSize(globalSettings?.special_delivery_font_size, 16)}px`
                                   : "inherit";
                               const fontWeight = rule.settings.special_delivery_override_global_text_styling
                                 ? getTextFontWeight(rule.settings.special_delivery_font_weight)
@@ -4084,19 +4121,25 @@ export default function Index() {
                                     ? globalSettings.custom_font_family
                                     : globalSettings?.special_delivery_custom_font_family || "inherit")
                                 : "inherit";
+                              const textAlignment = rule.settings.special_delivery_text_alignment || "left";
 
                               const iconAlignment = { top: "flex-start", center: "center", bottom: "flex-end" }[rule.settings.special_delivery_icon_alignment] || "flex-start";
+
+                              // Spacing settings
+                              const paddingH = globalSettings?.special_delivery_padding_horizontal ?? 12;
+                              const paddingV = globalSettings?.special_delivery_padding_vertical ?? 10;
+                              const iconGap = globalSettings?.special_delivery_icon_gap ?? 12;
 
                               return (
                                 <div style={{
                                   display: "inline-flex",
                                   alignItems: iconAlignment,
-                                  gap: 12,
+                                  gap: iconGap,
                                   boxSizing: "border-box",
                                   overflowWrap: "break-word",
                                   wordBreak: "break-word",
+                                  padding: `${paddingV}px ${paddingH}px`,
                                   ...(showBorder ? {
-                                    padding: "10px 12px",
                                     border: `${borderThickness}px solid ${borderColor}`,
                                     borderRadius: borderRadius,
                                   } : {}),
@@ -4122,7 +4165,7 @@ export default function Index() {
                                       style={{ width: sizePx, height: sizePx, flexShrink: 0, objectFit: "contain" }}
                                     />
                                   )}
-                                  <div style={{ minWidth: 0 }}>
+                                  <div style={{ minWidth: 0, textAlign: textAlignment }}>
                                     {parsedMessage.map((seg, i) => (
                                       seg.bold
                                         ? <strong key={i}>{renderWithLineBreaks(seg.text, `sp-${i}`)}</strong>
