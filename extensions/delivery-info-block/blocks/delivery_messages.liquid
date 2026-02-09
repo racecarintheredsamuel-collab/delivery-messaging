@@ -27,6 +27,7 @@
 {%- assign border_thickness_final = block.settings.border_thickness | default: 1 -%}
 {%- assign border_color_final = block.settings.border_color | default: '#e5e7eb' -%}
 {%- assign border_radius_final = block.settings.border_radius | default: 8 -%}
+{%- assign background_color_final = '' -%}
 {%- assign max_width_final = 600 -%}
 {%- assign icon_layout_final = 'per-line' -%}
 {%- assign single_icon_size_final = 36 -%}
@@ -40,6 +41,10 @@
 {%- assign messages_margin_top = 0 -%}
 {%- assign messages_margin_bottom = 0 -%}
 {%- assign messages_alignment = 'left' -%}
+{%- assign messages_alignment_mobile = 'left' -%}
+{%- assign messages_padding_h = 12 -%}
+{%- assign messages_padding_v = 10 -%}
+{%- assign messages_single_icon_gap = 12 -%}
 {%- assign rules_json = shop.metafields.delivery_rules.config.value -%}
 {%- assign rules_obj = nil -%}
 {%- assign rules = nil -%}
@@ -93,6 +98,10 @@
   {%- if global_settings.messages_margin_top != blank -%}{%- assign messages_margin_top = global_settings.messages_margin_top -%}{%- endif -%}
   {%- if global_settings.messages_margin_bottom != blank -%}{%- assign messages_margin_bottom = global_settings.messages_margin_bottom -%}{%- endif -%}
   {%- if global_settings.messages_alignment != blank -%}{%- assign messages_alignment = global_settings.messages_alignment -%}{%- endif -%}
+  {%- if global_settings.messages_alignment_mobile != blank -%}{%- assign messages_alignment_mobile = global_settings.messages_alignment_mobile -%}{%- endif -%}
+  {%- if global_settings.messages_padding_horizontal != blank -%}{%- assign messages_padding_h = global_settings.messages_padding_horizontal -%}{%- endif -%}
+  {%- if global_settings.messages_padding_vertical != blank -%}{%- assign messages_padding_v = global_settings.messages_padding_vertical -%}{%- endif -%}
+  {%- if global_settings.messages_single_icon_gap != blank -%}{%- assign messages_single_icon_gap = global_settings.messages_single_icon_gap -%}{%- endif -%}
 {%- endif -%}
 {%- assign fd_threshold_val = global_settings.fd_threshold | default: 5000 -%}
 {%- assign fd_message_progress_val = global_settings.fd_message_progress -%}
@@ -190,6 +199,7 @@
       {%- if s.border_thickness != blank -%}{%- assign border_thickness_final = s.border_thickness -%}{%- endif -%}
       {%- if s.border_color != blank -%}{%- assign border_color_final = s.border_color -%}{%- endif -%}
       {%- if s.border_radius != blank -%}{%- assign border_radius_final = s.border_radius -%}{%- endif -%}
+      {%- if s.background_color != blank -%}{%- assign background_color_final = s.background_color -%}{%- endif -%}
       {%- if s.max_width != blank -%}{%- assign max_width_final = s.max_width -%}{%- endif -%}
       {%- if s.icon_layout != blank -%}{%- assign icon_layout_final = s.icon_layout -%}{%- endif -%}
       {%- if s.single_icon_size != blank -%}{%- assign single_icon_size_final = s.single_icon_size -%}{%- endif -%}
@@ -223,7 +233,7 @@
 {%- endif -%}
 {{ 'dib-messages.css' | asset_url | stylesheet_tag }}
 <style>
-.dib-messages .dib-icon{width:1.3em;height:1.3em;flex:0 0 auto;display:inline-flex;overflow:hidden}.dib-messages .dib-icon svg,.dib-messages .dib-icon img{width:1.3em!important;height:1.3em!important;max-width:1.3em!important;max-height:1.3em!important;display:block}.dib-messages.icon-layout-single .dib-icon-single{flex:0 0 auto;display:inline-flex}.dib-messages.icon-layout-single .dib-icon-single svg,.dib-messages.icon-layout-single .dib-icon-single img{width:24px!important;height:24px!important}.dib-messages.icon-layout-single .dib-icon{display:none}.dib-messages.icon-layout-single.single-icon-size-small .dib-icon-single svg,.dib-messages.icon-layout-single.single-icon-size-small .dib-icon-single img{width:16px!important;height:16px!important}.dib-messages.icon-layout-single.single-icon-size-large .dib-icon-single svg,.dib-messages.icon-layout-single.single-icon-size-large .dib-icon-single img{width:32px!important;height:32px!important}.dib-messages.icon-layout-single.single-icon-size-x-large .dib-icon-single svg,.dib-messages.icon-layout-single.single-icon-size-x-large .dib-icon-single img{width:40px!important;height:40px!important}.dib-messages.icon-layout-single.single-icon-size-xx-large .dib-icon-single svg,.dib-messages.icon-layout-single.single-icon-size-xx-large .dib-icon-single img{width:48px!important;height:48px!important}
+.dib-messages .dib-icon{width:1.3em;height:1.3em;flex:0 0 auto;display:inline-flex;overflow:hidden}.dib-messages .dib-icon svg,.dib-messages .dib-icon img{width:1.3em!important;height:1.3em!important;max-width:1.3em!important;max-height:1.3em!important;display:block}.dib-messages.icon-layout-single .dib-icon-single{flex:0 0 auto;display:inline-flex}.dib-messages.icon-layout-single .dib-icon-single svg,.dib-messages.icon-layout-single .dib-icon-single img{width:var(--dib-single-icon-size,36px)!important;height:var(--dib-single-icon-size,36px)!important}.dib-messages.icon-layout-single .dib-icon{display:none}
 {%- if icon_vertical_align_final == 'center' %}#{{ uid }} .dib-line{align-items:center}{% endif -%}
 {%- if use_theme_text_styling_final == false %}#{{ uid }} .dib-text{ {%- if text_color_final != blank %}color:{{ text_color_final }};{%- endif %}{%- assign font_size_num = font_size_final | plus: 0 -%}{%- if font_size_num > 0 -%}font-size:{{ font_size_final }}px;{%- else -%}{%- case font_size_final -%}{%- when 'xsmall' %}font-size:12px;{%- when 'small' %}font-size:14px;{%- when 'large' %}font-size:18px;{%- when 'xlarge' %}font-size:20px;{%- else %}font-size:16px;{%- endcase %}{%- endif -%}{%- case font_weight_final -%}{%- when 'medium' %}font-weight:500;{%- when 'semibold' %}font-weight:600;{%- when 'bold' %}font-weight:700;{%- else %}font-weight:400;{%- endcase %}}{% endif -%}
 {%- if use_theme_font_final == false and custom_font_family_final != blank %}#{{ uid }} .dib-text{font-family:{{ custom_font_family_final }}}{% endif -%}
@@ -283,7 +293,7 @@
 <div style="text-align:{{ messages_alignment }};{% if messages_margin_top != 0 %}margin-top:{{ messages_margin_top }}px;{% endif %}{% if messages_margin_bottom != 0 %}margin-bottom:{{ messages_margin_bottom }}px;{% endif %}"><div style="border:2px dashed #d1d5db;border-radius:8px;padding:16px 20px;background:#f9fafb;display:inline-flex;align-items:center;gap:12px;max-width:400px;"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="14" x="2" y="5" rx="2"/><path d="M2 10h20"/></svg><div><div style="font-weight:600;color:#374151;font-size:14px;margin-bottom:2px;">Delivery Info Block</div><div style="color:#6b7280;font-size:12px;">Configure rules in the app to display delivery information here.</div></div></div></div>
 {% elsif should_show_block %}
 <style>.dib-messages-block-{{ uid }}{display:block!important;width:100%!important;text-align:{{ messages_alignment }}!important}.dib-messages-block-{{ uid }} #{{ uid }}{display:inline-block!important;text-align:left!important}</style>
-<div class="dib-messages-block-{{ uid }}" style="{% if messages_margin_top != 0 %}margin-top:{{ messages_margin_top }}px;{% endif %}{% if messages_margin_bottom != 0 %}margin-bottom:{{ messages_margin_bottom }}px;{% endif %}">
+<div class="dib-messages-block-{{ uid }}" style="{% if messages_alignment_mobile != blank %}--dib-align-mobile:{{ messages_alignment_mobile }};{% endif %}{% if messages_margin_top != 0 %}margin-top:{{ messages_margin_top }}px;{% endif %}{% if messages_margin_bottom != 0 %}margin-bottom:{{ messages_margin_bottom }}px;{% endif %}">
 {%- comment -%}Compute single icon size in pixels - handle both numeric and legacy string values{%- endcomment -%}
 {%- assign single_icon_size_px = single_icon_size_final | plus: 0 -%}
 {%- if single_icon_size_px == 0 -%}
@@ -295,8 +305,8 @@
     {%- else -%}{%- assign single_icon_size_px = 28 -%}
   {%- endcase -%}
 {%- endif -%}
-<div id="{{ uid }}" class="dib-messages{% if icon_layout_final == 'single' %} icon-layout-single{% endif %}" data-delivery-min="{{ delivery_min_final }}" data-delivery-max="{{ delivery_max_final }}" data-courier-no-delivery="{{ courier_no_delivery_days_final }}"{% if match_eta_width_final == true and show_eta_timeline_final == true %} data-match-eta-width="true"{% endif %}>
-<div class="dib-container {% if show_border_final %}has-border{% endif %}" style="{% if show_border_final %}border-width:{{ border_thickness_final }}px;border-color:{{ border_color_final }};border-radius:{{ border_radius_final }}px;{% endif %}">
+<div id="{{ uid }}" class="dib-messages{% if icon_layout_final == 'single' %} icon-layout-single{% endif %}" style="--dib-padding-h:{{ messages_padding_h }}px;--dib-padding-v:{{ messages_padding_v }}px;--dib-single-icon-gap:{{ messages_single_icon_gap }}px;--dib-single-icon-size:{{ single_icon_size_px }}px;" data-delivery-min="{{ delivery_min_final }}" data-delivery-max="{{ delivery_max_final }}" data-courier-no-delivery="{{ courier_no_delivery_days_final }}"{% if match_eta_width_final == true and show_eta_timeline_final == true %} data-match-eta-width="true"{% endif %}>
+<div class="dib-container {% if show_border_final %}has-border{% endif %}" style="{% if show_border_final %}border-width:{{ border_thickness_final }}px;border-color:{{ border_color_final }};border-radius:{{ border_radius_final }}px;{% endif %}{% if background_color_final != blank %}background-color:{{ background_color_final }};{% unless show_border_final %}border-radius:{{ border_radius_final }}px;{% endunless %}{% endif %}">
 {%- if icon_layout_final == 'single' and show_icon_final -%}<span class="dib-icon-single" aria-hidden="true" style="color:{{ icon_color }};width:{{ single_icon_size_px }}px;height:{{ single_icon_size_px }}px;flex-shrink:0;">{{ dib_icon_markup }}</span>{%- endif -%}
 <span class="dib-config" style="display:none" data-dib-js data-uid="{{ uid }}" data-shop-offset="{{ 'now' | date: '%z' }}" data-cutoff="{{ cutoff_time_final }}" data-cutoff-sat="{{ cutoff_time_sat_final }}" data-cutoff-sun="{{ cutoff_time_sun_final }}" data-closed-days="{{ closed_days_final }}" data-lead-time="{{ lead_time_final }}" data-courier-no-delivery="{{ courier_no_delivery_days_final }}" data-bank-holiday-country="{{ bank_holiday_country_final }}" data-custom-holidays="{{ custom_holidays_final }}"></span>
 <div class="dib-lines dib-text">

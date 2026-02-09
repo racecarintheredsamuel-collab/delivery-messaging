@@ -42,7 +42,7 @@
 /* Single icon layout */
 .dib-messages.icon-layout-single .dib-container {
   display: flex;
-  gap: 0.75em;
+  gap: var(--dib-single-icon-gap, 12px);
   align-items: center;
 }
 
@@ -103,12 +103,11 @@
 .dib-messages .dib-container {
   border: none;
   border-radius: 0;
-  padding: 0;
+  padding: var(--dib-padding-v, 10px) var(--dib-padding-h, 12px);
 }
 
 .dib-messages .dib-container.has-border {
   border-style: solid;
-  padding: 10px 12px;
 }
 
 /* Countdown visibility */
@@ -145,4 +144,15 @@
 
 .dib-eta-timeline-block .dib-eta-stages {
   display: inline-flex !important;
+}
+
+/* Mobile alignment overrides */
+@media (max-width: 768px) {
+  [style*="--dib-align-mobile"] {
+    text-align: var(--dib-align-mobile) !important;
+  }
+
+  .dib-eta-timeline-block[style*="--dib-align-mobile"] .dib-eta-timeline {
+    text-align: var(--dib-align-mobile) !important;
+  }
 }

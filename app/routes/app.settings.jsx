@@ -95,10 +95,20 @@ function defaultSettings() {
     special_delivery_margin_top: 0,
     special_delivery_margin_bottom: 0,
 
-    // Block alignment
+    // Block alignment (desktop)
     messages_alignment: "left",
     eta_alignment: "left",
     special_delivery_alignment: "left",
+
+    // Block alignment (mobile)
+    messages_alignment_mobile: "left",
+    eta_alignment_mobile: "left",
+    special_delivery_alignment_mobile: "left",
+
+    // Messages container padding
+    messages_padding_horizontal: 12,
+    messages_padding_vertical: 10,
+    messages_single_icon_gap: 12,
 
     // Special Delivery spacing
     special_delivery_padding_horizontal: 12,
@@ -806,8 +816,9 @@ export default function SettingsPage() {
               onChange={(e) => setSettings({ ...settings, lead_time: Number(e.target.value) || 0 })}
               style={{ width: "100%" }}
             />
-            <div style={{ display: "grid", gap: 2, color: "var(--p-color-text-subdued, #6b7280)", fontSize: 12, marginTop: 4 }}>
-              <span>💡 Additional business days before shipping (use 0 for same-day shipping).</span>
+            <div style={{ display: "flex", alignItems: "center", gap: 6, color: "var(--p-color-text-subdued, #6b7280)", marginTop: 4 }}>
+              <span style={{ fontSize: 12, flexShrink: 0 }}>💡</span>
+              <span style={{ fontSize: 12 }}>Additional business days before shipping (use 0 for same-day shipping).</span>
             </div>
           </label>
         </div>
@@ -1939,9 +1950,10 @@ export default function SettingsPage() {
                 <option value="700">Bold (700)</option>
               </select>
             </label>
-            <s-text size="small" style={{ color: "var(--p-color-text-subdued, #6b7280)", marginTop: 4 }}>
-              These settings help match the Rules page preview to your storefront. They do not affect your actual storefront.
-            </s-text>
+            <div style={{ display: "flex", alignItems: "center", gap: 6, color: "var(--p-color-text-subdued, #6b7280)", marginTop: 12 }}>
+              <span style={{ fontSize: 12, flexShrink: 0 }}>💡</span>
+              <span style={{ fontSize: 12 }}>These settings help match the Messages page preview to your storefront. They do not affect your actual storefront.</span>
+            </div>
           </div>
         </div>
 
@@ -1956,10 +1968,21 @@ export default function SettingsPage() {
             <div style={{ display: "grid", gap: 12 }}>
               <s-text fontWeight="bold">Messages</s-text>
               <label>
-                <s-text>Alignment</s-text>
+                <s-text>Desktop alignment</s-text>
                 <select
                   value={settings.messages_alignment || "left"}
                   onChange={(e) => setSettings({ ...settings, messages_alignment: e.target.value })}
+                  style={{ width: "100%", marginTop: 4 }}
+                >
+                  <option value="left">Left</option>
+                  <option value="center">Center</option>
+                </select>
+              </label>
+              <label>
+                <s-text>Mobile alignment</s-text>
+                <select
+                  value={settings.messages_alignment_mobile || "left"}
+                  onChange={(e) => setSettings({ ...settings, messages_alignment_mobile: e.target.value })}
                   style={{ width: "100%", marginTop: 4 }}
                 >
                   <option value="left">Left</option>
@@ -1989,10 +2012,21 @@ export default function SettingsPage() {
             <div style={{ display: "grid", gap: 12 }}>
               <s-text fontWeight="bold">ETA Timeline</s-text>
               <label>
-                <s-text>Alignment</s-text>
+                <s-text>Desktop alignment</s-text>
                 <select
                   value={settings.eta_alignment || "left"}
                   onChange={(e) => setSettings({ ...settings, eta_alignment: e.target.value })}
+                  style={{ width: "100%", marginTop: 4 }}
+                >
+                  <option value="left">Left</option>
+                  <option value="center">Center</option>
+                </select>
+              </label>
+              <label>
+                <s-text>Mobile alignment</s-text>
+                <select
+                  value={settings.eta_alignment_mobile || "left"}
+                  onChange={(e) => setSettings({ ...settings, eta_alignment_mobile: e.target.value })}
                   style={{ width: "100%", marginTop: 4 }}
                 >
                   <option value="left">Left</option>
@@ -2022,10 +2056,21 @@ export default function SettingsPage() {
             <div style={{ display: "grid", gap: 12 }}>
               <s-text fontWeight="bold">Special Delivery</s-text>
               <label>
-                <s-text>Alignment</s-text>
+                <s-text>Desktop alignment</s-text>
                 <select
                   value={settings.special_delivery_alignment || "left"}
                   onChange={(e) => setSettings({ ...settings, special_delivery_alignment: e.target.value })}
+                  style={{ width: "100%", marginTop: 4 }}
+                >
+                  <option value="left">Left</option>
+                  <option value="center">Center</option>
+                </select>
+              </label>
+              <label>
+                <s-text>Mobile alignment</s-text>
+                <select
+                  value={settings.special_delivery_alignment_mobile || "left"}
+                  onChange={(e) => setSettings({ ...settings, special_delivery_alignment_mobile: e.target.value })}
                   style={{ width: "100%", marginTop: 4 }}
                 >
                   <option value="left">Left</option>
@@ -2051,6 +2096,11 @@ export default function SettingsPage() {
                 />
               </label>
             </div>
+          </div>
+
+          <div style={{ display: "flex", alignItems: "center", gap: 6, color: "var(--p-color-text-subdued, #6b7280)" }}>
+            <span style={{ fontSize: 12, flexShrink: 0 }}>💡</span>
+            <span style={{ fontSize: 12 }}>These settings do not affect the Messages page preview.</span>
           </div>
         </div>
 
@@ -2093,6 +2143,59 @@ export default function SettingsPage() {
                 onChange={(e) => setSettings({ ...settings, special_delivery_icon_gap: safeParseNumber(e.target.value, 12, 0, 40) })}
                 style={{ width: "100%" }}
               />
+            </label>
+          </div>
+        </div>
+
+        {/* Messages Spacing */}
+        <div style={{ border: "1px solid var(--p-color-border, #e5e7eb)", borderRadius: 8, padding: 16, display: "grid", gap: 12, background: "var(--p-color-bg-surface, #ffffff)" }}>
+          <s-heading>Messages Spacing</s-heading>
+          <div>
+            <s-text size="small" style={{ color: "var(--p-color-text-subdued, #6b7280)" }}>
+              Control the padding inside the Messages container.
+            </s-text>
+            <div style={{ display: "flex", alignItems: "center", gap: 6, color: "var(--p-color-text-subdued, #6b7280)", marginTop: 4 }}>
+              <span style={{ fontSize: 12, flexShrink: 0 }}>💡</span>
+              <span style={{ fontSize: 12 }}>Padding applies whether border is on or off.</span>
+            </div>
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+            <label>
+              <s-text>Horizontal padding (px)</s-text>
+              <input
+                type="number"
+                min="0"
+                max="40"
+                value={settings.messages_padding_horizontal ?? 12}
+                onChange={(e) => setSettings({ ...settings, messages_padding_horizontal: safeParseNumber(e.target.value, 12, 0, 40) })}
+                style={{ width: "100%" }}
+              />
+            </label>
+            <label>
+              <s-text>Vertical padding (px)</s-text>
+              <input
+                type="number"
+                min="0"
+                max="40"
+                value={settings.messages_padding_vertical ?? 10}
+                onChange={(e) => setSettings({ ...settings, messages_padding_vertical: safeParseNumber(e.target.value, 10, 0, 40) })}
+                style={{ width: "100%" }}
+              />
+            </label>
+            <label>
+              <s-text>Single icon gap (px)</s-text>
+              <input
+                type="number"
+                min="0"
+                max="40"
+                value={settings.messages_single_icon_gap ?? 12}
+                onChange={(e) => setSettings({ ...settings, messages_single_icon_gap: safeParseNumber(e.target.value, 12, 0, 40) })}
+                style={{ width: "100%" }}
+              />
+              <div style={{ display: "flex", alignItems: "center", gap: 6, color: "var(--p-color-text-subdued, #6b7280)", marginTop: 4 }}>
+                <span style={{ fontSize: 12, flexShrink: 0 }}>💡</span>
+                <span style={{ fontSize: 12 }}>Gap between the single larger icon and message text.</span>
+              </div>
             </label>
           </div>
         </div>

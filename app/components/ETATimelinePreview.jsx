@@ -52,9 +52,12 @@ export function ETATimelinePreview({ rule, globalSettings }) {
   const maxDays = rule.settings?.eta_delivery_days_max ?? 5;
 
   // ETA timeline always uses its own border settings
-  const borderWidth = rule.settings?.eta_border_width ?? 0;
+  // show_eta_border: undefined = true (default), false = hidden
+  const showBorder = rule.settings?.show_eta_border !== false;
+  const borderWidth = showBorder ? (rule.settings?.eta_border_width ?? 0) : 0;
   const borderColor = rule.settings?.eta_border_color || "#e5e7eb";
   const borderRadius = rule.settings?.eta_border_radius ?? 8;
+  const backgroundColor = rule.settings?.eta_background_color || "";
 
   // Vertical spacing between elements (from global settings)
   const gapIconLabel = globalSettings?.eta_gap_icon_label ?? 2;
@@ -533,6 +536,7 @@ export function ETATimelinePreview({ rule, globalSettings }) {
           border: `${borderWidth}px solid ${borderColor}`,
           borderRadius: borderRadius,
         } : {}),
+        ...(backgroundColor ? { backgroundColor, borderRadius: borderRadius } : {}),
       }}
     >
       <Stage label={rule.settings?.eta_label_order || "Ordered"} date={formatDate(today)} icon="order" />

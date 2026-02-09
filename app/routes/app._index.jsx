@@ -550,6 +550,7 @@ function defaultRule() {
       border_thickness: 1,
       border_color: "#e5e7eb",
       border_radius: 8,
+      background_color: "",
       max_width: 600,
 
       // Dispatch settings overrides (separate flags)
@@ -574,9 +575,10 @@ function defaultRule() {
       eta_connector_alignment: "center",
       eta_color: "#111827",
       eta_use_main_icon_color: true,
-      eta_border_width: 0,
+      eta_border_width: 1,
       eta_border_color: "#e5e7eb",
       eta_border_radius: 8,
+      eta_background_color: "",
       eta_delivery_days_min: 3,
       eta_delivery_days_max: 5,
       eta_order_icon: "clipboard-document-check",
@@ -619,6 +621,7 @@ function defaultRule() {
       special_delivery_border_thickness: 1,
       special_delivery_border_color: "#e5e7eb",
       special_delivery_border_radius: 8,
+      special_delivery_background_color: "",
       special_delivery_match_eta_border: false,
       special_delivery_match_eta_width: false,
       special_delivery_max_width: 600,
@@ -2145,6 +2148,59 @@ export default function Index() {
                         </>
                       )}
 
+                      {/* Background color - always visible, independent of border */}
+                      <div style={{ display: "flex", alignItems: "flex-end", gap: 8 }}>
+                        <div style={{ flex: 1 }}>
+                          <s-color-field
+                            label="Background color"
+                            placeholder="transparent"
+                            value={rule.settings?.background_color || ""}
+                            onInput={(e) => {
+                              const val = e.detail?.value ?? e.target?.value ?? "";
+                              const next = [...rules];
+                              next[safeSelectedIndex] = {
+                                ...rule,
+                                settings: { ...rule.settings, background_color: val },
+                              };
+                              setRules(next);
+                            }}
+                            onChange={(e) => {
+                              const val = e.detail?.value ?? e.target?.value ?? "";
+                              const next = [...rules];
+                              next[safeSelectedIndex] = {
+                                ...rule,
+                                settings: { ...rule.settings, background_color: val },
+                              };
+                              setRules(next);
+                            }}
+                          />
+                        </div>
+                        {rule.settings?.background_color && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const next = [...rules];
+                              next[safeSelectedIndex] = {
+                                ...rule,
+                                settings: { ...rule.settings, background_color: "" },
+                              };
+                              setRules(next);
+                            }}
+                            style={{
+                              padding: "6px 10px",
+                              fontSize: 12,
+                              border: "1px solid var(--p-color-border, #e5e7eb)",
+                              borderRadius: 4,
+                              background: "var(--p-color-bg-surface, #fff)",
+                              cursor: "pointer",
+                              marginBottom: 4,
+                            }}
+                          >
+                            Clear
+                          </button>
+                        )}
+                      </div>
+
                       {rule.settings?.show_eta_timeline && (
                         <label style={{ display: "flex", alignItems: "center", gap: 6 }}>
                           <input
@@ -2466,6 +2522,10 @@ export default function Index() {
                         <option value="top">Top</option>
                         <option value="center">Center</option>
                       </select>
+                      <div style={{ display: "flex", alignItems: "center", gap: 6, color: "var(--p-color-text-subdued, #6b7280)", marginTop: 4 }}>
+                        <span style={{ fontSize: 12, flexShrink: 0 }}>💡</span>
+                        <span style={{ fontSize: 12 }}>Adjusts icon position when message text wraps to multiple lines.</span>
+                      </div>
                     </label>
                   )}
 
@@ -3114,6 +3174,59 @@ export default function Index() {
                   />
                     </>
                   )}
+
+                  {/* Background color - always visible, independent of border */}
+                  <div style={{ display: "flex", alignItems: "flex-end", gap: 8 }}>
+                    <div style={{ flex: 1 }}>
+                      <s-color-field
+                        label="Background color"
+                        placeholder="transparent"
+                        value={rule.settings?.eta_background_color || ""}
+                        onInput={(e) => {
+                          const val = e.detail?.value ?? e.target?.value ?? "";
+                          const next = [...rules];
+                          next[safeSelectedIndex] = {
+                            ...rule,
+                            settings: { ...rule.settings, eta_background_color: val },
+                          };
+                          setRules(next);
+                        }}
+                        onChange={(e) => {
+                          const val = e.detail?.value ?? e.target?.value ?? "";
+                          const next = [...rules];
+                          next[safeSelectedIndex] = {
+                            ...rule,
+                            settings: { ...rule.settings, eta_background_color: val },
+                          };
+                          setRules(next);
+                        }}
+                      />
+                    </div>
+                    {rule.settings?.eta_background_color && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const next = [...rules];
+                          next[safeSelectedIndex] = {
+                            ...rule,
+                            settings: { ...rule.settings, eta_background_color: "" },
+                          };
+                          setRules(next);
+                        }}
+                        style={{
+                          padding: "6px 10px",
+                          fontSize: 12,
+                          border: "1px solid var(--p-color-border, #e5e7eb)",
+                          borderRadius: 4,
+                          background: "var(--p-color-bg-surface, #fff)",
+                          cursor: "pointer",
+                          marginBottom: 4,
+                        }}
+                      >
+                        Clear
+                      </button>
+                    )}
+                  </div>
                   </div>
 
                   {/* ETA Text Styling */}
@@ -3644,6 +3757,59 @@ export default function Index() {
                         </div>
                       )}
 
+                      {/* Background color - always visible, independent of border */}
+                      <div style={{ display: "flex", alignItems: "flex-end", gap: 8 }}>
+                        <div style={{ flex: 1 }}>
+                          <s-color-field
+                            label="Background color"
+                            placeholder="transparent"
+                            value={rule.settings?.special_delivery_background_color || ""}
+                            onInput={(e) => {
+                              const val = e.detail?.value ?? e.target?.value ?? "";
+                              const next = [...rules];
+                              next[safeSelectedIndex] = {
+                                ...rule,
+                                settings: { ...rule.settings, special_delivery_background_color: val },
+                              };
+                              setRules(next);
+                            }}
+                            onChange={(e) => {
+                              const val = e.detail?.value ?? e.target?.value ?? "";
+                              const next = [...rules];
+                              next[safeSelectedIndex] = {
+                                ...rule,
+                                settings: { ...rule.settings, special_delivery_background_color: val },
+                              };
+                              setRules(next);
+                            }}
+                          />
+                        </div>
+                        {rule.settings?.special_delivery_background_color && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const next = [...rules];
+                              next[safeSelectedIndex] = {
+                                ...rule,
+                                settings: { ...rule.settings, special_delivery_background_color: "" },
+                              };
+                              setRules(next);
+                            }}
+                            style={{
+                              padding: "6px 10px",
+                              fontSize: 12,
+                              border: "1px solid var(--p-color-border, #e5e7eb)",
+                              borderRadius: 4,
+                              background: "var(--p-color-bg-surface, #fff)",
+                              cursor: "pointer",
+                              marginBottom: 4,
+                            }}
+                          >
+                            Clear
+                          </button>
+                        )}
+                      </div>
+
                       {/* Match ETA timeline width - only when ETA enabled */}
                       {rule.settings?.show_eta_timeline && (
                         <label style={{ display: "flex", gap: 8, alignItems: "center" }}>
@@ -3900,7 +4066,7 @@ export default function Index() {
                           style={{
                             // When match_eta_border is true, always show border (ignore show_border)
                             boxSizing: "border-box",
-                            padding: (rule.settings?.show_eta_timeline && rule.settings?.match_eta_border) || rule.settings?.show_border ? "10px 12px" : 0,
+                            padding: `${globalSettings?.messages_padding_vertical ?? 10}px ${globalSettings?.messages_padding_horizontal ?? 12}px`,
                             borderStyle: "solid",
                             borderWidth: (rule.settings?.show_eta_timeline && rule.settings?.match_eta_border)
                               ? Number(rule.settings?.eta_border_width ?? 1)
@@ -3913,6 +4079,7 @@ export default function Index() {
                             borderRadius: Number(rule.settings?.show_eta_timeline && rule.settings?.match_eta_border
                               ? (rule.settings?.eta_border_radius ?? 8)
                               : (rule.settings?.border_radius ?? 8)),
+                            backgroundColor: rule.settings?.background_color || "transparent",
                             // Width constraint: match ETA timeline width or use custom max_width
                             // Case 1: match_eta_width ON - force exact ETA width (content wraps)
                             // Case 2: max_width = 0 - fit to content
@@ -3931,7 +4098,7 @@ export default function Index() {
                             overflowWrap: "break-word",
                             display: rule.settings?.icon_layout === "single" ? "flex" : "grid",
                             gap: rule.settings?.icon_layout === "single"
-                              ? (rule.settings?.show_icon !== false ? 12 : 0)
+                              ? (rule.settings?.show_icon !== false ? (globalSettings?.messages_single_icon_gap ?? 12) : 0)
                               : 6,
                             alignItems: rule.settings?.icon_layout === "single" ? "center" : "stretch",
                             fontSize: rule.settings?.override_global_text_styling
@@ -4091,6 +4258,7 @@ export default function Index() {
                               const borderRadius = rule.settings.special_delivery_match_eta_border
                                 ? (rule.settings.eta_border_radius ?? 8)
                                 : (rule.settings.special_delivery_border_radius ?? 8);
+                              const backgroundColor = rule.settings.special_delivery_background_color || "";
 
                               // Width constraint: match ETA timeline width or use custom max_width
                               const matchEtaWidth = rule.settings.special_delivery_match_eta_width && rule.settings.show_eta_timeline && etaTimelineWidth > 0;
@@ -4143,6 +4311,7 @@ export default function Index() {
                                     border: `${borderThickness}px solid ${borderColor}`,
                                     borderRadius: borderRadius,
                                   } : {}),
+                                  ...(backgroundColor ? { backgroundColor, borderRadius: borderRadius } : {}),
                                   // Width constraint: match ETA or custom max_width
                                   ...widthStyle,
                                   color: textColor,

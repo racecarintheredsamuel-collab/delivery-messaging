@@ -22,6 +22,7 @@
 {%- assign special_delivery_margin_top = 0 -%}
 {%- assign special_delivery_margin_bottom = 0 -%}
 {%- assign special_delivery_alignment = 'left' -%}
+{%- assign special_delivery_alignment_mobile = 'left' -%}
 {%- assign special_delivery_text_alignment_final = 'left' -%}
 
 {%- assign special_delivery_padding_horizontal = 12 -%}
@@ -32,6 +33,7 @@
 {%- assign special_delivery_border_thickness_final = 1 -%}
 {%- assign special_delivery_border_color_final = '#e5e7eb' -%}
 {%- assign special_delivery_border_radius_final = 8 -%}
+{%- assign special_delivery_background_color_final = '' -%}
 {%- assign special_delivery_match_eta_border_final = false -%}
 {%- assign special_delivery_match_eta_width_final = false -%}
 {%- assign special_delivery_max_width_final = 600 -%}
@@ -84,6 +86,7 @@
   {%- if global_settings.special_delivery_margin_top != blank -%}{%- assign special_delivery_margin_top = global_settings.special_delivery_margin_top -%}{%- endif -%}
   {%- if global_settings.special_delivery_margin_bottom != blank -%}{%- assign special_delivery_margin_bottom = global_settings.special_delivery_margin_bottom -%}{%- endif -%}
   {%- if global_settings.special_delivery_alignment != blank -%}{%- assign special_delivery_alignment = global_settings.special_delivery_alignment -%}{%- endif -%}
+  {%- if global_settings.special_delivery_alignment_mobile != blank -%}{%- assign special_delivery_alignment_mobile = global_settings.special_delivery_alignment_mobile -%}{%- endif -%}
   {%- if global_settings.special_delivery_padding_horizontal != blank -%}{%- assign special_delivery_padding_horizontal = global_settings.special_delivery_padding_horizontal -%}{%- endif -%}
   {%- if global_settings.special_delivery_padding_vertical != blank -%}{%- assign special_delivery_padding_vertical = global_settings.special_delivery_padding_vertical -%}{%- endif -%}
   {%- if global_settings.special_delivery_icon_gap != blank -%}{%- assign special_delivery_icon_gap = global_settings.special_delivery_icon_gap -%}{%- endif -%}
@@ -173,6 +176,7 @@
       {%- if s.special_delivery_border_thickness != blank -%}{%- assign special_delivery_border_thickness_final = s.special_delivery_border_thickness -%}{%- endif -%}
       {%- if s.special_delivery_border_color != blank -%}{%- assign special_delivery_border_color_final = s.special_delivery_border_color -%}{%- endif -%}
       {%- if s.special_delivery_border_radius != blank -%}{%- assign special_delivery_border_radius_final = s.special_delivery_border_radius -%}{%- endif -%}
+      {%- if s.special_delivery_background_color != blank -%}{%- assign special_delivery_background_color_final = s.special_delivery_background_color -%}{%- endif -%}
       {%- if s.special_delivery_match_eta_border == true or s.special_delivery_match_eta_border == 'true' -%}
         {%- assign special_delivery_match_eta_border_final = true -%}
         {%- assign special_delivery_show_border_final = true -%}
@@ -287,8 +291,8 @@
 #{{ uid }} .dib-special-text{font-family:{{ final_font_family }}}
 {%- endif %}
 </style>
-<div id="{{ uid }}" class="dib-special-delivery-block" {% if special_delivery_match_eta_width_final %}data-match-eta-width="true"{% endif %} style="text-align:{{ special_delivery_alignment }};{% if special_delivery_margin_top != 0 %}margin-top:{{ special_delivery_margin_top }}px;{% endif %}{% if special_delivery_margin_bottom != 0 %}margin-bottom:{{ special_delivery_margin_bottom }}px;{% endif %}">
-  <div class="dib-special-delivery dib-container" style="display:inline-flex;align-items:{{ icon_align_css }};gap:{{ special_delivery_icon_gap }}px;box-sizing:border-box;overflow-wrap:break-word;word-break:break-word;text-align:{{ special_delivery_text_alignment_final }};padding:{{ special_delivery_padding_vertical }}px {{ special_delivery_padding_horizontal }}px;{%- if special_delivery_show_border_final -%}border:{{ special_delivery_border_thickness_final }}px solid {{ special_delivery_border_color_final }};border-radius:{{ special_delivery_border_radius_final }}px;{%- endif -%}{%- if special_delivery_max_width_final > 0 and special_delivery_match_eta_width_final == false -%}width:min({{ special_delivery_max_width_final }}px,100%);{%- endif -%}">
+<div id="{{ uid }}" class="dib-special-delivery-block" {% if special_delivery_match_eta_width_final %}data-match-eta-width="true"{% endif %} style="text-align:{{ special_delivery_alignment }};{% if special_delivery_alignment_mobile != blank %}--dib-align-mobile:{{ special_delivery_alignment_mobile }};{% endif %}{% if special_delivery_margin_top != 0 %}margin-top:{{ special_delivery_margin_top }}px;{% endif %}{% if special_delivery_margin_bottom != 0 %}margin-bottom:{{ special_delivery_margin_bottom }}px;{% endif %}">
+  <div class="dib-special-delivery dib-container" style="display:inline-flex;align-items:{{ icon_align_css }};gap:{{ special_delivery_icon_gap }}px;box-sizing:border-box;overflow-wrap:break-word;word-break:break-word;text-align:{{ special_delivery_text_alignment_final }};padding:{{ special_delivery_padding_vertical }}px {{ special_delivery_padding_horizontal }}px;{%- if special_delivery_show_border_final -%}border:{{ special_delivery_border_thickness_final }}px solid {{ special_delivery_border_color_final }};border-radius:{{ special_delivery_border_radius_final }}px;{%- endif -%}{%- if special_delivery_background_color_final != blank -%}background-color:{{ special_delivery_background_color_final }};{%- unless special_delivery_show_border_final -%}border-radius:{{ special_delivery_border_radius_final }}px;{%- endunless -%}{%- endif -%}{%- if special_delivery_max_width_final > 0 and special_delivery_match_eta_width_final == false -%}width:min({{ special_delivery_max_width_final }}px,100%);{%- endif -%}">
     {%- if special_delivery_is_preset -%}
       <div class="dib-special-icon" style="width:{{ icon_px }}px;height:{{ icon_px }}px;flex-shrink:0;color:{{ final_icon_color }};">{% render 'icon', icon: special_delivery_icon_final, style: special_delivery_icon_style_final %}</div>
     {%- elsif special_delivery_svg_resolved != blank -%}
