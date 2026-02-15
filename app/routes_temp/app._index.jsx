@@ -10,7 +10,7 @@ import { ensureDeliveryRulesDefinition } from "../models/deliveryRules.server";
 import { ChevronDownIcon, ChevronRightIcon } from "../components/icons/ChevronIcons";
 import { newRuleId, newProfileId } from "../utils/idGenerators";
 import { isHHMM, ruleHasMatch, safeParseNumber, friendlyError, safeLogError, validateConfig } from "../utils/validation";
-import { getSingleIconSize, getTextFontSize, getTextFontWeight, normalizeFontSize, normalizeEtaLabelFontSize, normalizeEtaDateFontSize, normalizeSingleIconSize } from "../utils/styling";
+import { getSingleIconSize, getTextFontSize, getTextFontWeight } from "../utils/styling";
 import { getIconSvg, getConfiguredCustomIcons } from "../utils/icons";
 import { getHolidaysForYear } from "../utils/holidays";
 import { PreviewLine } from "../components/PreviewLine";
@@ -51,6 +51,7 @@ function defaultGlobalSettings() {
     font_weight: "normal",
     // Typography - ETA Timeline font
     eta_use_theme_font: true,
+    eta_match_messages_font: false,
     eta_custom_font_family: "",
     eta_preview_theme_font: "",
     eta_preview_font_size_scale: "", // Font size scale for admin preview (80-130%)
@@ -74,13 +75,6 @@ function defaultGlobalSettings() {
     // ETA Timeline padding
     eta_padding_horizontal: 8,
     eta_padding_vertical: 8,
-    // Typography - Special Delivery Header styling
-    special_delivery_header_use_theme_text_styling: true,
-    special_delivery_header_text_color: "#111827",
-    special_delivery_header_font_size: 16,
-    special_delivery_header_font_weight: "semibold",
-    special_delivery_header_gap: 4,
-    special_delivery_line_height: 1.4,
   };
 }
 
@@ -201,55 +195,27 @@ export const action = async ({ request }) => {
 
   const formData = await request.formData();
   const configRaw = formData.get("config");
-  const settingsRaw = formData.get("settings");
   let shopId = formData.get("shopId");
 
-  const metafieldsToSave = [];
-
-  // Parse and validate config if provided
-  if (configRaw && typeof configRaw === "string" && configRaw.trim()) {
-    let parsed;
-    try {
-      parsed = JSON.parse(configRaw);
-    } catch (error) {
-      safeLogError("Failed to parse config JSON", error);
-      return { ok: false, error: "Config must be valid JSON." };
-    }
-
-    // Validate config against schema
-    const validation = validateConfig(parsed);
-    if (!validation.success) {
-      safeLogError("Config validation failed", new Error(validation.error));
-      return { ok: false, error: "Invalid configuration format. Please check your data and try again." };
-    }
-    metafieldsToSave.push({
-      namespace: METAFIELD_NAMESPACE,
-      key: CONFIG_KEY,
-      type: "json",
-      value: JSON.stringify(validation.data),
-    });
+  if (typeof configRaw !== "string" || !configRaw.trim()) {
+    return { ok: false, error: "Config is empty." };
   }
 
-  // Parse settings if provided (no validation needed - just JSON)
-  if (settingsRaw && typeof settingsRaw === "string" && settingsRaw.trim()) {
-    let parsedSettings;
-    try {
-      parsedSettings = JSON.parse(settingsRaw);
-    } catch (error) {
-      safeLogError("Failed to parse settings JSON", error);
-      return { ok: false, error: "Settings must be valid JSON." };
-    }
-    metafieldsToSave.push({
-      namespace: METAFIELD_NAMESPACE,
-      key: SETTINGS_KEY,
-      type: "json",
-      value: JSON.stringify(parsedSettings),
-    });
+  let parsed;
+  try {
+    parsed = JSON.parse(configRaw);
+  } catch (error) {
+    safeLogError("Failed to parse config JSON", error);
+    return { ok: false, error: "Config must be valid JSON." };
   }
 
-  if (metafieldsToSave.length === 0) {
-    return { ok: false, error: "No data to save." };
+  // Validate config against schema
+  const validation = validateConfig(parsed);
+  if (!validation.success) {
+    safeLogError("Config validation failed", new Error(validation.error));
+    return { ok: false, error: "Invalid configuration format. Please check your data and try again." };
   }
+  const validatedConfig = validation.data;
 
   // Use shopId from form data if provided, otherwise fetch (fallback for edge cases)
   if (!shopId) {
@@ -261,15 +227,17 @@ export const action = async ({ request }) => {
     shopId = shopJson?.data?.shop?.id;
   }
 
-  // Add ownerId to all metafields
-  const metafieldsWithOwner = metafieldsToSave.map(mf => ({
-    ...mf,
-    ownerId: shopId,
-  }));
-
   const setRes = await admin.graphql(SET_METAFIELDS_MINIMAL, {
     variables: {
-      metafields: metafieldsWithOwner,
+      metafields: [
+        {
+          ownerId: shopId,
+          namespace: METAFIELD_NAMESPACE,
+          key: CONFIG_KEY,
+          type: "json",
+          value: JSON.stringify(validatedConfig),
+        },
+      ],
     },
   });
 
@@ -354,22 +322,24 @@ function renderWithLineBreaks(text, keyPrefix = '') {
 function replaceDatePlaceholders(text, rule, globalSettings, shopCurrency = 'GBP') {
   if (!text) return text;
 
-  // Format currency helper - strips .00 for whole numbers (£50 not £50.00)
+  // Format currency helper
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat('en-GB', {
       style: 'currency',
       currency: shopCurrency,
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 2,
     }).format(amount);
   };
 
-  // Handle free delivery threshold placeholder (static value)
-  // Note: {remaining} and {cart_total} are NOT supported in Messages section
-  // as they cause confusing UX (e.g., "Spend £0 more..."). Use announcement bar or cart for dynamic messages.
+  // Handle free delivery placeholders
   if (text.includes('{threshold}')) {
     const thresholdAmount = (globalSettings?.fd_threshold || 5000) / 100;
     text = text.replace(/{threshold}/g, formatCurrency(thresholdAmount));
+  }
+  if (text.includes('{remaining}')) {
+    text = text.replace(/{remaining}/g, formatCurrency(24.01));
+  }
+  if (text.includes('{cart_total}')) {
+    text = text.replace(/{cart_total}/g, formatCurrency(25.99));
   }
 
   if (!text.includes('{arrival}') && !text.includes('{express}') && !text.includes('{countdown}')) return text;
@@ -524,6 +494,14 @@ function migrateMessageFields(settings) {
     result.message_line_2 = line2.trim();
   }
 
+  // Migrate old cart_message format (none/line1/line2/custom) to simple text
+  if (settings.cart_message === "custom" && settings.cart_message_custom) {
+    result.cart_message = settings.cart_message_custom;
+  } else if (["none", "line1", "line2"].includes(settings.cart_message)) {
+    result.cart_message = "";
+  }
+  delete result.cart_message_custom;
+
   // Migrate old countdown settings (prefix/suffix) to {countdown} placeholder
   if (settings.show_countdown && (settings.countdown_prefix !== undefined || settings.countdown_suffix !== undefined)) {
     const prefix = settings.countdown_prefix || "Order within";
@@ -580,10 +558,10 @@ function defaultRule() {
       icon_layout: "per-line",
       single_icon_size: "medium",
       icon_vertical_align: "top",
-      border_thickness: 0,
+      show_border: false,
+      border_thickness: 1,
       border_color: "#e5e7eb",
       border_radius: 8,
-      background_color: "",
       max_width: 600,
 
       // Dispatch settings overrides (separate flags)
@@ -611,7 +589,6 @@ function defaultRule() {
       eta_border_width: 0,
       eta_border_color: "#e5e7eb",
       eta_border_radius: 8,
-      eta_background_color: "",
       eta_delivery_days_min: 3,
       eta_delivery_days_max: 5,
       eta_order_icon: "clipboard-document-check",
@@ -643,18 +620,20 @@ function defaultRule() {
       eta_date_font_size: "xsmall",
       eta_date_font_weight: "normal",
 
+      // Cart message (text to show under items in cart, use {arrival} for delivery date)
+      cart_message: "",
+
       // Special Delivery block
       show_special_delivery: false,
-      special_delivery_header: "",
       special_delivery_message: "",
       special_delivery_icon_size: "medium",
       special_delivery_icon_color: "#111827",
       special_delivery_use_main_icon_color: true,
       // Special Delivery - Border Styling
-      special_delivery_border_thickness: 0,
+      special_delivery_show_border: false,
+      special_delivery_border_thickness: 1,
       special_delivery_border_color: "#e5e7eb",
       special_delivery_border_radius: 8,
-      special_delivery_background_color: "",
       special_delivery_match_eta_border: false,
       special_delivery_match_eta_width: false,
       special_delivery_max_width: 600,
@@ -663,12 +642,6 @@ function defaultRule() {
       special_delivery_text_color: "#374151",
       special_delivery_font_size: "medium",
       special_delivery_font_weight: "normal",
-      special_delivery_text_alignment: "left",
-      // Special Delivery - Header Styling (per-rule override)
-      special_delivery_override_global_header_styling: false,
-      special_delivery_header_color: "#111827",
-      special_delivery_header_font_size: 16,
-      special_delivery_header_font_weight: "semibold",
       // Special Delivery - Icon selection from Icons page
       special_delivery_icon: "",
     },
@@ -711,14 +684,7 @@ const setCollapsedState = (ruleId, section, collapsed) => {
 // ============================================================================
 
 export default function Index() {
-  const { config, globalSettings: loaderGlobalSettings, shopId, shopCurrency } = useLoaderData();
-
-  // Editable global settings state (for Typography and Alignment panels)
-  const [globalSettings, setGlobalSettings] = useState(loaderGlobalSettings);
-
-  // Typography and Alignment panel visibility
-  const [showTypographyPanel, setShowTypographyPanel] = useState(false);
-  const [showAlignmentPanel, setShowAlignmentPanel] = useState(false);
+  const { config, globalSettings, shopId, shopCurrency } = useLoaderData();
 
   // Parse and migrate config to v2 format on initial load
   const initialConfig = (() => {
@@ -839,9 +805,7 @@ export default function Index() {
   const [justSaved, setJustSaved] = useState(false);
   const savedTimerRef = useRef(null);
   const autoSaveTimerRef = useRef(null);
-  const settingsAutoSaveTimerRef = useRef(null);
   const initialDraftRef = useRef(JSON.stringify(initialConfig));
-  const initialSettingsRef = useRef(JSON.stringify(loaderGlobalSettings));
 
   useEffect(() => {
     // Handle dev reset - reload page to get fresh state
@@ -874,7 +838,7 @@ export default function Index() {
     };
   }, []);
 
-  // Auto-save config after 2 seconds of inactivity
+  // Auto-save after 2 seconds of inactivity
   useEffect(() => {
     if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
 
@@ -893,30 +857,10 @@ export default function Index() {
     };
   }, [draft, shopId, fetcher.state]);
 
-  // Auto-save globalSettings after 2 seconds of inactivity
-  useEffect(() => {
-    if (settingsAutoSaveTimerRef.current) clearTimeout(settingsAutoSaveTimerRef.current);
-
-    const currentSettingsStr = JSON.stringify(globalSettings);
-    // Don't auto-save if unchanged from initial load
-    if (currentSettingsStr === initialSettingsRef.current) return;
-
-    // Don't auto-save while already saving
-    if (fetcher.state !== "idle") return;
-
-    settingsAutoSaveTimerRef.current = setTimeout(() => {
-      fetcher.submit({ settings: currentSettingsStr, shopId }, { method: "POST" });
-    }, 2000);
-
-    return () => {
-      if (settingsAutoSaveTimerRef.current) clearTimeout(settingsAutoSaveTimerRef.current);
-    };
-  }, [globalSettings, shopId, fetcher.state]);
-
   // Track previous fetcher state to detect save completion
   const prevFetcherStateRef = useRef(fetcher.state);
 
-  // Update initial refs after successful save (so we don't re-save the same data)
+  // Update initial ref after successful save (so we don't re-save the same data)
   useEffect(() => {
     const wasSubmitting = prevFetcherStateRef.current === "submitting" || prevFetcherStateRef.current === "loading";
     const isNowIdle = fetcher.state === "idle";
@@ -927,9 +871,8 @@ export default function Index() {
 
     if (fetcher.data?.ok === true) {
       initialDraftRef.current = draft;
-      initialSettingsRef.current = JSON.stringify(globalSettings);
     }
-  }, [fetcher.state, fetcher.data, draft, globalSettings]);
+  }, [fetcher.state, fetcher.data, draft]);
 
   // --------------------------------------------------------------------------
   // Derived state from parsed config (memoized to avoid re-parsing on every render)
@@ -1371,39 +1314,11 @@ export default function Index() {
 
             {/* Action row - spans both columns (NOT sticky) */}
             <div style={{ gridColumn: "1 / -1", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              {/* Editor/Typography/Alignment + Collapse/Expand buttons - LEFT */}
-              <div style={{ display: "flex", gap: 8 }}>
-                <s-button
-                  variant={!showTypographyPanel && !showAlignmentPanel ? "primary" : undefined}
-                  onClick={() => {
-                    setShowTypographyPanel(false);
-                    setShowAlignmentPanel(false);
-                  }}
-                >
-                  Editor
-                </s-button>
-                <s-button
-                  variant={showTypographyPanel ? "primary" : undefined}
-                  onClick={() => {
-                    setShowTypographyPanel(!showTypographyPanel);
-                    setShowAlignmentPanel(false);
-                  }}
-                >
-                  Typography
-                </s-button>
-                <s-button
-                  variant={showAlignmentPanel ? "primary" : undefined}
-                  onClick={() => {
-                    setShowAlignmentPanel(!showAlignmentPanel);
-                    setShowTypographyPanel(false);
-                  }}
-                >
-                  Alignment
-                </s-button>
-                {rule && (
-                  <>
-                    <s-button
-                      onClick={() => {
+              {/* Collapse/Expand buttons - LEFT (only when rule selected) */}
+              {rule ? (
+                <div style={{ display: "flex", gap: 8 }}>
+                  <s-button
+                    onClick={() => {
                       if (!rule?.id) return;
                       const allCollapsed = {
                         product_matching: true,
@@ -1411,7 +1326,6 @@ export default function Index() {
                         countdown_messages: true,
                         countdown_icon: true,
                         eta_timeline: true,
-                        special_delivery: true,
                       };
                       setCollapsedPanels(allCollapsed);
                       Object.entries(allCollapsed).forEach(([key, val]) => {
@@ -1430,7 +1344,6 @@ export default function Index() {
                         countdown_messages: false,
                         countdown_icon: false,
                         eta_timeline: false,
-                        special_delivery: false,
                       };
                       setCollapsedPanels(allExpanded);
                       Object.entries(allExpanded).forEach(([key, val]) => {
@@ -1449,7 +1362,6 @@ export default function Index() {
                         countdown_messages: !rule.settings?.show_messages,
                         countdown_icon: rule.settings?.show_icon === false,
                         eta_timeline: !rule.settings?.show_eta_timeline,
-                        special_delivery: !rule.settings?.show_special_delivery,
                       };
                       setCollapsedPanels(smartCollapse);
                       Object.entries(smartCollapse).forEach(([key, val]) => {
@@ -1459,9 +1371,10 @@ export default function Index() {
                   >
                     Show enabled
                   </s-button>
-                  </>
-                )}
-              </div>
+                </div>
+              ) : (
+                <div />
+              )}
               {/* Profile + Add rule + Copy rule - RIGHT */}
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
@@ -1494,716 +1407,10 @@ export default function Index() {
             </div>
 
             {/* LEFT column: editor (inputs, main work area) */}
-            <div style={{ display: "grid", gap: 12 }}>
+            {rule ? (
+              <div style={{ display: "grid", gap: 12 }}>
 
-              {/* Typography Panel */}
-              {showTypographyPanel && (
-                <div style={{ border: "1px solid var(--p-color-border, #e5e7eb)", borderRadius: 8, padding: 16, background: "var(--p-color-bg-surface, #ffffff)", display: "grid", gap: 16 }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <s-heading>Typography</s-heading>
-                  <s-button variant="plain" onClick={() => setShowTypographyPanel(false)}>Close</s-button>
-                </div>
-
-                {/* Theme Font for Preview */}
-                <div style={{ border: "1px solid var(--p-color-border, #e5e7eb)", borderRadius: 8, padding: 16, display: "grid", gap: 12, background: "var(--p-color-bg-surface-secondary, #f9fafb)" }}>
-                  <s-heading size="small">Theme Font for Preview</s-heading>
-                  <s-text size="small" style={{ color: "var(--p-color-text-subdued, #6b7280)" }}>
-                    Select your Shopify theme's body font so the preview matches your storefront when "Match theme font" is enabled.
-                  </s-text>
-                  <select
-                    value={globalSettings?.eta_preview_theme_font || ""}
-                    onChange={(e) => setGlobalSettings({ ...globalSettings, eta_preview_theme_font: e.target.value })}
-                    style={{ width: "100%" }}
-                  >
-                    <option value="">Select font...</option>
-                    <option value="'Assistant', sans-serif">Assistant</option>
-                    <option value="'Roboto', sans-serif">Roboto</option>
-                    <option value="'Open Sans', sans-serif">Open Sans</option>
-                    <option value="'Montserrat', sans-serif">Montserrat</option>
-                    <option value="'Poppins', sans-serif">Poppins</option>
-                    <option value="'Lato', sans-serif">Lato</option>
-                    <option value="'Nunito Sans', sans-serif">Nunito Sans</option>
-                    <option value="'Source Sans Pro', sans-serif">Source Sans Pro</option>
-                    <option value="'Oswald', sans-serif">Oswald</option>
-                    <option value="'Raleway', sans-serif">Raleway</option>
-                    <option value="'Inter', sans-serif">Inter</option>
-                  </select>
-                  <div>
-                    <s-text size="small">Font size scale ({globalSettings?.eta_preview_font_size_scale || 100}%)</s-text>
-                    <input
-                      type="range"
-                      min="80"
-                      max="130"
-                      value={globalSettings?.eta_preview_font_size_scale || 100}
-                      onChange={(e) => setGlobalSettings({ ...globalSettings, eta_preview_font_size_scale: Number(e.target.value) })}
-                      style={{ width: "100%" }}
-                    />
-                  </div>
-                </div>
-
-                {/* Messages Font & Text Styling */}
-                <div style={{ border: "1px solid var(--p-color-border, #e5e7eb)", borderRadius: 8, padding: 16, display: "grid", gap: 12, background: "var(--p-color-bg-surface-secondary, #f9fafb)" }}>
-                  <s-heading size="small">Messages Font & Text Styling</s-heading>
-
-                  <label style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer" }}>
-                    <input
-                      type="checkbox"
-                      checked={globalSettings?.use_theme_font !== false}
-                      onChange={(e) => setGlobalSettings({ ...globalSettings, use_theme_font: e.target.checked })}
-                    />
-                    <s-text>Match theme font</s-text>
-                  </label>
-                  {!globalSettings?.use_theme_font && (
-                    <div style={{ display: "grid", gap: 8, marginLeft: 24 }}>
-                      <s-text size="small">Custom font</s-text>
-                      <select
-                        value={globalSettings?.custom_font_family || ""}
-                        onChange={(e) => setGlobalSettings({ ...globalSettings, custom_font_family: e.target.value })}
-                        style={{ width: "100%" }}
-                      >
-                        <option value="">Select font...</option>
-                        <option value="'Roboto', sans-serif">Roboto</option>
-                        <option value="'Open Sans', sans-serif">Open Sans</option>
-                        <option value="'Montserrat', sans-serif">Montserrat</option>
-                        <option value="'Poppins', sans-serif">Poppins</option>
-                        <option value="'Lato', sans-serif">Lato</option>
-                        <option value="'Nunito Sans', sans-serif">Nunito Sans</option>
-                        <option value="'Source Sans Pro', sans-serif">Source Sans Pro</option>
-                        <option value="'Oswald', sans-serif">Oswald</option>
-                        <option value="'Raleway', sans-serif">Raleway</option>
-                        <option value="'Inter', sans-serif">Inter</option>
-                      </select>
-                    </div>
-                  )}
-
-                  <label style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer" }}>
-                    <input
-                      type="checkbox"
-                      checked={globalSettings?.use_theme_text_styling !== false}
-                      onChange={(e) => setGlobalSettings({ ...globalSettings, use_theme_text_styling: e.target.checked })}
-                    />
-                    <s-text>Match theme text styling</s-text>
-                  </label>
-                  {rule.settings?.override_global_text_styling === true && (
-                    <s-text size="small" style={{ color: "#6b7280", marginLeft: 24 }}><em>📌 Current rule is using custom text styling</em></s-text>
-                  )}
-                  {globalSettings?.use_theme_text_styling === false && (
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginLeft: 24 }}>
-                      <div>
-                        <s-text size="small">Text color</s-text>
-                        <s-color-field
-                          label=""
-                          value={globalSettings?.text_color || "#374151"}
-                          onInput={(e) => setGlobalSettings({ ...globalSettings, text_color: e.detail?.value ?? e.target?.value ?? "#374151" })}
-                          onChange={(e) => setGlobalSettings({ ...globalSettings, text_color: e.detail?.value ?? e.target?.value ?? "#374151" })}
-                        />
-                      </div>
-                      <div>
-                        <s-text size="small">Font size ({globalSettings?.font_size ?? 16}px)</s-text>
-                        <input
-                          type="range"
-                          min="10"
-                          max="22"
-                          value={globalSettings?.font_size ?? 16}
-                          onChange={(e) => setGlobalSettings({ ...globalSettings, font_size: Number(e.target.value) })}
-                          style={{ width: "100%" }}
-                        />
-                      </div>
-                      <div>
-                        <s-text size="small">Font weight</s-text>
-                        <select
-                          value={globalSettings?.font_weight || "normal"}
-                          onChange={(e) => setGlobalSettings({ ...globalSettings, font_weight: e.target.value })}
-                          style={{ width: "100%" }}
-                        >
-                          <option value="normal">Normal</option>
-                          <option value="medium">Medium</option>
-                          <option value="semibold">Semibold</option>
-                          <option value="bold">Bold</option>
-                        </select>
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                {/* ETA Timeline Font & Text Styling */}
-                <div style={{ border: "1px solid var(--p-color-border, #e5e7eb)", borderRadius: 8, padding: 16, display: "grid", gap: 12, background: "var(--p-color-bg-surface-secondary, #f9fafb)" }}>
-                  <s-heading size="small">ETA Timeline Font & Text Styling</s-heading>
-
-                  <label style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer" }}>
-                    <input
-                      type="checkbox"
-                      checked={globalSettings?.eta_use_theme_font !== false}
-                      onChange={(e) => setGlobalSettings({ ...globalSettings, eta_use_theme_font: e.target.checked })}
-                    />
-                    <s-text>Match theme font</s-text>
-                  </label>
-                  {globalSettings?.eta_use_theme_font === false && (
-                    <div style={{ display: "grid", gap: 8, marginLeft: 24 }}>
-                      <s-text size="small">Custom font</s-text>
-                      <select
-                        value={globalSettings?.eta_custom_font_family || ""}
-                        onChange={(e) => setGlobalSettings({ ...globalSettings, eta_custom_font_family: e.target.value })}
-                        style={{ width: "100%" }}
-                      >
-                        <option value="">Select font...</option>
-                        <option value="'Roboto', sans-serif">Roboto</option>
-                        <option value="'Open Sans', sans-serif">Open Sans</option>
-                        <option value="'Montserrat', sans-serif">Montserrat</option>
-                        <option value="'Poppins', sans-serif">Poppins</option>
-                        <option value="'Lato', sans-serif">Lato</option>
-                        <option value="'Nunito Sans', sans-serif">Nunito Sans</option>
-                        <option value="'Source Sans Pro', sans-serif">Source Sans Pro</option>
-                        <option value="'Oswald', sans-serif">Oswald</option>
-                        <option value="'Raleway', sans-serif">Raleway</option>
-                        <option value="'Inter', sans-serif">Inter</option>
-                      </select>
-                    </div>
-                  )}
-
-                  <label style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer" }}>
-                    <input
-                      type="checkbox"
-                      checked={globalSettings?.eta_use_theme_text_styling !== false}
-                      onChange={(e) => setGlobalSettings({ ...globalSettings, eta_use_theme_text_styling: e.target.checked })}
-                    />
-                    <s-text>Match theme text styling</s-text>
-                  </label>
-                  {rule.settings?.override_eta_text_styling === true && (
-                    <s-text size="small" style={{ color: "#6b7280", marginLeft: 24 }}><em>📌 Current rule is using custom text styling</em></s-text>
-                  )}
-                  {globalSettings?.eta_use_theme_text_styling === false && (
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginLeft: 24 }}>
-                    {/* Labels */}
-                    <div style={{ display: "grid", gap: 8 }}>
-                      <div style={{ minHeight: 40 }}><s-text size="small" style={{ fontWeight: 600 }}>Labels (Ordered, Shipped, Delivered)</s-text></div>
-                      <div>
-                        <s-text size="small">Color</s-text>
-                        <s-color-field
-                          label=""
-                          value={globalSettings?.eta_label_color || "#374151"}
-                          onInput={(e) => setGlobalSettings({ ...globalSettings, eta_label_color: e.detail?.value ?? e.target?.value ?? "#374151" })}
-                          onChange={(e) => setGlobalSettings({ ...globalSettings, eta_label_color: e.detail?.value ?? e.target?.value ?? "#374151" })}
-                        />
-                      </div>
-                      <div>
-                        <s-text size="small">Font size ({globalSettings?.eta_label_font_size ?? 12}px)</s-text>
-                        <input
-                          type="range"
-                          min="10"
-                          max="18"
-                          value={globalSettings?.eta_label_font_size ?? 12}
-                          onChange={(e) => setGlobalSettings({ ...globalSettings, eta_label_font_size: Number(e.target.value) })}
-                          style={{ width: "100%" }}
-                        />
-                      </div>
-                      <div>
-                        <s-text size="small">Font weight</s-text>
-                        <select
-                          value={globalSettings?.eta_label_font_weight || "semibold"}
-                          onChange={(e) => setGlobalSettings({ ...globalSettings, eta_label_font_weight: e.target.value })}
-                          style={{ width: "100%" }}
-                        >
-                          <option value="normal">Normal</option>
-                          <option value="medium">Medium</option>
-                          <option value="semibold">Semibold</option>
-                          <option value="bold">Bold</option>
-                        </select>
-                      </div>
-                    </div>
-                    {/* Dates */}
-                    <div style={{ display: "grid", gap: 8 }}>
-                      <div style={{ minHeight: 40 }}><s-text size="small" style={{ fontWeight: 600 }}>Dates (Jan 20, Jan 21-24)</s-text></div>
-                      <div>
-                        <s-text size="small">Color</s-text>
-                        <s-color-field
-                          label=""
-                          value={globalSettings?.eta_date_color || "#6b7280"}
-                          onInput={(e) => setGlobalSettings({ ...globalSettings, eta_date_color: e.detail?.value ?? e.target?.value ?? "#6b7280" })}
-                          onChange={(e) => setGlobalSettings({ ...globalSettings, eta_date_color: e.detail?.value ?? e.target?.value ?? "#6b7280" })}
-                        />
-                      </div>
-                      <div>
-                        <s-text size="small">Font size ({globalSettings?.eta_date_font_size ?? 11}px)</s-text>
-                        <input
-                          type="range"
-                          min="10"
-                          max="18"
-                          value={globalSettings?.eta_date_font_size ?? 11}
-                          onChange={(e) => setGlobalSettings({ ...globalSettings, eta_date_font_size: Number(e.target.value) })}
-                          style={{ width: "100%" }}
-                        />
-                      </div>
-                      <div>
-                        <s-text size="small">Font weight</s-text>
-                        <select
-                          value={globalSettings?.eta_date_font_weight || "normal"}
-                          onChange={(e) => setGlobalSettings({ ...globalSettings, eta_date_font_weight: e.target.value })}
-                          style={{ width: "100%" }}
-                        >
-                          <option value="normal">Normal</option>
-                          <option value="medium">Medium</option>
-                          <option value="semibold">Semibold</option>
-                          <option value="bold">Bold</option>
-                        </select>
-                      </div>
-                    </div>
-                  </div>
-                  )}
-                </div>
-
-                {/* Special Delivery Font & Text Styling */}
-                <div style={{ border: "1px solid var(--p-color-border, #e5e7eb)", borderRadius: 8, padding: 16, display: "grid", gap: 12, background: "var(--p-color-bg-surface-secondary, #f9fafb)" }}>
-                  <s-heading size="small">Special Delivery Font & Text Styling</s-heading>
-                  <label style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer" }}>
-                    <input
-                      type="checkbox"
-                      checked={globalSettings?.special_delivery_use_theme_font !== false}
-                      onChange={(e) => setGlobalSettings({ ...globalSettings, special_delivery_use_theme_font: e.target.checked })}
-                    />
-                    <s-text>Match theme font</s-text>
-                  </label>
-                  {globalSettings?.special_delivery_use_theme_font === false && (
-                    <div style={{ display: "grid", gap: 8, marginLeft: 24 }}>
-                      <s-text size="small">Custom font</s-text>
-                      <select
-                        value={globalSettings?.special_delivery_custom_font_family || ""}
-                        onChange={(e) => setGlobalSettings({ ...globalSettings, special_delivery_custom_font_family: e.target.value })}
-                        style={{ width: "100%" }}
-                      >
-                        <option value="">Select font...</option>
-                        <option value="'Assistant', sans-serif">Assistant</option>
-                        <option value="'Roboto', sans-serif">Roboto</option>
-                        <option value="'Open Sans', sans-serif">Open Sans</option>
-                        <option value="'Montserrat', sans-serif">Montserrat</option>
-                        <option value="'Poppins', sans-serif">Poppins</option>
-                        <option value="'Lato', sans-serif">Lato</option>
-                        <option value="'Nunito Sans', sans-serif">Nunito Sans</option>
-                        <option value="'Source Sans Pro', sans-serif">Source Sans Pro</option>
-                        <option value="'Oswald', sans-serif">Oswald</option>
-                        <option value="'Raleway', sans-serif">Raleway</option>
-                        <option value="'Inter', sans-serif">Inter</option>
-                      </select>
-                    </div>
-                  )}
-
-                  <label style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer" }}>
-                    <input
-                      type="checkbox"
-                      checked={globalSettings?.special_delivery_use_theme_text_styling !== false}
-                      onChange={(e) => setGlobalSettings({ ...globalSettings, special_delivery_use_theme_text_styling: e.target.checked, special_delivery_header_use_theme_text_styling: e.target.checked })}
-                    />
-                    <s-text>Match theme text styling</s-text>
-                  </label>
-                  {(rule.settings?.special_delivery_override_global_text_styling === true || rule.settings?.special_delivery_override_global_header_styling === true) && (
-                    <s-text size="small" style={{ color: "#6b7280", marginLeft: 24 }}><em>📌 Current rule is using custom text styling</em></s-text>
-                  )}
-                  {globalSettings?.special_delivery_use_theme_text_styling === false && (
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginLeft: 24 }}>
-                    {/* Header */}
-                    <div style={{ display: "grid", gap: 8 }}>
-                      <s-text size="small" style={{ fontWeight: 600 }}>Header (optional)</s-text>
-                      <div>
-                        <s-text size="small">Color</s-text>
-                        <s-color-field
-                          label=""
-                          value={globalSettings?.special_delivery_header_text_color || "#111827"}
-                          onInput={(e) => setGlobalSettings({ ...globalSettings, special_delivery_header_text_color: e.detail?.value ?? e.target?.value ?? "#111827" })}
-                          onChange={(e) => setGlobalSettings({ ...globalSettings, special_delivery_header_text_color: e.detail?.value ?? e.target?.value ?? "#111827" })}
-                        />
-                      </div>
-                      <div>
-                        <s-text size="small">Font size ({globalSettings?.special_delivery_header_font_size ?? 16}px)</s-text>
-                        <input
-                          type="range"
-                          min="12"
-                          max="24"
-                          value={globalSettings?.special_delivery_header_font_size ?? 16}
-                          onChange={(e) => setGlobalSettings({ ...globalSettings, special_delivery_header_font_size: Number(e.target.value) })}
-                          style={{ width: "100%" }}
-                        />
-                      </div>
-                      <div>
-                        <s-text size="small">Font weight</s-text>
-                        <select
-                          value={globalSettings?.special_delivery_header_font_weight || "semibold"}
-                          onChange={(e) => setGlobalSettings({ ...globalSettings, special_delivery_header_font_weight: e.target.value })}
-                          style={{ width: "100%" }}
-                        >
-                          <option value="normal">Normal</option>
-                          <option value="medium">Medium</option>
-                          <option value="semibold">Semibold</option>
-                          <option value="bold">Bold</option>
-                        </select>
-                      </div>
-                    </div>
-                    {/* Message */}
-                    <div style={{ display: "grid", gap: 8 }}>
-                      <s-text size="small" style={{ fontWeight: 600 }}>Message</s-text>
-                      <div>
-                        <s-text size="small">Color</s-text>
-                        <s-color-field
-                          label=""
-                          value={globalSettings?.special_delivery_text_color || "#374151"}
-                          onInput={(e) => setGlobalSettings({ ...globalSettings, special_delivery_text_color: e.detail?.value ?? e.target?.value ?? "#374151" })}
-                          onChange={(e) => setGlobalSettings({ ...globalSettings, special_delivery_text_color: e.detail?.value ?? e.target?.value ?? "#374151" })}
-                        />
-                      </div>
-                      <div>
-                        <s-text size="small">Font size ({globalSettings?.special_delivery_font_size ?? 16}px)</s-text>
-                        <input
-                          type="range"
-                          min="10"
-                          max="22"
-                          value={globalSettings?.special_delivery_font_size ?? 16}
-                          onChange={(e) => setGlobalSettings({ ...globalSettings, special_delivery_font_size: Number(e.target.value) })}
-                          style={{ width: "100%" }}
-                        />
-                      </div>
-                      <div>
-                        <s-text size="small">Font weight</s-text>
-                        <select
-                          value={globalSettings?.special_delivery_font_weight || "normal"}
-                          onChange={(e) => setGlobalSettings({ ...globalSettings, special_delivery_font_weight: e.target.value })}
-                          style={{ width: "100%" }}
-                        >
-                          <option value="normal">Normal</option>
-                          <option value="medium">Medium</option>
-                          <option value="semibold">Semibold</option>
-                          <option value="bold">Bold</option>
-                        </select>
-                      </div>
-                    </div>
-                  </div>
-                  )}
-                </div>
-              </div>
-            )}
-
-              {/* Alignment Panel */}
-              {showAlignmentPanel && (
-                <div style={{ border: "1px solid var(--p-color-border, #e5e7eb)", borderRadius: 8, padding: 16, background: "var(--p-color-bg-surface, #ffffff)", display: "grid", gap: 16 }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <s-heading>Spacing & Alignment</s-heading>
-                  <s-button variant="plain" onClick={() => setShowAlignmentPanel(false)}>Close</s-button>
-                </div>
-
-                {/* Messages Spacing & Alignment */}
-                <div style={{ border: "1px solid var(--p-color-border, #e5e7eb)", borderRadius: 8, padding: 16, display: "grid", gap: 12, background: "var(--p-color-bg-surface-secondary, #f9fafb)" }}>
-                  <s-heading size="small">Messages Spacing & Alignment</s-heading>
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-                    <div>
-                      <s-text size="small">Left padding</s-text>
-                      <input
-                        type="number"
-                        min="0"
-                        max="40"
-                        value={globalSettings?.messages_padding_left ?? 8}
-                        onChange={(e) => setGlobalSettings({ ...globalSettings, messages_padding_left: safeParseNumber(e.target.value, 8, 0, 40) })}
-                        style={{ width: "100%" }}
-                      />
-                    </div>
-                    <div>
-                      <s-text size="small">Right padding</s-text>
-                      <input
-                        type="number"
-                        min="0"
-                        max="40"
-                        value={globalSettings?.messages_padding_right ?? 12}
-                        onChange={(e) => setGlobalSettings({ ...globalSettings, messages_padding_right: safeParseNumber(e.target.value, 12, 0, 40) })}
-                        style={{ width: "100%" }}
-                      />
-                    </div>
-                    <div>
-                      <s-text size="small">Vertical padding</s-text>
-                      <input
-                        type="number"
-                        min="0"
-                        max="40"
-                        value={globalSettings?.messages_padding_vertical ?? 10}
-                        onChange={(e) => setGlobalSettings({ ...globalSettings, messages_padding_vertical: safeParseNumber(e.target.value, 10, 0, 40) })}
-                        style={{ width: "100%" }}
-                      />
-                    </div>
-                    <div>
-                      <s-text size="small">Single icon gap</s-text>
-                      <input
-                        type="number"
-                        min="0"
-                        max="40"
-                        value={globalSettings?.messages_single_icon_gap ?? 12}
-                        onChange={(e) => setGlobalSettings({ ...globalSettings, messages_single_icon_gap: safeParseNumber(e.target.value, 12, 0, 40) })}
-                        style={{ width: "100%" }}
-                      />
-                    </div>
-                  </div>
-                  <div style={{ borderTop: "1px solid var(--p-color-border, #e5e7eb)", paddingTop: 12, marginTop: 4 }}>
-                    <s-text size="small" style={{ color: "#6b7280" }}><em>📌 Settings below only apply to the live storefront</em></s-text>
-                    <div style={{ display: "flex", alignItems: "center", gap: 6, color: "var(--p-color-text-subdued, #6b7280)", marginTop: 4 }}>
-                      <span style={{ fontSize: 12, flexShrink: 0 }}>💡</span>
-                      <span style={{ fontSize: 12 }}>Negative margins pull elements closer together.</span>
-                    </div>
-                  </div>
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-                    <div>
-                      <s-text size="small">Margin top</s-text>
-                      <input
-                        type="number"
-                        value={globalSettings?.messages_margin_top ?? 0}
-                        onChange={(e) => setGlobalSettings({ ...globalSettings, messages_margin_top: Number(e.target.value) || 0 })}
-                        style={{ width: "100%" }}
-                      />
-                    </div>
-                    <div>
-                      <s-text size="small">Margin bottom</s-text>
-                      <input
-                        type="number"
-                        value={globalSettings?.messages_margin_bottom ?? 0}
-                        onChange={(e) => setGlobalSettings({ ...globalSettings, messages_margin_bottom: Number(e.target.value) || 0 })}
-                        style={{ width: "100%" }}
-                      />
-                    </div>
-                    <div>
-                      <s-text size="small">Desktop alignment</s-text>
-                      <select
-                        value={globalSettings?.messages_alignment || "left"}
-                        onChange={(e) => setGlobalSettings({ ...globalSettings, messages_alignment: e.target.value })}
-                        style={{ width: "100%" }}
-                      >
-                        <option value="left">Left</option>
-                        <option value="center">Center</option>
-                      </select>
-                    </div>
-                    <div>
-                      <s-text size="small">Mobile alignment</s-text>
-                      <select
-                        value={globalSettings?.messages_alignment_mobile || "left"}
-                        onChange={(e) => setGlobalSettings({ ...globalSettings, messages_alignment_mobile: e.target.value })}
-                        style={{ width: "100%" }}
-                      >
-                        <option value="left">Left</option>
-                        <option value="center">Center</option>
-                      </select>
-                    </div>
-                  </div>
-                </div>
-
-                {/* ETA Timeline Spacing & Alignment */}
-                <div style={{ border: "1px solid var(--p-color-border, #e5e7eb)", borderRadius: 8, padding: 16, display: "grid", gap: 12, background: "var(--p-color-bg-surface-secondary, #f9fafb)" }}>
-                  <s-heading size="small">ETA Timeline Spacing & Alignment</s-heading>
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-                    <div>
-                      <s-text size="small">Horizontal padding</s-text>
-                      <input
-                        type="number"
-                        min="0"
-                        max="20"
-                        value={globalSettings?.eta_padding_horizontal ?? 8}
-                        onChange={(e) => setGlobalSettings({ ...globalSettings, eta_padding_horizontal: safeParseNumber(e.target.value, 8, 0, 20) })}
-                        style={{ width: "100%" }}
-                      />
-                    </div>
-                    <div>
-                      <s-text size="small">Vertical padding</s-text>
-                      <input
-                        type="number"
-                        min="0"
-                        max="40"
-                        value={globalSettings?.eta_padding_vertical ?? 8}
-                        onChange={(e) => setGlobalSettings({ ...globalSettings, eta_padding_vertical: safeParseNumber(e.target.value, 8, 0, 40) })}
-                        style={{ width: "100%" }}
-                      />
-                    </div>
-                    <div>
-                      <s-text size="small">Gap: icon to label</s-text>
-                      <input
-                        type="number"
-                        min="0"
-                        max="20"
-                        value={globalSettings?.eta_gap_icon_label ?? 2}
-                        onChange={(e) => setGlobalSettings({ ...globalSettings, eta_gap_icon_label: safeParseNumber(e.target.value, 2, 0, 20) })}
-                        style={{ width: "100%" }}
-                      />
-                    </div>
-                    <div>
-                      <s-text size="small">Gap: label to date</s-text>
-                      <input
-                        type="number"
-                        min="0"
-                        max="20"
-                        value={globalSettings?.eta_gap_label_date ?? 0}
-                        onChange={(e) => setGlobalSettings({ ...globalSettings, eta_gap_label_date: safeParseNumber(e.target.value, 0, 0, 20) })}
-                        style={{ width: "100%" }}
-                      />
-                    </div>
-                  </div>
-                  <div style={{ borderTop: "1px solid var(--p-color-border, #e5e7eb)", paddingTop: 12, marginTop: 4 }}>
-                    <s-text size="small" style={{ color: "#6b7280" }}><em>📌 Settings below only apply to the live storefront</em></s-text>
-                    <div style={{ display: "flex", alignItems: "center", gap: 6, color: "var(--p-color-text-subdued, #6b7280)", marginTop: 4 }}>
-                      <span style={{ fontSize: 12, flexShrink: 0 }}>💡</span>
-                      <span style={{ fontSize: 12 }}>Negative margins pull elements closer together.</span>
-                    </div>
-                  </div>
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-                    <div>
-                      <s-text size="small">Margin top</s-text>
-                      <input
-                        type="number"
-                        value={globalSettings?.eta_margin_top ?? 0}
-                        onChange={(e) => setGlobalSettings({ ...globalSettings, eta_margin_top: Number(e.target.value) || 0 })}
-                        style={{ width: "100%" }}
-                      />
-                    </div>
-                    <div>
-                      <s-text size="small">Margin bottom</s-text>
-                      <input
-                        type="number"
-                        value={globalSettings?.eta_margin_bottom ?? 0}
-                        onChange={(e) => setGlobalSettings({ ...globalSettings, eta_margin_bottom: Number(e.target.value) || 0 })}
-                        style={{ width: "100%" }}
-                      />
-                    </div>
-                    <div>
-                      <s-text size="small">Desktop alignment</s-text>
-                      <select
-                        value={globalSettings?.eta_alignment || "left"}
-                        onChange={(e) => setGlobalSettings({ ...globalSettings, eta_alignment: e.target.value })}
-                        style={{ width: "100%" }}
-                      >
-                        <option value="left">Left</option>
-                        <option value="center">Center</option>
-                      </select>
-                    </div>
-                    <div>
-                      <s-text size="small">Mobile alignment</s-text>
-                      <select
-                        value={globalSettings?.eta_alignment_mobile || "left"}
-                        onChange={(e) => setGlobalSettings({ ...globalSettings, eta_alignment_mobile: e.target.value })}
-                        style={{ width: "100%" }}
-                      >
-                        <option value="left">Left</option>
-                        <option value="center">Center</option>
-                      </select>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Special Delivery Spacing & Alignment */}
-                <div style={{ border: "1px solid var(--p-color-border, #e5e7eb)", borderRadius: 8, padding: 16, display: "grid", gap: 12, background: "var(--p-color-bg-surface-secondary, #f9fafb)" }}>
-                  <s-heading size="small">Special Delivery Spacing & Alignment</s-heading>
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-                    <div>
-                      <s-text size="small">Left padding</s-text>
-                      <input
-                        type="number"
-                        min="0"
-                        max="40"
-                        value={globalSettings?.special_delivery_padding_left ?? 8}
-                        onChange={(e) => setGlobalSettings({ ...globalSettings, special_delivery_padding_left: safeParseNumber(e.target.value, 8, 0, 40) })}
-                        style={{ width: "100%" }}
-                      />
-                    </div>
-                    <div>
-                      <s-text size="small">Right padding</s-text>
-                      <input
-                        type="number"
-                        min="0"
-                        max="40"
-                        value={globalSettings?.special_delivery_padding_right ?? 12}
-                        onChange={(e) => setGlobalSettings({ ...globalSettings, special_delivery_padding_right: safeParseNumber(e.target.value, 12, 0, 40) })}
-                        style={{ width: "100%" }}
-                      />
-                    </div>
-                    <div>
-                      <s-text size="small">Vertical padding</s-text>
-                      <input
-                        type="number"
-                        min="0"
-                        max="40"
-                        value={globalSettings?.special_delivery_padding_vertical ?? 10}
-                        onChange={(e) => setGlobalSettings({ ...globalSettings, special_delivery_padding_vertical: safeParseNumber(e.target.value, 10, 0, 40) })}
-                        style={{ width: "100%" }}
-                      />
-                    </div>
-                    <div>
-                      <s-text size="small">Header gap</s-text>
-                      <input
-                        type="number"
-                        value={globalSettings?.special_delivery_header_gap ?? 4}
-                        onChange={(e) => setGlobalSettings({ ...globalSettings, special_delivery_header_gap: Number(e.target.value) || 0 })}
-                        style={{ width: "100%" }}
-                      />
-                    </div>
-                    <div>
-                      <s-text size="small">Line height</s-text>
-                      <input
-                        type="number"
-                        min="1"
-                        max="3"
-                        step="0.1"
-                        value={globalSettings?.special_delivery_line_height ?? 1.4}
-                        onChange={(e) => setGlobalSettings({ ...globalSettings, special_delivery_line_height: parseFloat(e.target.value) || 1.4 })}
-                        style={{ width: "100%" }}
-                      />
-                    </div>
-                  </div>
-                  <div style={{ borderTop: "1px solid var(--p-color-border, #e5e7eb)", paddingTop: 12, marginTop: 4 }}>
-                    <s-text size="small" style={{ color: "#6b7280" }}><em>📌 Settings below only apply to the live storefront</em></s-text>
-                    <div style={{ display: "flex", alignItems: "center", gap: 6, color: "var(--p-color-text-subdued, #6b7280)", marginTop: 4 }}>
-                      <span style={{ fontSize: 12, flexShrink: 0 }}>💡</span>
-                      <span style={{ fontSize: 12 }}>Negative margins pull elements closer together.</span>
-                    </div>
-                  </div>
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-                    <div>
-                      <s-text size="small">Margin top</s-text>
-                      <input
-                        type="number"
-                        value={globalSettings?.special_delivery_margin_top ?? 0}
-                        onChange={(e) => setGlobalSettings({ ...globalSettings, special_delivery_margin_top: Number(e.target.value) || 0 })}
-                        style={{ width: "100%" }}
-                      />
-                    </div>
-                    <div>
-                      <s-text size="small">Margin bottom</s-text>
-                      <input
-                        type="number"
-                        value={globalSettings?.special_delivery_margin_bottom ?? 0}
-                        onChange={(e) => setGlobalSettings({ ...globalSettings, special_delivery_margin_bottom: Number(e.target.value) || 0 })}
-                        style={{ width: "100%" }}
-                      />
-                    </div>
-                    <div>
-                      <s-text size="small">Desktop alignment</s-text>
-                      <select
-                        value={globalSettings?.special_delivery_alignment || "left"}
-                        onChange={(e) => setGlobalSettings({ ...globalSettings, special_delivery_alignment: e.target.value })}
-                        style={{ width: "100%" }}
-                      >
-                        <option value="left">Left</option>
-                        <option value="center">Center</option>
-                      </select>
-                    </div>
-                    <div>
-                      <s-text size="small">Mobile alignment</s-text>
-                      <select
-                        value={globalSettings?.special_delivery_alignment_mobile || "left"}
-                        onChange={(e) => setGlobalSettings({ ...globalSettings, special_delivery_alignment_mobile: e.target.value })}
-                        style={{ width: "100%" }}
-                      >
-                        <option value="left">Left</option>
-                        <option value="center">Center</option>
-                      </select>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-
-              {/* Rule-specific sections (only shown when a rule is selected AND no styling panel is open) */}
-              {rule && !showTypographyPanel && !showAlignmentPanel && (
-                <>
-                  {/* Product Matching Section */}
+                {/* Product Matching Section */}
                 <div
                   style={{
                     border: "1px solid var(--p-color-border, #e5e7eb)",
@@ -2755,7 +1962,6 @@ export default function Index() {
                       style={{ display: "flex", alignItems: "center", gap: 6 }}
                       onClick={(e) => e.stopPropagation()}
                     >
-                      <s-text size="small">{rule.settings?.show_messages ? "Enabled" : "Disabled"}</s-text>
                       <input
                         type="checkbox"
                         checked={!!rule.settings?.show_messages}
@@ -2777,6 +1983,7 @@ export default function Index() {
                           }
                         }}
                       />
+                      <s-text size="small">{rule.settings?.show_messages ? "Enabled" : "Disabled"}</s-text>
                     </label>
                   </div>
 
@@ -2787,7 +1994,6 @@ export default function Index() {
                       <span>💡 Use &#123;countdown&#125; for live countdown timer.</span>
                       <span>💡 Use &#123;arrival&#125; for estimated delivery date.</span>
                       <span>💡 Use &#123;express&#125; for next-day delivery date.</span>
-                      <span>💡 Use &#123;threshold&#125; for free delivery threshold amount.</span>
                       <span>💡 Use &#123;lb&#125; for manual line breaks.</span>
                       <span>💡 Use **double asterisks** for bold text.</span>
                     </div>
@@ -2846,12 +2052,31 @@ export default function Index() {
                       />
                     </label>
 
+                    <label>
+                      <s-text>Cart message</s-text>
+                      <input
+                        type="text"
+                        value={rule.settings?.cart_message || ""}
+                        onChange={(e) => {
+                          const next = [...rules];
+                          next[safeSelectedIndex] = {
+                            ...rule,
+                            settings: { ...rule.settings, cart_message: e.target.value },
+                          };
+                          setRules(next);
+                        }}
+                        maxLength={100}
+                        style={{ width: "100%" }}
+                        placeholder="Shows under items in cart"
+                      />
+                    </label>
+
                     {/* Border Styling sub-section */}
                     <div style={{ borderTop: "1px solid var(--p-color-border, #e5e7eb)", paddingTop: 16, display: "grid", gap: 12 }}>
                       <s-heading>Border Styling</s-heading>
 
                       {/* Only show "Match ETA border" when ETA Timeline is enabled AND has border enabled */}
-                      {rule.settings?.show_eta_timeline && (rule.settings?.eta_border_width ?? 0) > 0 && (
+                      {rule.settings?.show_eta_timeline && rule.settings?.show_eta_border !== false && (
                         <label style={{ display: "flex", gap: 8, alignItems: "center" }}>
                           <input
                             type="checkbox"
@@ -2869,25 +2094,43 @@ export default function Index() {
                         </label>
                       )}
 
-                      {/* Border settings - hide when Match ETA timeline border is checked */}
-                      {!(rule.settings?.show_eta_timeline && rule.settings?.match_eta_border) && (
+                      {/* Hide "Show border" when Match ETA timeline border is selected (and ETA has border) */}
+                      {!(rule.settings?.show_eta_timeline && rule.settings?.show_eta_border !== false && rule.settings?.match_eta_border) && (
+                        <label style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                          <input
+                            type="checkbox"
+                            checked={!!rule.settings?.show_border}
+                            onChange={(e) => {
+                              const next = [...rules];
+                              next[safeSelectedIndex] = {
+                                ...rule,
+                                settings: { ...rule.settings, show_border: e.target.checked },
+                              };
+                              setRules(next);
+                            }}
+                          />
+                          <s-text>Show border</s-text>
+                        </label>
+                      )}
+
+                      {(!rule.settings?.show_eta_timeline || rule.settings?.show_eta_border === false || !rule.settings?.match_eta_border) && rule.settings?.show_border && (
                         <>
                           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
                             <label>
                               <s-text>Border thickness (px)</s-text>
                               <input
                                 type="number"
-                                min="0"
+                                min="1"
                                 max="10"
-                                value={String(rule.settings?.border_thickness ?? 0)}
+                                value={String(rule.settings?.border_thickness ?? 1)}
                                 onChange={(e) => {
-                                  const n = Math.max(0, Number(e.target.value) || 0);
+                                  const n = Math.max(1, Number(e.target.value) || 1);
                                   const next = [...rules];
                                   next[safeSelectedIndex] = {
                                     ...rule,
                                     settings: {
                                       ...rule.settings,
-                                      border_thickness: Number.isFinite(n) ? n : 0,
+                                      border_thickness: Number.isFinite(n) ? n : 1,
                                     },
                                   };
                                   setRules(next);
@@ -2933,59 +2176,6 @@ export default function Index() {
                           />
                         </>
                       )}
-
-                      {/* Background color - always visible, independent of border */}
-                      <div style={{ display: "flex", alignItems: "flex-end", gap: 8 }}>
-                        <div style={{ flex: 1 }}>
-                          <s-color-field
-                            label="Background color"
-                            placeholder="transparent"
-                            value={rule.settings?.background_color || ""}
-                            onInput={(e) => {
-                              const val = e.detail?.value ?? e.target?.value ?? "";
-                              const next = [...rules];
-                              next[safeSelectedIndex] = {
-                                ...rule,
-                                settings: { ...rule.settings, background_color: val },
-                              };
-                              setRules(next);
-                            }}
-                            onChange={(e) => {
-                              const val = e.detail?.value ?? e.target?.value ?? "";
-                              const next = [...rules];
-                              next[safeSelectedIndex] = {
-                                ...rule,
-                                settings: { ...rule.settings, background_color: val },
-                              };
-                              setRules(next);
-                            }}
-                          />
-                        </div>
-                        {rule.settings?.background_color && (
-                          <button
-                            type="button"
-                            onClick={() => {
-                              const next = [...rules];
-                              next[safeSelectedIndex] = {
-                                ...rule,
-                                settings: { ...rule.settings, background_color: "" },
-                              };
-                              setRules(next);
-                            }}
-                            style={{
-                              padding: "6px 10px",
-                              fontSize: 12,
-                              border: "1px solid var(--p-color-border, #e5e7eb)",
-                              borderRadius: 4,
-                              background: "var(--p-color-bg-surface, #fff)",
-                              cursor: "pointer",
-                              marginBottom: 4,
-                            }}
-                          >
-                            Clear
-                          </button>
-                        )}
-                      </div>
 
                       {rule.settings?.show_eta_timeline && (
                         <label style={{ display: "flex", alignItems: "center", gap: 6 }}>
@@ -3090,23 +2280,25 @@ export default function Index() {
 
                         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
                           <label>
-                            <s-text>Font size: {normalizeFontSize(rule.settings?.font_size, 16)}px</s-text>
-                            <input
-                              type="range"
-                              min="10"
-                              max="22"
-                              step="1"
-                              value={normalizeFontSize(rule.settings?.font_size, 16)}
+                            <s-text>Font size</s-text>
+                            <select
+                              value={rule.settings?.font_size || "medium"}
                               onChange={(e) => {
                                 const next = [...rules];
                                 next[safeSelectedIndex] = {
                                   ...rule,
-                                  settings: { ...rule.settings, font_size: parseInt(e.target.value) },
+                                  settings: { ...rule.settings, font_size: e.target.value },
                                 };
                                 setRules(next);
                               }}
                               style={{ width: "100%" }}
-                            />
+                            >
+                              <option value="xsmall">X-Small (12px)</option>
+                              <option value="small">Small (14px)</option>
+                              <option value="medium">Medium (16px)</option>
+                              <option value="large">Large (18px)</option>
+                              <option value="xlarge">X-Large (20px)</option>
+                            </select>
                           </label>
 
                           <label>
@@ -3123,10 +2315,9 @@ export default function Index() {
                               }}
                               style={{ width: "100%" }}
                             >
-                              <option value="normal">Normal (400)</option>
-                              <option value="medium">Medium (500)</option>
-                              <option value="semibold">Semi-bold (600)</option>
-                              <option value="bold">Bold (700)</option>
+                              <option value="normal">Normal</option>
+                              <option value="medium">Medium</option>
+                              <option value="bold">Bold</option>
                             </select>
                           </label>
                         </div>
@@ -3180,7 +2371,6 @@ export default function Index() {
                       style={{ display: "flex", alignItems: "center", gap: 6 }}
                       onClick={(e) => e.stopPropagation()}
                     >
-                      <s-text size="small">{rule.settings?.show_icon !== false ? "Enabled" : "Disabled"}</s-text>
                       <input
                         type="checkbox"
                         checked={rule.settings?.show_icon !== false}
@@ -3202,6 +2392,7 @@ export default function Index() {
                           }
                         }}
                       />
+                      <s-text size="small">{rule.settings?.show_icon !== false ? "Enabled" : "Disabled"}</s-text>
                     </label>
                   </div>
 
@@ -3224,19 +2415,13 @@ export default function Index() {
                     >
                       <optgroup label="Preset Icons">
                         <option value="truck">Truck</option>
-                        <option value="truck-v2">Truck v2</option>
                         <option value="clock">Clock</option>
                         <option value="home">Home</option>
                         <option value="pin">Pin</option>
-                        <option value="pin-v2">Pin v2</option>
                         <option value="gift">Gift</option>
-                        <option value="shopping-bag">Shopping Bag</option>
-                        <option value="shopping-bag-v2">Shopping Bag v2</option>
-                        <option value="shopping-cart">Shopping Cart</option>
-                        <option value="shopping-cart-v2">Shopping Cart v2</option>
-                        <option value="shopping-basket">Shopping Basket</option>
+                        <option value="shopping-bag">Shopping bag</option>
+                        <option value="shopping-cart">Shopping cart</option>
                         <option value="clipboard-document-check">Clipboard</option>
-                        <option value="clipboard-v2">Clipboard v2</option>
                         <option value="bullet">Bullet</option>
                         <option value="checkmark">Checkmark (badge)</option>
                       </optgroup>
@@ -3308,32 +2493,30 @@ export default function Index() {
                         <option value="top">Top</option>
                         <option value="center">Center</option>
                       </select>
-                      <div style={{ display: "flex", alignItems: "center", gap: 6, color: "var(--p-color-text-subdued, #6b7280)", marginTop: 4 }}>
-                        <span style={{ fontSize: 12, flexShrink: 0 }}>💡</span>
-                        <span style={{ fontSize: 12 }}>Adjusts icon position when message text wraps to multiple lines.</span>
-                      </div>
                     </label>
                   )}
 
                   {rule.settings?.icon_layout === "single" && (
                     <label>
-                      <s-text>Icon size: {normalizeSingleIconSize(rule.settings?.single_icon_size, 36)}px</s-text>
-                      <input
-                        type="range"
-                        min="20"
-                        max="56"
-                        step="4"
-                        value={normalizeSingleIconSize(rule.settings?.single_icon_size, 36)}
+                      <s-text>Single icon size</s-text>
+                      <select
+                        value={rule.settings?.single_icon_size || "medium"}
                         onChange={(e) => {
                           const next = [...rules];
                           next[safeSelectedIndex] = {
                             ...rule,
-                            settings: { ...rule.settings, single_icon_size: parseInt(e.target.value) },
+                            settings: { ...rule.settings, single_icon_size: e.target.value },
                           };
                           setRules(next);
                         }}
                         style={{ width: "100%" }}
-                      />
+                      >
+                        <option value="small">Small</option>
+                        <option value="medium">Medium</option>
+                        <option value="large">Large</option>
+                        <option value="x-large">Extra Large</option>
+                        <option value="xx-large">XX Large</option>
+                      </select>
                     </label>
                   )}
 
@@ -3397,7 +2580,6 @@ export default function Index() {
                       style={{ display: "flex", alignItems: "center", gap: 6 }}
                       onClick={(e) => e.stopPropagation()}
                     >
-                      <s-text size="small">{rule.settings?.show_eta_timeline ? "Enabled" : "Disabled"}</s-text>
                       <input
                         type="checkbox"
                         checked={!!rule.settings?.show_eta_timeline}
@@ -3413,7 +2595,8 @@ export default function Index() {
                               // On first activation, inherit border settings from Messages
                               ...(isFirstActivation ? {
                                 eta_timeline_initialized: true,
-                                eta_border_width: rule.settings?.border_thickness ?? 0,
+                                show_eta_border: rule.settings?.show_border !== false,
+                                eta_border_width: rule.settings?.border_thickness ?? 1,
                                 eta_border_radius: rule.settings?.border_radius ?? 8,
                                 eta_border_color: rule.settings?.border_color || "#e5e7eb",
                               } : {}),
@@ -3428,6 +2611,7 @@ export default function Index() {
                           }
                         }}
                       />
+                      <s-text size="small">{rule.settings?.show_eta_timeline ? "Enabled" : "Disabled"}</s-text>
                     </label>
                   </div>
 
@@ -3579,7 +2763,6 @@ export default function Index() {
                         }}
                         style={{ width: "100%" }}
                         placeholder="Ordered"
-                        maxLength={10}
                       />
                     </label>
                     <label>
@@ -3597,7 +2780,6 @@ export default function Index() {
                         }}
                         style={{ width: "100%" }}
                         placeholder="Shipped"
-                        maxLength={10}
                       />
                     </label>
                     <label>
@@ -3615,7 +2797,6 @@ export default function Index() {
                         }}
                         style={{ width: "100%" }}
                         placeholder="Delivered"
-                        maxLength={10}
                       />
                     </label>
                   </div>
@@ -3638,19 +2819,13 @@ export default function Index() {
                       >
                         <optgroup label="Preset">
                           <option value="truck">Truck</option>
-                          <option value="truck-v2">Truck v2</option>
                           <option value="clock">Clock</option>
                           <option value="home">Home</option>
                           <option value="pin">Pin</option>
-                          <option value="pin-v2">Pin v2</option>
                           <option value="gift">Gift</option>
-                          <option value="shopping-bag">Shopping Bag</option>
-                          <option value="shopping-bag-v2">Shopping Bag v2</option>
-                          <option value="shopping-cart">Shopping Cart</option>
-                          <option value="shopping-cart-v2">Shopping Cart v2</option>
-                          <option value="shopping-basket">Shopping Basket</option>
+                          <option value="shopping-bag">Shopping bag</option>
+                          <option value="shopping-cart">Shopping cart</option>
                           <option value="clipboard-document-check">Clipboard</option>
-                          <option value="clipboard-v2">Clipboard v2</option>
                           <option value="bullet">Bullet</option>
                           <option value="checkmark">Checkmark (badge)</option>
                         </optgroup>
@@ -3679,19 +2854,13 @@ export default function Index() {
                       >
                         <optgroup label="Preset">
                           <option value="truck">Truck</option>
-                          <option value="truck-v2">Truck v2</option>
                           <option value="clock">Clock</option>
                           <option value="home">Home</option>
                           <option value="pin">Pin</option>
-                          <option value="pin-v2">Pin v2</option>
                           <option value="gift">Gift</option>
-                          <option value="shopping-bag">Shopping Bag</option>
-                          <option value="shopping-bag-v2">Shopping Bag v2</option>
-                          <option value="shopping-cart">Shopping Cart</option>
-                          <option value="shopping-cart-v2">Shopping Cart v2</option>
-                          <option value="shopping-basket">Shopping Basket</option>
+                          <option value="shopping-bag">Shopping bag</option>
+                          <option value="shopping-cart">Shopping cart</option>
                           <option value="clipboard-document-check">Clipboard</option>
-                          <option value="clipboard-v2">Clipboard v2</option>
                           <option value="bullet">Bullet</option>
                           <option value="checkmark">Checkmark (badge)</option>
                         </optgroup>
@@ -3720,19 +2889,13 @@ export default function Index() {
                       >
                         <optgroup label="Preset">
                           <option value="truck">Truck</option>
-                          <option value="truck-v2">Truck v2</option>
                           <option value="clock">Clock</option>
                           <option value="home">Home</option>
                           <option value="pin">Pin</option>
-                          <option value="pin-v2">Pin v2</option>
                           <option value="gift">Gift</option>
-                          <option value="shopping-bag">Shopping Bag</option>
-                          <option value="shopping-bag-v2">Shopping Bag v2</option>
-                          <option value="shopping-cart">Shopping Cart</option>
-                          <option value="shopping-cart-v2">Shopping Cart v2</option>
-                          <option value="shopping-basket">Shopping Basket</option>
+                          <option value="shopping-bag">Shopping bag</option>
+                          <option value="shopping-cart">Shopping cart</option>
                           <option value="clipboard-document-check">Clipboard</option>
-                          <option value="clipboard-v2">Clipboard v2</option>
                           <option value="bullet">Bullet</option>
                           <option value="checkmark">Checkmark (badge)</option>
                         </optgroup>
@@ -3891,19 +3054,37 @@ export default function Index() {
                   <div style={{ borderTop: "1px solid var(--p-color-border, #e5e7eb)", paddingTop: 16, display: "grid", gap: 12 }}>
                     <s-heading>Border Styling</s-heading>
 
+                    <label style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                      <input
+                        type="checkbox"
+                        checked={rule.settings?.show_eta_border !== false}
+                        onChange={(e) => {
+                          const next = [...rules];
+                          next[safeSelectedIndex] = {
+                            ...rule,
+                            settings: { ...rule.settings, show_eta_border: e.target.checked },
+                          };
+                          setRules(next);
+                        }}
+                      />
+                      <s-text>Show border</s-text>
+                    </label>
+
+                  {rule.settings?.show_eta_border !== false && (
+                    <>
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
                     <label>
                       <s-text>Border thickness (px)</s-text>
                       <input
                         type="number"
-                        min="0"
+                        min="1"
                         max="10"
-                        value={String(rule.settings?.eta_border_width ?? 0)}
+                        value={String(rule.settings?.eta_border_width ?? 1)}
                         onChange={(e) => {
                           const next = [...rules];
                           next[safeSelectedIndex] = {
                             ...rule,
-                            settings: { ...rule.settings, eta_border_width: safeParseNumber(e.target.value, 0, 0) },
+                            settings: { ...rule.settings, eta_border_width: safeParseNumber(e.target.value, 1, 1) },
                           };
                           setRules(next);
                         }}
@@ -3942,59 +3123,8 @@ export default function Index() {
                       setRules(next);
                     }}
                   />
-
-                  {/* Background color - always visible, independent of border */}
-                  <div style={{ display: "flex", alignItems: "flex-end", gap: 8 }}>
-                    <div style={{ flex: 1 }}>
-                      <s-color-field
-                        label="Background color"
-                        placeholder="transparent"
-                        value={rule.settings?.eta_background_color || ""}
-                        onInput={(e) => {
-                          const val = e.detail?.value ?? e.target?.value ?? "";
-                          const next = [...rules];
-                          next[safeSelectedIndex] = {
-                            ...rule,
-                            settings: { ...rule.settings, eta_background_color: val },
-                          };
-                          setRules(next);
-                        }}
-                        onChange={(e) => {
-                          const val = e.detail?.value ?? e.target?.value ?? "";
-                          const next = [...rules];
-                          next[safeSelectedIndex] = {
-                            ...rule,
-                            settings: { ...rule.settings, eta_background_color: val },
-                          };
-                          setRules(next);
-                        }}
-                      />
-                    </div>
-                    {rule.settings?.eta_background_color && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const next = [...rules];
-                          next[safeSelectedIndex] = {
-                            ...rule,
-                            settings: { ...rule.settings, eta_background_color: "" },
-                          };
-                          setRules(next);
-                        }}
-                        style={{
-                          padding: "6px 10px",
-                          fontSize: 12,
-                          border: "1px solid var(--p-color-border, #e5e7eb)",
-                          borderRadius: 4,
-                          background: "var(--p-color-bg-surface, #fff)",
-                          cursor: "pointer",
-                          marginBottom: 4,
-                        }}
-                      >
-                        Clear
-                      </button>
-                    )}
-                  </div>
+                    </>
+                  )}
                   </div>
 
                   {/* ETA Text Styling */}
@@ -4046,23 +3176,23 @@ export default function Index() {
                       </div>
                       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
                         <label>
-                          <s-text>Label font size: {normalizeEtaLabelFontSize(rule.settings?.eta_label_font_size, 12)}px</s-text>
-                          <input
-                            type="range"
-                            min="10"
-                            max="18"
-                            step="1"
-                            value={normalizeEtaLabelFontSize(rule.settings?.eta_label_font_size, 12)}
+                          <s-text>Label font size</s-text>
+                          <select
+                            value={rule.settings?.eta_label_font_size || "small"}
                             onChange={(e) => {
                               const next = [...rules];
                               next[safeSelectedIndex] = {
                                 ...rule,
-                                settings: { ...rule.settings, eta_label_font_size: parseInt(e.target.value) },
+                                settings: { ...rule.settings, eta_label_font_size: e.target.value },
                               };
                               setRules(next);
                             }}
                             style={{ width: "100%" }}
-                          />
+                          >
+                            <option value="xsmall">X-Small (11px)</option>
+                            <option value="small">Small (12px)</option>
+                            <option value="medium">Medium (14px)</option>
+                          </select>
                         </label>
                         <label>
                           <s-text>Label font weight</s-text>
@@ -4113,23 +3243,23 @@ export default function Index() {
                       </div>
                       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
                         <label>
-                          <s-text>Date font size: {normalizeEtaDateFontSize(rule.settings?.eta_date_font_size, 11)}px</s-text>
-                          <input
-                            type="range"
-                            min="10"
-                            max="18"
-                            step="1"
-                            value={normalizeEtaDateFontSize(rule.settings?.eta_date_font_size, 11)}
+                          <s-text>Date font size</s-text>
+                          <select
+                            value={rule.settings?.eta_date_font_size || "xsmall"}
                             onChange={(e) => {
                               const next = [...rules];
                               next[safeSelectedIndex] = {
                                 ...rule,
-                                settings: { ...rule.settings, eta_date_font_size: parseInt(e.target.value) },
+                                settings: { ...rule.settings, eta_date_font_size: e.target.value },
                               };
                               setRules(next);
                             }}
                             style={{ width: "100%" }}
-                          />
+                          >
+                            <option value="xxsmall">XX-Small (10px)</option>
+                            <option value="xsmall">X-Small (11px)</option>
+                            <option value="small">Small (12px)</option>
+                          </select>
                         </label>
                         <label>
                           <s-text>Date font weight</s-text>
@@ -4148,7 +3278,6 @@ export default function Index() {
                             <option value="normal">Normal (400)</option>
                             <option value="medium">Medium (500)</option>
                             <option value="semibold">Semi-bold (600)</option>
-                            <option value="bold">Bold (700)</option>
                           </select>
                         </label>
                       </div>
@@ -4202,7 +3331,6 @@ export default function Index() {
                       style={{ display: "flex", alignItems: "center", gap: 6 }}
                       onClick={(e) => e.stopPropagation()}
                     >
-                      <s-text size="small">{rule.settings?.show_special_delivery ? "Enabled" : "Disabled"}</s-text>
                       <input
                         type="checkbox"
                         checked={!!rule.settings?.show_special_delivery}
@@ -4224,6 +3352,7 @@ export default function Index() {
                           }
                         }}
                       />
+                      <s-text size="small">{rule.settings?.show_special_delivery ? "Enabled" : "Disabled"}</s-text>
                     </label>
                   </div>
 
@@ -4233,26 +3362,6 @@ export default function Index() {
                     <s-text size="small" style={{ color: "var(--p-color-text-subdued, #6b7280)" }}>
                       Display special delivery information for large items, palletised shipments, etc.
                     </s-text>
-
-                    {/* Header input (optional) */}
-                    <label>
-                      <s-text>Header (optional)</s-text>
-                      <input
-                        type="text"
-                        value={rule.settings?.special_delivery_header || ""}
-                        onChange={(e) => {
-                          const next = [...rules];
-                          next[safeSelectedIndex] = {
-                            ...rule,
-                            settings: { ...rule.settings, special_delivery_header: e.target.value },
-                          };
-                          setRules(next);
-                        }}
-                        maxLength={100}
-                        style={{ width: "100%" }}
-                        placeholder="e.g. Large Item Delivery"
-                      />
-                    </label>
 
                     {/* Message textarea */}
                     <label>
@@ -4300,19 +3409,13 @@ export default function Index() {
                           <option value="">None</option>
                           <optgroup label="Preset Icons">
                             <option value="truck">Truck</option>
-                            <option value="truck-v2">Truck v2</option>
                             <option value="clock">Clock</option>
                             <option value="home">Home</option>
                             <option value="pin">Pin</option>
-                            <option value="pin-v2">Pin v2</option>
                             <option value="gift">Gift</option>
-                            <option value="shopping-bag">Shopping Bag</option>
-                            <option value="shopping-bag-v2">Shopping Bag v2</option>
-                            <option value="shopping-cart">Shopping Cart</option>
-                            <option value="shopping-cart-v2">Shopping Cart v2</option>
-                            <option value="shopping-basket">Shopping Basket</option>
+                            <option value="shopping-bag">Shopping bag</option>
+                            <option value="shopping-cart">Shopping cart</option>
                             <option value="clipboard-document-check">Clipboard</option>
-                            <option value="clipboard-v2">Clipboard v2</option>
                             <option value="bullet">Bullet</option>
                             <option value="checkmark">Checkmark (badge)</option>
                           </optgroup>
@@ -4428,20 +3531,10 @@ export default function Index() {
                                     label="SVG icon color"
                                     value={rule.settings?.special_delivery_icon_color || "#111827"}
                                     onInput={(e) => {
-                                      const val = e.detail?.value ?? e.target?.value ?? "#111827";
                                       const next = [...rules];
                                       next[safeSelectedIndex] = {
                                         ...rule,
-                                        settings: { ...rule.settings, special_delivery_icon_color: val },
-                                      };
-                                      setRules(next);
-                                    }}
-                                    onChange={(e) => {
-                                      const val = e.detail?.value ?? e.target?.value ?? "#111827";
-                                      const next = [...rules];
-                                      next[safeSelectedIndex] = {
-                                        ...rule,
-                                        settings: { ...rule.settings, special_delivery_icon_color: val },
+                                        settings: { ...rule.settings, special_delivery_icon_color: e.target.value },
                                       };
                                       setRules(next);
                                     }}
@@ -4460,7 +3553,7 @@ export default function Index() {
                       <s-heading>Border Styling</s-heading>
 
                       {/* Match ETA timeline border - only when ETA enabled with border */}
-                      {rule.settings?.show_eta_timeline && (rule.settings?.eta_border_width ?? 0) > 0 && (
+                      {rule.settings?.show_eta_timeline && rule.settings?.show_eta_border !== false && (
                         <label style={{ display: "flex", gap: 8, alignItems: "center" }}>
                           <input
                             type="checkbox"
@@ -4478,22 +3571,41 @@ export default function Index() {
                         </label>
                       )}
 
-                      {/* Border controls - show when not matching ETA border */}
-                      {!rule.settings?.special_delivery_match_eta_border && (
+                      {/* Show border checkbox - hide when matching ETA */}
+                      {!(rule.settings?.show_eta_timeline && rule.settings?.show_eta_border !== false && rule.settings?.special_delivery_match_eta_border) && (
+                        <label style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                          <input
+                            type="checkbox"
+                            checked={!!rule.settings?.special_delivery_show_border}
+                            onChange={(e) => {
+                              const next = [...rules];
+                              next[safeSelectedIndex] = {
+                                ...rule,
+                                settings: { ...rule.settings, special_delivery_show_border: e.target.checked },
+                              };
+                              setRules(next);
+                            }}
+                          />
+                          <s-text>Show border</s-text>
+                        </label>
+                      )}
+
+                      {/* Border controls - show when border enabled and not matching ETA */}
+                      {rule.settings?.special_delivery_show_border && !rule.settings?.special_delivery_match_eta_border && (
                         <div style={{ display: "grid", gap: 12, marginTop: 12 }}>
                           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
                             <label>
                               <s-text>Thickness (px)</s-text>
                               <input
                                 type="number"
-                                min="0"
+                                min="1"
                                 max="10"
-                                value={rule.settings?.special_delivery_border_thickness ?? 0}
+                                value={rule.settings?.special_delivery_border_thickness ?? 1}
                                 onChange={(e) => {
                                   const next = [...rules];
                                   next[safeSelectedIndex] = {
                                     ...rule,
-                                    settings: { ...rule.settings, special_delivery_border_thickness: Number(e.target.value) },
+                                    settings: { ...rule.settings, special_delivery_border_thickness: Number(e.target.value) || 1 },
                                   };
                                   setRules(next);
                                 }}
@@ -4522,79 +3634,19 @@ export default function Index() {
                             label="Border color"
                             value={rule.settings?.special_delivery_border_color || "#e5e7eb"}
                             onInput={(e) => {
-                              const val = e.detail?.value ?? e.target?.value ?? "#e5e7eb";
-                              const next = [...rules];
-                              next[safeSelectedIndex] = {
-                                ...rule,
-                                settings: { ...rule.settings, special_delivery_border_color: val },
-                              };
-                              setRules(next);
-                            }}
-                            onChange={(e) => {
-                              const val = e.detail?.value ?? e.target?.value ?? "#e5e7eb";
-                              const next = [...rules];
-                              next[safeSelectedIndex] = {
-                                ...rule,
-                                settings: { ...rule.settings, special_delivery_border_color: val },
-                              };
-                              setRules(next);
+                              const val = e.detail?.value || e.target?.value;
+                              if (val) {
+                                const next = [...rules];
+                                next[safeSelectedIndex] = {
+                                  ...rule,
+                                  settings: { ...rule.settings, special_delivery_border_color: val },
+                                };
+                                setRules(next);
+                              }
                             }}
                           />
                         </div>
                       )}
-
-                      {/* Background color - always visible, independent of border */}
-                      <div style={{ display: "flex", alignItems: "flex-end", gap: 8 }}>
-                        <div style={{ flex: 1 }}>
-                          <s-color-field
-                            label="Background color"
-                            placeholder="transparent"
-                            value={rule.settings?.special_delivery_background_color || ""}
-                            onInput={(e) => {
-                              const val = e.detail?.value ?? e.target?.value ?? "";
-                              const next = [...rules];
-                              next[safeSelectedIndex] = {
-                                ...rule,
-                                settings: { ...rule.settings, special_delivery_background_color: val },
-                              };
-                              setRules(next);
-                            }}
-                            onChange={(e) => {
-                              const val = e.detail?.value ?? e.target?.value ?? "";
-                              const next = [...rules];
-                              next[safeSelectedIndex] = {
-                                ...rule,
-                                settings: { ...rule.settings, special_delivery_background_color: val },
-                              };
-                              setRules(next);
-                            }}
-                          />
-                        </div>
-                        {rule.settings?.special_delivery_background_color && (
-                          <button
-                            type="button"
-                            onClick={() => {
-                              const next = [...rules];
-                              next[safeSelectedIndex] = {
-                                ...rule,
-                                settings: { ...rule.settings, special_delivery_background_color: "" },
-                              };
-                              setRules(next);
-                            }}
-                            style={{
-                              padding: "6px 10px",
-                              fontSize: 12,
-                              border: "1px solid var(--p-color-border, #e5e7eb)",
-                              borderRadius: 4,
-                              background: "var(--p-color-bg-surface, #fff)",
-                              cursor: "pointer",
-                              marginBottom: 4,
-                            }}
-                          >
-                            Clear
-                          </button>
-                        )}
-                      </div>
 
                       {/* Match ETA timeline width - only when ETA enabled */}
                       {rule.settings?.show_eta_timeline && (
@@ -4662,11 +3714,7 @@ export default function Index() {
                             const next = [...rules];
                             next[safeSelectedIndex] = {
                               ...rule,
-                              settings: {
-                                ...rule.settings,
-                                special_delivery_override_global_text_styling: e.target.checked,
-                                special_delivery_override_global_header_styling: e.target.checked
-                              },
+                              settings: { ...rule.settings, special_delivery_override_global_text_styling: e.target.checked },
                             };
                             setRules(next);
                           }}
@@ -4675,124 +3723,46 @@ export default function Index() {
                       </label>
 
                       {rule.settings?.special_delivery_override_global_text_styling === true && (
-                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginLeft: 24 }}>
-                          {/* Header */}
-                          <div style={{ display: "grid", gap: 8 }}>
-                            <s-text size="small" style={{ fontWeight: 600 }}>Header (optional)</s-text>
-                            <div>
-                              <s-text size="small">Color</s-text>
-                              <s-color-field
-                                label=""
-                                value={rule.settings?.special_delivery_header_color || "#111827"}
-                                onInput={(e) => {
-                                  const val = e.detail?.value ?? e.target?.value ?? "#111827";
-                                  const next = [...rules];
-                                  next[safeSelectedIndex] = {
-                                    ...rule,
-                                    settings: { ...rule.settings, special_delivery_header_color: val },
-                                  };
-                                  setRules(next);
-                                }}
-                                onChange={(e) => {
-                                  const val = e.detail?.value ?? e.target?.value ?? "#111827";
-                                  const next = [...rules];
-                                  next[safeSelectedIndex] = {
-                                    ...rule,
-                                    settings: { ...rule.settings, special_delivery_header_color: val },
-                                  };
-                                  setRules(next);
-                                }}
-                              />
-                            </div>
-                            <div>
-                              <s-text size="small">Font size ({normalizeFontSize(rule.settings?.special_delivery_header_font_size, 16)}px)</s-text>
-                              <input
-                                type="range"
-                                min="12"
-                                max="24"
-                                step="1"
-                                value={normalizeFontSize(rule.settings?.special_delivery_header_font_size, 16)}
-                                onChange={(e) => {
-                                  const next = [...rules];
-                                  next[safeSelectedIndex] = {
-                                    ...rule,
-                                    settings: { ...rule.settings, special_delivery_header_font_size: parseInt(e.target.value) },
-                                  };
-                                  setRules(next);
-                                }}
-                                style={{ width: "100%" }}
-                              />
-                            </div>
-                            <div>
-                              <s-text size="small">Font weight</s-text>
+                        <div style={{ display: "grid", gap: 12 }}>
+                          <s-color-field
+                            label="Text color"
+                            value={rule.settings?.special_delivery_text_color || "#374151"}
+                            onInput={(e) => {
+                              const val = e.detail?.value || e.target?.value;
+                              if (val) {
+                                const next = [...rules];
+                                next[safeSelectedIndex] = {
+                                  ...rule,
+                                  settings: { ...rule.settings, special_delivery_text_color: val },
+                                };
+                                setRules(next);
+                              }
+                            }}
+                          />
+                          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                            <label>
+                              <s-text>Font size</s-text>
                               <select
-                                value={rule.settings?.special_delivery_header_font_weight || "semibold"}
+                                value={rule.settings?.special_delivery_font_size || "medium"}
                                 onChange={(e) => {
                                   const next = [...rules];
                                   next[safeSelectedIndex] = {
                                     ...rule,
-                                    settings: { ...rule.settings, special_delivery_header_font_weight: e.target.value },
+                                    settings: { ...rule.settings, special_delivery_font_size: e.target.value },
                                   };
                                   setRules(next);
                                 }}
-                                style={{ width: "100%" }}
+                                style={{ width: "100%", marginTop: 4 }}
                               >
-                                <option value="normal">Normal</option>
-                                <option value="medium">Medium</option>
-                                <option value="semibold">Semibold</option>
-                                <option value="bold">Bold</option>
+                                <option value="xsmall">X-Small (12px)</option>
+                                <option value="small">Small (14px)</option>
+                                <option value="medium">Medium (16px)</option>
+                                <option value="large">Large (18px)</option>
+                                <option value="xlarge">X-Large (20px)</option>
                               </select>
-                            </div>
-                          </div>
-                          {/* Message */}
-                          <div style={{ display: "grid", gap: 8 }}>
-                            <s-text size="small" style={{ fontWeight: 600 }}>Message</s-text>
-                            <div>
-                              <s-text size="small">Color</s-text>
-                              <s-color-field
-                                label=""
-                                value={rule.settings?.special_delivery_text_color || "#374151"}
-                                onInput={(e) => {
-                                  const val = e.detail?.value ?? e.target?.value ?? "#374151";
-                                  const next = [...rules];
-                                  next[safeSelectedIndex] = {
-                                    ...rule,
-                                    settings: { ...rule.settings, special_delivery_text_color: val },
-                                  };
-                                  setRules(next);
-                                }}
-                                onChange={(e) => {
-                                  const val = e.detail?.value ?? e.target?.value ?? "#374151";
-                                  const next = [...rules];
-                                  next[safeSelectedIndex] = {
-                                    ...rule,
-                                    settings: { ...rule.settings, special_delivery_text_color: val },
-                                  };
-                                  setRules(next);
-                                }}
-                              />
-                            </div>
-                            <div>
-                              <s-text size="small">Font size ({normalizeFontSize(rule.settings?.special_delivery_font_size, 16)}px)</s-text>
-                              <input
-                                type="range"
-                                min="10"
-                                max="22"
-                                step="1"
-                                value={normalizeFontSize(rule.settings?.special_delivery_font_size, 16)}
-                                onChange={(e) => {
-                                  const next = [...rules];
-                                  next[safeSelectedIndex] = {
-                                    ...rule,
-                                    settings: { ...rule.settings, special_delivery_font_size: parseInt(e.target.value) },
-                                  };
-                                  setRules(next);
-                                }}
-                                style={{ width: "100%" }}
-                              />
-                            </div>
-                            <div>
-                              <s-text size="small">Font weight</s-text>
+                            </label>
+                            <label>
+                              <s-text>Font weight</s-text>
                               <select
                                 value={rule.settings?.special_delivery_font_weight || "normal"}
                                 onChange={(e) => {
@@ -4803,37 +3773,17 @@ export default function Index() {
                                   };
                                   setRules(next);
                                 }}
-                                style={{ width: "100%" }}
+                                style={{ width: "100%", marginTop: 4 }}
                               >
-                                <option value="normal">Normal</option>
-                                <option value="medium">Medium</option>
-                                <option value="semibold">Semibold</option>
-                                <option value="bold">Bold</option>
+                                <option value="normal">Normal (400)</option>
+                                <option value="medium">Medium (500)</option>
+                                <option value="semibold">Semi-bold (600)</option>
+                                <option value="bold">Bold (700)</option>
                               </select>
-                            </div>
+                            </label>
                           </div>
                         </div>
                       )}
-
-                      <label style={{ marginTop: 8 }}>
-                        <s-text size="small">Text alignment</s-text>
-                        <select
-                          value={rule.settings?.special_delivery_text_alignment || "left"}
-                          onChange={(e) => {
-                            const next = [...rules];
-                            next[safeSelectedIndex] = {
-                              ...rule,
-                              settings: { ...rule.settings, special_delivery_text_alignment: e.target.value },
-                            };
-                            setRules(next);
-                          }}
-                          style={{ width: "100%", marginTop: 4 }}
-                        >
-                          <option value="left">Left</option>
-                          <option value="center">Center</option>
-                          <option value="right">Right</option>
-                        </select>
-                      </label>
                     </div>
                   </div>
                   )}
@@ -4844,17 +3794,13 @@ export default function Index() {
                     {fetcher.data.error}
                   </s-text>
                 )}
-              </>
-              )}
-
-              {/* No rule selected message (only when no styling panel is open) */}
-              {!rule && !showTypographyPanel && !showAlignmentPanel && (
-                <div style={{ border: "1px solid var(--p-color-border, #e5e7eb)", borderRadius: 8, padding: 16, background: "var(--p-color-bg-surface, #ffffff)" }}>
-                  <s-heading>No rule selected</s-heading>
-                  <s-text>Add a rule to edit.</s-text>
-                </div>
-              )}
-            </div>
+              </div>
+            ) : (
+              <div style={{ display: "grid", gap: 12 }}>
+                <s-heading>No rule selected</s-heading>
+                <s-text>Add a rule to edit.</s-text>
+              </div>
+            )}
 
             {/* RIGHT column: preview, rules list */}
             <div className="dib-right-column" style={{ display: "flex", flexDirection: "column", gap: 12, minWidth: 0 }}>
@@ -4862,36 +3808,37 @@ export default function Index() {
               {/* Load Google Font for preview if custom font is selected for messages */}
               {globalSettings?.use_theme_font === false &&
                globalSettings?.custom_font_family &&
-               ["Assistant", "Roboto", "Open Sans", "Montserrat", "Poppins", "Lato", "Nunito Sans", "Source Sans Pro", "Oswald", "Raleway", "Inter"].some(gf => globalSettings.custom_font_family.includes(gf)) && (
+               globalSettings.custom_font_family.includes("'") &&
+               !globalSettings.custom_font_family.includes("Times") &&
+               !globalSettings.custom_font_family.includes("Courier") &&
+               !globalSettings.custom_font_family.includes("Trebuchet") && (
                 <link
-                  href={`https://fonts.googleapis.com/css2?family=${(globalSettings.custom_font_family.match(/'([^']+)'/)?.[1] || globalSettings.custom_font_family).replace(/ /g, '+')}:wght@400;500;600;700&display=swap`}
+                  href={`https://fonts.googleapis.com/css2?family=${globalSettings.custom_font_family.match(/'([^']+)'/)?.[1]?.replace(/ /g, '+')}:wght@400;500;600&display=swap`}
                   rel="stylesheet"
                 />
               )}
               {/* Load Google Font for ETA Timeline if custom font is selected */}
               {globalSettings?.eta_use_theme_font === false &&
+               !globalSettings?.eta_match_messages_font &&
                globalSettings?.eta_custom_font_family &&
-               ["Assistant", "Roboto", "Open Sans", "Montserrat", "Poppins", "Lato", "Nunito Sans", "Source Sans Pro", "Oswald", "Raleway", "Inter"].some(gf => globalSettings.eta_custom_font_family.includes(gf)) && (
+               globalSettings.eta_custom_font_family.includes("'") &&
+               !globalSettings.eta_custom_font_family.includes("Times") &&
+               !globalSettings.eta_custom_font_family.includes("Courier") &&
+               !globalSettings.eta_custom_font_family.includes("Trebuchet") && (
                 <link
-                  href={`https://fonts.googleapis.com/css2?family=${(globalSettings.eta_custom_font_family.match(/'([^']+)'/)?.[1] || globalSettings.eta_custom_font_family).replace(/ /g, '+')}:wght@400;500;600;700&display=swap`}
+                  href={`https://fonts.googleapis.com/css2?family=${globalSettings.eta_custom_font_family.match(/'([^']+)'/)?.[1]?.replace(/ /g, '+')}:wght@400;500;600&display=swap`}
                   rel="stylesheet"
                 />
               )}
-              {/* Load Google Font for Special Delivery if custom font is selected */}
-              {globalSettings?.special_delivery_use_theme_font === false &&
-               globalSettings?.special_delivery_custom_font_family &&
-               ["Assistant", "Roboto", "Open Sans", "Montserrat", "Poppins", "Lato", "Nunito Sans", "Source Sans Pro", "Oswald", "Raleway", "Inter"].some(gf => globalSettings.special_delivery_custom_font_family.includes(gf)) && (
-                <link
-                  href={`https://fonts.googleapis.com/css2?family=${(globalSettings.special_delivery_custom_font_family.match(/'([^']+)'/)?.[1] || globalSettings.special_delivery_custom_font_family).replace(/ /g, '+')}:wght@400;500;600;700&display=swap`}
-                  rel="stylesheet"
-                />
-              )}
-              {/* Load preview theme font if Messages or ETA Timeline is using theme font */}
-              {(globalSettings?.use_theme_font !== false || globalSettings?.eta_use_theme_font !== false) &&
+              {/* Load preview theme font for ETA Timeline if using theme font */}
+              {globalSettings?.eta_use_theme_font !== false &&
                globalSettings?.eta_preview_theme_font &&
-               globalSettings.eta_preview_theme_font.includes("'") && (
+               globalSettings.eta_preview_theme_font.includes("'") &&
+               !globalSettings.eta_preview_theme_font.includes("Times") &&
+               !globalSettings.eta_preview_theme_font.includes("Courier") &&
+               !globalSettings.eta_preview_theme_font.includes("Trebuchet") && (
                 <link
-                  href={`https://fonts.googleapis.com/css2?family=${globalSettings.eta_preview_theme_font.match(/'([^']+)'/)?.[1]?.replace(/ /g, '+')}:wght@400;500;600;700&display=swap`}
+                  href={`https://fonts.googleapis.com/css2?family=${globalSettings.eta_preview_theme_font.match(/'([^']+)'/)?.[1]?.replace(/ /g, '+')}:wght@400;500;600&display=swap`}
                   rel="stylesheet"
                 />
               )}
@@ -4938,24 +3885,25 @@ export default function Index() {
                             (rule.settings?.message_line_1 || rule.settings?.message_line_2 || rule.settings?.message_line_3)) && (
                         <div
                           style={{
-                            // Border: match ETA border or use direct thickness (0 = no border)
+                            // When match_eta_border is true, always show border (ignore show_border)
                             boxSizing: "border-box",
-                            padding: `${globalSettings?.messages_padding_vertical ?? 10}px ${globalSettings?.messages_padding_right ?? 12}px ${globalSettings?.messages_padding_vertical ?? 10}px ${globalSettings?.messages_padding_left ?? 8}px`,
+                            padding: (rule.settings?.show_eta_timeline && rule.settings?.match_eta_border) || rule.settings?.show_border ? "10px 12px" : 0,
                             borderStyle: "solid",
                             borderWidth: (rule.settings?.show_eta_timeline && rule.settings?.match_eta_border)
                               ? Number(rule.settings?.eta_border_width ?? 1)
-                              : Number(rule.settings?.border_thickness ?? 0),
+                              : (rule.settings?.show_border
+                                  ? Number(rule.settings?.border_thickness ?? 1)
+                                  : 0),
                             borderColor: rule.settings?.show_eta_timeline && rule.settings?.match_eta_border
                               ? (rule.settings?.eta_border_color ?? "#e5e7eb")
                               : (rule.settings?.border_color ?? "#e5e7eb"),
                             borderRadius: Number(rule.settings?.show_eta_timeline && rule.settings?.match_eta_border
                               ? (rule.settings?.eta_border_radius ?? 8)
                               : (rule.settings?.border_radius ?? 8)),
-                            backgroundColor: rule.settings?.background_color || "transparent",
                             // Width constraint: match ETA timeline width or use custom max_width
                             // Case 1: match_eta_width ON - force exact ETA width (content wraps)
                             // Case 2: max_width = 0 - fit to content
-                            // Case 3: max_width > 0 - expand TO that width, but never smaller than content
+                            // Case 3: max_width > 0 - expand TO that width
                             ...(rule.settings?.match_eta_width && rule.settings?.show_eta_timeline && etaTimelineWidth > 0
                               ? {
                                   width: etaTimelineWidth,
@@ -4963,20 +3911,20 @@ export default function Index() {
                                   maxWidth: etaTimelineWidth,
                                 }
                               : rule.settings?.max_width && rule.settings.max_width > 0
-                                ? { width: `min(${rule.settings.max_width}px, 100%)`, minWidth: "fit-content" }
+                                ? { width: `min(${rule.settings.max_width}px, 100%)` }
                                 : { width: "fit-content" }),
                             justifySelf: "start",
                             alignSelf: "start",
                             overflowWrap: "break-word",
                             display: rule.settings?.icon_layout === "single" ? "flex" : "grid",
                             gap: rule.settings?.icon_layout === "single"
-                              ? (rule.settings?.show_icon !== false ? (globalSettings?.messages_single_icon_gap ?? 12) : 0)
+                              ? (rule.settings?.show_icon !== false ? 12 : 0)
                               : 6,
                             alignItems: rule.settings?.icon_layout === "single" ? "center" : "stretch",
                             fontSize: rule.settings?.override_global_text_styling
-                              ? `${normalizeFontSize(rule.settings?.font_size, 16)}px`
+                              ? getTextFontSize(rule.settings?.font_size)
                               : globalSettings?.use_theme_text_styling === false
-                                ? `${normalizeFontSize(globalSettings?.font_size, 16)}px`
+                                ? getTextFontSize(globalSettings?.font_size)
                                 : `${Math.round((globalSettings?.eta_preview_font_size_scale || 100) * 1.2)}%`,
                             fontWeight: rule.settings?.override_global_text_styling
                               ? getTextFontWeight(rule.settings?.font_weight)
@@ -4996,14 +3944,14 @@ export default function Index() {
                           {rule.settings?.icon_layout === "single" && rule.settings?.show_icon !== false && (
                             <span
                               style={{
-                                width: normalizeSingleIconSize(rule.settings?.single_icon_size, 36),
-                                height: normalizeSingleIconSize(rule.settings?.single_icon_size, 36),
+                                width: getSingleIconSize(rule.settings?.single_icon_size),
+                                height: getSingleIconSize(rule.settings?.single_icon_size),
                                 flexShrink: 0,
                                 display: "inline-flex",
                                 alignItems: "center",
                                 justifyContent: "center",
                                 color: rule.settings?.icon_color ?? "#111827",
-                                fontSize: normalizeSingleIconSize(rule.settings?.single_icon_size, 36),
+                                fontSize: getSingleIconSize(rule.settings?.single_icon_size),
                               }}
                               aria-hidden="true"
                             >
@@ -5048,8 +3996,8 @@ export default function Index() {
                                     <span
                                       dangerouslySetInnerHTML={{ __html: svg }}
                                       style={{
-                                        width: normalizeSingleIconSize(rule.settings?.single_icon_size, 36),
-                                        height: normalizeSingleIconSize(rule.settings?.single_icon_size, 36),
+                                        width: getSingleIconSize(rule.settings?.single_icon_size),
+                                        height: getSingleIconSize(rule.settings?.single_icon_size),
                                         display: "block",
                                       }}
                                     />
@@ -5114,42 +4062,22 @@ export default function Index() {
 
                               const sizePx = rule.settings.special_delivery_icon_size || 24;
                               const iconColor = rule.settings.special_delivery_use_main_icon_color !== false
-                                ? (rule.settings.icon_color || "#111827")
+                                ? (globalSettings?.icon_color || "#111827")
                                 : (rule.settings.special_delivery_icon_color || "#111827");
                               const parsedMessage = parseMarkdownBold(message);
 
-                              // Header styling
-                              const header = rule.settings.special_delivery_header || "";
-                              const headerGap = globalSettings?.special_delivery_header_gap ?? 4;
-                              const headerColor = rule.settings.special_delivery_override_global_header_styling
-                                ? (rule.settings.special_delivery_header_color || "#111827")
-                                : globalSettings?.special_delivery_header_use_theme_text_styling === false
-                                  ? (globalSettings?.special_delivery_header_text_color || "#111827")
-                                  : "inherit";
-                              const headerFontSize = rule.settings.special_delivery_override_global_header_styling
-                                ? `${normalizeFontSize(rule.settings.special_delivery_header_font_size, 16)}px`
-                                : globalSettings?.special_delivery_header_use_theme_text_styling === false
-                                  ? `${normalizeFontSize(globalSettings?.special_delivery_header_font_size, 16)}px`
-                                  : "inherit";
-                              const headerFontWeight = rule.settings.special_delivery_override_global_header_styling
-                                ? getTextFontWeight(rule.settings.special_delivery_header_font_weight)
-                                : globalSettings?.special_delivery_header_use_theme_text_styling === false
-                                  ? getTextFontWeight(globalSettings?.special_delivery_header_font_weight)
-                                  : globalSettings?.eta_preview_font_weight || "normal";
-
                               // Border styling
-                              const showBorder = (rule.settings.special_delivery_border_thickness ?? 0) > 0 ||
+                              const showBorder = rule.settings.special_delivery_show_border ||
                                 (rule.settings.show_eta_timeline && rule.settings.special_delivery_match_eta_border);
                               const borderThickness = rule.settings.special_delivery_match_eta_border
                                 ? (rule.settings.eta_border_width ?? 1)
-                                : (rule.settings.special_delivery_border_thickness ?? 0);
+                                : (rule.settings.special_delivery_border_thickness ?? 1);
                               const borderColor = rule.settings.special_delivery_match_eta_border
                                 ? (rule.settings.eta_border_color ?? "#e5e7eb")
                                 : (rule.settings.special_delivery_border_color ?? "#e5e7eb");
                               const borderRadius = rule.settings.special_delivery_match_eta_border
                                 ? (rule.settings.eta_border_radius ?? 8)
                                 : (rule.settings.special_delivery_border_radius ?? 8);
-                              const backgroundColor = rule.settings.special_delivery_background_color || "";
 
                               // Width constraint: match ETA timeline width or use custom max_width
                               const matchEtaWidth = rule.settings.special_delivery_match_eta_width && rule.settings.show_eta_timeline && etaTimelineWidth > 0;
@@ -5166,50 +4094,42 @@ export default function Index() {
                                   ? (globalSettings?.special_delivery_text_color || "#374151")
                                   : "inherit";
                               const fontSize = rule.settings.special_delivery_override_global_text_styling
-                                ? `${normalizeFontSize(rule.settings.special_delivery_font_size, 16)}px`
+                                ? getTextFontSize(rule.settings.special_delivery_font_size)
                                 : globalSettings?.special_delivery_use_theme_text_styling === false
-                                  ? `${normalizeFontSize(globalSettings?.special_delivery_font_size, 16)}px`
-                                  : `${Math.round((globalSettings?.eta_preview_font_size_scale || 100) * 1.2)}%`;
+                                  ? getTextFontSize(globalSettings?.special_delivery_font_size)
+                                  : "inherit";
                               const fontWeight = rule.settings.special_delivery_override_global_text_styling
                                 ? getTextFontWeight(rule.settings.special_delivery_font_weight)
                                 : globalSettings?.special_delivery_use_theme_text_styling === false
                                   ? getTextFontWeight(globalSettings?.special_delivery_font_weight)
-                                  : globalSettings?.eta_preview_font_weight || "normal";
+                                  : "inherit";
                               const fontFamily = globalSettings?.special_delivery_use_theme_font === false
-                                ? (globalSettings?.special_delivery_custom_font_family || "inherit")
-                                : globalSettings?.eta_preview_theme_font || "'Assistant', sans-serif";
-                              const lineHeight = globalSettings?.special_delivery_line_height ?? 1.4;
-                              const textAlignment = rule.settings.special_delivery_text_alignment || "left";
+                                ? (globalSettings?.special_delivery_match_messages_font && globalSettings?.custom_font_family
+                                    ? globalSettings.custom_font_family
+                                    : globalSettings?.special_delivery_custom_font_family || "inherit")
+                                : "inherit";
 
                               const iconAlignment = { top: "flex-start", center: "center", bottom: "flex-end" }[rule.settings.special_delivery_icon_alignment] || "flex-start";
-
-                              // Spacing settings
-                              const paddingL = globalSettings?.special_delivery_padding_left ?? 8;
-                              const paddingR = globalSettings?.special_delivery_padding_right ?? 12;
-                              const paddingV = globalSettings?.special_delivery_padding_vertical ?? 10;
-                              const iconGap = globalSettings?.special_delivery_icon_gap ?? 12;
 
                               return (
                                 <div style={{
                                   display: "inline-flex",
                                   alignItems: iconAlignment,
-                                  gap: iconGap,
+                                  gap: 12,
                                   boxSizing: "border-box",
                                   overflowWrap: "break-word",
                                   wordBreak: "break-word",
-                                  padding: `${paddingV}px ${paddingR}px ${paddingV}px ${paddingL}px`,
                                   ...(showBorder ? {
+                                    padding: "10px 12px",
                                     border: `${borderThickness}px solid ${borderColor}`,
                                     borderRadius: borderRadius,
                                   } : {}),
-                                  ...(backgroundColor ? { backgroundColor, borderRadius: borderRadius } : {}),
                                   // Width constraint: match ETA or custom max_width
                                   ...widthStyle,
                                   color: textColor,
                                   fontSize,
                                   fontWeight,
                                   fontFamily,
-                                  lineHeight,
                                 }}>
                                   {/* SVG icon (inherits color) */}
                                   {svgCode && (
@@ -5226,25 +4146,12 @@ export default function Index() {
                                       style={{ width: sizePx, height: sizePx, flexShrink: 0, objectFit: "contain" }}
                                     />
                                   )}
-                                  <div style={{ minWidth: 0, textAlign: textAlignment, display: "flex", flexDirection: "column", gap: header ? headerGap : 0 }}>
-                                    {/* Header - only render if populated */}
-                                    {header && (
-                                      <div style={{
-                                        color: headerColor,
-                                        fontSize: headerFontSize,
-                                        fontWeight: headerFontWeight,
-                                      }}>
-                                        {header}
-                                      </div>
-                                    )}
-                                    {/* Message */}
-                                    <div>
-                                      {parsedMessage.map((seg, i) => (
-                                        seg.bold
-                                          ? <strong key={i}>{renderWithLineBreaks(seg.text, `sp-${i}`)}</strong>
-                                          : <span key={i}>{renderWithLineBreaks(seg.text, `sp-${i}`)}</span>
-                                      ))}
-                                    </div>
+                                  <div style={{ minWidth: 0 }}>
+                                    {parsedMessage.map((seg, i) => (
+                                      seg.bold
+                                        ? <strong key={i}>{renderWithLineBreaks(seg.text, `sp-${i}`)}</strong>
+                                        : <span key={i}>{renderWithLineBreaks(seg.text, `sp-${i}`)}</span>
+                                    ))}
                                   </div>
                                 </div>
                               );

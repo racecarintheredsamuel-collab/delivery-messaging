@@ -430,51 +430,9 @@
     debug('Fetch interceptor installed');
   }
 
-  // Setup announcement bar - always show on all pages when enabled
-  function setupAnnouncementBar() {
-    const announcement = document.getElementById('dib-fd-announcement');
-    if (!announcement) return;
-
-    // Show announcement bar and add body padding class
-    announcement.style.display = '';
-    document.body.classList.add('dib-has-announcement');
-    debug('Announcement bar enabled');
-
-    // Subscribe to DeliveryMessaging to handle empty cart state
-    if (window.DeliveryMessaging && window.DeliveryMessaging.subscribe) {
-      const emptyMessage = announcement.dataset.emptyMessage || '';
-
-      window.DeliveryMessaging.subscribe((state) => {
-        const messageEl = announcement.querySelector('[data-dm-message]');
-        if (!messageEl) return;
-
-        // If cart is empty, use the announcement-specific empty message
-        if (state.isEmpty) {
-          if (emptyMessage) {
-            messageEl.textContent = emptyMessage;
-            announcement.dataset.dmState = 'empty-message';
-            announcement.style.display = '';
-            document.body.classList.add('dib-has-announcement');
-          } else {
-            // No empty message configured, hide the bar
-            announcement.dataset.dmState = 'hidden';
-            document.body.classList.remove('dib-has-announcement');
-          }
-        } else {
-          // Cart has items, show normally
-          announcement.style.display = '';
-          document.body.classList.add('dib-has-announcement');
-        }
-      });
-    }
-  }
-
   // Initialize
   function init() {
     debug('Initializing');
-
-    // Setup announcement bar
-    setupAnnouncementBar();
 
     // Initial scan
     scanAndInject();
@@ -485,7 +443,6 @@
     // Re-scan on navigation (SPA support)
     window.addEventListener('popstate', () => {
       setTimeout(scanAndInject, 100);
-      setTimeout(setupAnnouncementBar, 100);
     });
   }
 

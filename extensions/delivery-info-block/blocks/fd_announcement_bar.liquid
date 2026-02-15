@@ -1,0 +1,208 @@
+{%- comment -%}
+  Free Delivery Announcement Bar - App Block
+  Place this in your theme's header/announcement area via Theme Customize
+  All settings are controlled from the app
+{%- endcomment -%}
+
+{%- assign global_settings_json = shop.metafields.delivery_rules.settings.value -%}
+{%- assign global_settings = nil -%}
+{%- if global_settings_json != blank -%}
+  {%- assign global_settings = global_settings_json | parse_json -%}
+{%- endif -%}
+
+{%- comment -%} Defaults {%- endcomment -%}
+{%- assign fd_threshold = 5000 -%}
+{%- assign fd_exclude_tags = '' -%}
+{%- assign fd_exclude_handles = '' -%}
+{%- capture fd_progress_message -%}Spend {remaining} more for free delivery{%- endcapture -%}
+{%- capture fd_unlocked_message -%}You've unlocked free delivery!{%- endcapture -%}
+{%- assign fd_empty_message = '' -%}
+{%- assign fd_excluded_message = '' -%}
+{%- assign fd_bg_color = '#1f2937' -%}
+{%- assign fd_text_color = '#ffffff' -%}
+{%- assign fd_text_size = 'medium' -%}
+{%- assign fd_bar_height = 'comfortable' -%}
+{%- assign fd_progress_duration = 5 -%}
+{%- assign fd_unlocked_duration = 5 -%}
+{%- assign fd_empty_duration = 5 -%}
+{%- assign fd_excluded_duration = 5 -%}
+{%- assign fd_additional1_message = '' -%}
+{%- assign fd_additional1_duration = 5 -%}
+{%- assign fd_additional2_message = '' -%}
+{%- assign fd_additional2_duration = 5 -%}
+{%- assign fd_content_max_width = '' -%}
+
+{%- comment -%} Load settings from app {%- endcomment -%}
+{%- if global_settings != nil -%}
+  {%- if global_settings.fd_threshold != blank -%}
+    {%- assign fd_threshold = global_settings.fd_threshold -%}
+  {%- endif -%}
+  {%- if global_settings.fd_exclude_tags != blank -%}
+    {%- assign fd_exclude_tags = global_settings.fd_exclude_tags | json -%}
+  {%- endif -%}
+  {%- if global_settings.fd_exclude_handles != blank -%}
+    {%- assign fd_exclude_handles = global_settings.fd_exclude_handles | json -%}
+  {%- endif -%}
+  {%- if global_settings.fd_announcement_progress_message != blank -%}
+    {%- assign fd_progress_message = global_settings.fd_announcement_progress_message -%}
+  {%- endif -%}
+  {%- if global_settings.fd_announcement_unlocked_message != blank -%}
+    {%- assign fd_unlocked_message = global_settings.fd_announcement_unlocked_message -%}
+  {%- endif -%}
+  {%- if global_settings.fd_announcement_empty_message != blank -%}
+    {%- assign fd_empty_message = global_settings.fd_announcement_empty_message -%}
+  {%- endif -%}
+  {%- if global_settings.fd_announcement_excluded_message != blank -%}
+    {%- assign fd_excluded_message = global_settings.fd_announcement_excluded_message -%}
+  {%- endif -%}
+  {%- if global_settings.fd_announcement_bg_color != blank -%}
+    {%- assign fd_bg_color = global_settings.fd_announcement_bg_color -%}
+  {%- endif -%}
+  {%- if global_settings.fd_announcement_text_color != blank -%}
+    {%- assign fd_text_color = global_settings.fd_announcement_text_color -%}
+  {%- endif -%}
+  {%- if global_settings.fd_announcement_text_size != blank -%}
+    {%- assign fd_text_size = global_settings.fd_announcement_text_size -%}
+  {%- endif -%}
+  {%- if global_settings.fd_announcement_bar_height != blank -%}
+    {%- assign fd_bar_height = global_settings.fd_announcement_bar_height -%}
+  {%- endif -%}
+  {%- if global_settings.fd_announcement_progress_duration != blank -%}
+    {%- assign fd_progress_duration = global_settings.fd_announcement_progress_duration -%}
+  {%- endif -%}
+  {%- if global_settings.fd_announcement_unlocked_duration != blank -%}
+    {%- assign fd_unlocked_duration = global_settings.fd_announcement_unlocked_duration -%}
+  {%- endif -%}
+  {%- if global_settings.fd_announcement_empty_duration != blank -%}
+    {%- assign fd_empty_duration = global_settings.fd_announcement_empty_duration -%}
+  {%- endif -%}
+  {%- if global_settings.fd_announcement_excluded_duration != blank -%}
+    {%- assign fd_excluded_duration = global_settings.fd_announcement_excluded_duration -%}
+  {%- endif -%}
+  {%- if global_settings.fd_announcement_additional1_message != blank -%}
+    {%- assign fd_additional1_message = global_settings.fd_announcement_additional1_message -%}
+  {%- endif -%}
+  {%- if global_settings.fd_announcement_additional1_duration != blank -%}
+    {%- assign fd_additional1_duration = global_settings.fd_announcement_additional1_duration -%}
+  {%- endif -%}
+  {%- if global_settings.fd_announcement_additional2_message != blank -%}
+    {%- assign fd_additional2_message = global_settings.fd_announcement_additional2_message -%}
+  {%- endif -%}
+  {%- if global_settings.fd_announcement_additional2_duration != blank -%}
+    {%- assign fd_additional2_duration = global_settings.fd_announcement_additional2_duration -%}
+  {%- endif -%}
+  {%- if global_settings.fd_announcement_content_max_width != blank -%}
+    {%- assign fd_content_max_width = global_settings.fd_announcement_content_max_width -%}
+  {%- endif -%}
+{%- endif -%}
+
+{%- assign ct = global_settings.cutoff_time | default: '14:00' -%}
+{%- assign cts = global_settings.cutoff_time_sat | default: '' -%}
+{%- assign ctu = global_settings.cutoff_time_sun | default: '' -%}
+{%- assign cd = global_settings.closed_days | join: ',' | default: '' -%}
+{%- assign bh = global_settings.bank_holiday_country | default: '' -%}
+{%- assign ch = '' -%}{%- if global_settings.custom_holidays != blank -%}{%- for h in global_settings.custom_holidays -%}{%- if ch != '' -%}{%- assign ch = ch | append: ',' -%}{%- endif -%}{%- assign ch = ch | append: h.date -%}{%- endfor -%}{%- endif -%}
+
+{%- comment -%} Calculate text size in pixels {%- endcomment -%}
+{%- case fd_text_size -%}
+  {%- when 'small' -%}{%- assign text_size_px = 12 -%}
+  {%- when 'large' -%}{%- assign text_size_px = 16 -%}
+  {%- else -%}{%- assign text_size_px = 14 -%}
+{%- endcase -%}
+
+{%- comment -%} Calculate padding based on height {%- endcomment -%}
+{%- case fd_bar_height -%}
+  {%- when 'compact' -%}{%- assign bar_padding = '6px 16px' -%}
+  {%- when 'standard' -%}{%- assign bar_padding = '10px 16px' -%}
+  {%- when 'spacious' -%}{%- assign bar_padding = '18px 16px' -%}
+  {%- else -%}{%- assign bar_padding = '14px 16px' -%}
+{%- endcase -%}
+
+
+<style>
+.dib-fd-announcement.dib-fd-celebrate{
+  animation:dib-announce-pulse .4s ease-out!important;
+}
+@keyframes dib-announce-pulse{
+  0%,100%{opacity:1}
+  50%{opacity:0.7}
+}
+.dib-fd-inner{
+  position:relative;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  width:100%;
+  margin:0 auto;
+}
+.dib-fd-chevron{
+  position:absolute;
+  top:50%;
+  transform:translateY(-50%);
+  background:none;
+  border:none;
+  color:inherit;
+  cursor:pointer;
+  padding:8px;
+  opacity:0.6;
+  transition:opacity 0.15s ease;
+  display:none;
+}
+.dib-fd-chevron:hover{opacity:1;}
+.dib-fd-chevron.dib-fd-prev{left:8px;}
+.dib-fd-chevron.dib-fd-next{right:8px;}
+.dib-fd-chevron svg{width:12px;height:12px;display:block;}
+.dib-fd-announcement.dib-fd-has-multiple .dib-fd-chevron{display:block;}
+.dib-fd-message-wrap{
+  transition:opacity 0.15s ease;
+}
+</style>
+
+<div class="dib-fd-announcement"
+  style="padding:{{ bar_padding }};background:{{ fd_bg_color }};color:{{ fd_text_color }};font-size:{{ text_size_px }}px;line-height:1.4;text-align:center;width:100%;box-sizing:border-box;"
+  data-dm-target
+  data-dm-no-hide
+  data-dm-cycling
+  data-threshold="{{ fd_threshold }}"
+  data-currency="{{ shop.currency }}"
+  data-locale="{{ request.locale.iso_code | default: 'en-GB' }}"
+  data-progress-message="{{ fd_progress_message | escape }}"
+  data-unlocked-message="{{ fd_unlocked_message | escape }}"
+  data-empty-message="{{ fd_empty_message | escape }}"
+  data-excluded-message="{{ fd_excluded_message | escape }}"
+  data-has-empty-message="{{ fd_empty_message | size | at_least: 1 }}"
+  data-has-excluded-message="{{ fd_excluded_message | size | at_least: 1 }}"
+  data-exclude-tags="{{ fd_exclude_tags | escape }}"
+  data-exclude-handles="{{ fd_exclude_handles | escape }}"
+  data-progress-duration="{{ fd_progress_duration }}"
+  data-unlocked-duration="{{ fd_unlocked_duration }}"
+  data-empty-duration="{{ fd_empty_duration }}"
+  data-excluded-duration="{{ fd_excluded_duration }}"
+  data-additional1-message="{{ fd_additional1_message | escape }}"
+  data-additional1-duration="{{ fd_additional1_duration }}"
+  data-additional2-message="{{ fd_additional2_message | escape }}"
+  data-additional2-duration="{{ fd_additional2_duration }}"
+>
+  <div class="dib-fd-inner"{% if fd_content_max_width != blank %} style="max-width:{{ fd_content_max_width }}px"{% endif %}>
+    <span class="dib-cycling-config" style="display:none" data-shop-offset="{{ 'now' | date: '%z' }}" data-cutoff="{{ ct }}" data-cutoff-sat="{{ cts }}" data-cutoff-sun="{{ ctu }}" data-closed-days="{{ cd }}" data-bank-holiday-country="{{ bh }}" data-custom-holidays="{{ ch }}"></span>
+    <button class="dib-fd-chevron dib-fd-prev" aria-label="Previous message" type="button">
+      <svg viewBox="0 0 14 14" fill="none"><path d="M9 3L5 7l4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+    <span class="dib-fd-message-wrap" data-dm-message><span style="color:{{ fd_bg_color }}">.</span></span>
+    <button class="dib-fd-chevron dib-fd-next" aria-label="Next message" type="button">
+      <svg viewBox="0 0 14 14" fill="none"><path d="M5 3l4 4-4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+  </div>
+</div>
+
+<script src="{{ 'delivery-messaging.js' | asset_url }}" defer></script>
+<script src="{{ 'dib-countdown.js' | asset_url }}" defer></script>
+<script src="{{ 'dib-announcement-cycling.js' | asset_url }}" defer></script>
+
+{% schema %}
+{
+  "name": "Free Delivery Bar",
+  "target": "section",
+  "settings": []
+}
+{% endschema %}

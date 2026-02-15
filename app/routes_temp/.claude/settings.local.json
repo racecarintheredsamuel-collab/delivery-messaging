@@ -28,16 +28,7 @@
       "Bash(python -c \"import os; os.remove\\(r''\\\\?\\\\c:\\\\projects\\\\delivery-info-block\\\\app\\\\routes\\\\nul''\\)\")",
       "Bash(python -c \"import subprocess; subprocess.run\\([''cmd'', ''/c'', ''del'', ''/f'', ''/q'', ''\\\\\\\\?\\\\c:\\\\projects\\\\delivery-info-block\\\\app\\\\routes\\\\nul''], shell=False\\)\")",
       "Bash(git clean:*)",
-      "Bash(wsl rm:*)",
-      "Bash(git commit:*)",
-      "Bash(git push:*)",
-      "Bash(wc:*)",
-      "WebFetch(domain:github.com)",
-      "Bash(npm run deploy:*)",
-      "WebFetch(domain:gist.github.com)",
-      "Bash(grep:*)",
-      "Bash(shopify app deploy:*)",
-      "Bash(git add:*)"
+      "Bash(wsl rm:*)"
     ]
   }
 }

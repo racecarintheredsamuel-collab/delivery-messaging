@@ -117,7 +117,7 @@ export const settingsSchema = z.object({
   custom_font_family: z.string().optional(),
   use_theme_text_styling: z.boolean().optional(),
   text_color: z.string().optional(),
-  font_size: z.string().optional(),
+  font_size: z.union([z.string(), z.number()]).optional(),
   font_weight: z.string().optional(),
   // Block spacing
   messages_margin_top: z.number().optional(),
@@ -133,6 +133,8 @@ export const settingsSchema = z.object({
   eta_horizontal_gap: z.number().optional(),
   eta_padding_horizontal: z.number().optional(),
   eta_padding_vertical: z.number().optional(),
+  // Special Delivery spacing
+  special_delivery_line_height: z.number().optional(),
   // Custom icons (global)
   custom_icons: z.array(customIconSchema).max(8).optional(),
   // Custom connector SVG for ETA Timeline
@@ -148,7 +150,12 @@ export const settingsSchema = z.object({
   fd_progress_bar_bg: z.string().optional(),
   fd_message_excluded: z.string().optional(),
   fd_show_announcement_bar: z.boolean().optional(),
+  fd_announcement_progress_message: z.string().optional(),
+  fd_announcement_unlocked_message: z.string().optional(),
+  fd_announcement_empty_message: z.string().optional(),
   fd_announcement_excluded_message: z.string().optional(),
+  fd_announcement_bg_color: z.string().optional(),
+  fd_announcement_text_color: z.string().optional(),
   fd_announcement_text_size: z.string().optional(),
   fd_announcement_bar_height: z.string().optional(),
 }).passthrough();

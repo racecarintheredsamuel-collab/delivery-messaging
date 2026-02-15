@@ -1,5 +1,10 @@
 /* Delivery Messages Block - Static CSS */
 
+/* Design mode placeholder */
+.dib-placeholder{border:2px dashed #d1d5db;border-radius:8px;padding:16px 20px;background:#f9fafb;display:inline-flex;align-items:center;gap:12px;max-width:400px}
+.dib-placeholder b{font-weight:600;color:#374151;font-size:14px}
+.dib-placeholder span{color:#6b7280;font-size:12px}
+
 /* Base layout */
 .dib-messages .dib-lines {
   display: grid;
@@ -53,7 +58,12 @@
   justify-content: center;
 }
 
-.dib-messages.icon-layout-single .dib-icon-single svg { display: block; }
+.dib-messages.icon-layout-single .dib-icon-single svg,
+.dib-messages.icon-layout-single .dib-icon-single img {
+  width: var(--dib-single-icon-size, 36px) !important;
+  height: var(--dib-single-icon-size, 36px) !important;
+  display: block;
+}
 .dib-messages.icon-layout-single .dib-icon-single svg [fill]:not([fill="none"]) { fill: currentColor; }
 .dib-messages.icon-layout-single .dib-icon-single svg [stroke] { stroke: currentColor; }
 
@@ -103,7 +113,7 @@
 .dib-messages .dib-container {
   border: none;
   border-radius: 0;
-  padding: var(--dib-padding-v, 10px) var(--dib-padding-h, 12px);
+  padding: var(--dib-padding-v, 10px) var(--dib-padding-r, 12px) var(--dib-padding-v, 10px) var(--dib-padding-l, 8px);
 }
 
 .dib-messages .dib-container.has-border {

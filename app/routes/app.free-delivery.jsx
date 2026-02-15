@@ -209,71 +209,91 @@ export default function FreeDeliveryPage() {
 
   return (
     <s-page heading="Free Delivery">
-      <s-layout style={{ maxWidth: 720 }}>
+      <s-layout style={{ maxWidth: 1000 }}>
         <div style={{ display: "grid", gap: 24 }}>
           {/* Top Save Button */}
           <SaveButtonRow />
 
-          {/* Section 1: Threshold Amount */}
-          <div
-            style={{
-              border: "1px solid var(--p-color-border, #e5e7eb)",
-              borderRadius: "8px",
-              padding: "16px",
-              display: "grid",
-              gap: 12,
-              background: "var(--p-color-bg-surface, #ffffff)",
-            }}
-          >
-            <s-text style={{ fontWeight: 600 }}>Threshold Amount</s-text>
-            <label>
-              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                <s-text style={{ color: "var(--p-color-text-subdued, #6b7280)" }}>£</s-text>
-                <input
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={(settings.fd_threshold || 0) / 100}
-                  onChange={(e) => setSettings({ ...settings, fd_threshold: Math.round(parseFloat(e.target.value || 0) * 100) })}
-                  style={{ width: 120 }}
-                />
+          {/* Two-column layout for messaging sections */}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24 }}>
+            {/* Left Column: Threshold + Free Delivery Messaging */}
+            <div style={{ display: "grid", gap: 24, alignContent: "start" }}>
+              {/* Section 1: Threshold Amount */}
+              <div
+                style={{
+                  border: "1px solid var(--p-color-border, #e5e7eb)",
+                  borderRadius: "8px",
+                  overflow: "hidden",
+                  background: "var(--p-color-bg-surface, #ffffff)",
+                  alignSelf: "start",
+                }}
+              >
+                {/* Header */}
+                <div
+                  style={{
+                    padding: "12px 16px",
+                    background: "var(--p-color-bg-surface-hover, #f8fafc)",
+                    borderBottom: "1px solid var(--p-color-border, #e5e7eb)",
+                  }}
+                >
+                  <s-text style={{ fontWeight: 600 }}>Threshold Amount</s-text>
+                </div>
+                {/* Content */}
+                <div style={{ padding: "16px 16px 12px 16px" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <s-text style={{ color: "var(--p-color-text-subdued, #6b7280)" }}>£</s-text>
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={(settings.fd_threshold || 0) / 100}
+                      onChange={(e) => setSettings({ ...settings, fd_threshold: Math.round(parseFloat(e.target.value || 0) * 100) })}
+                      style={{ width: 120 }}
+                    />
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 6, color: "var(--p-color-text-subdued, #6b7280)", marginTop: 8 }}>
+                    <span style={{ fontSize: 12, flexShrink: 0 }}>💡</span>
+                    <span style={{ fontSize: 12 }}>Customers spending this amount or more qualify for free delivery</span>
+                  </div>
+                </div>
               </div>
-              <div style={{ display: "flex", alignItems: "center", gap: 6, color: "var(--p-color-text-subdued, #6b7280)", marginTop: 4 }}>
-                <span style={{ fontSize: 12, flexShrink: 0 }}>💡</span>
-                <span style={{ fontSize: 12 }}>Customers spending this amount or more qualify for free delivery</span>
+
+              {/* Section 2: Free Delivery Messaging */}
+            <div
+              style={{
+                border: "1px solid var(--p-color-border, #e5e7eb)",
+                borderRadius: "8px",
+                overflow: "hidden",
+                background: "var(--p-color-bg-surface, #ffffff)",
+              }}
+            >
+              {/* Header */}
+              <div
+                style={{
+                  padding: "12px 16px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  background: "var(--p-color-bg-surface-hover, #f8fafc)",
+                  borderBottom: "1px solid var(--p-color-border, #e5e7eb)",
+                }}
+              >
+                <s-text style={{ fontWeight: 600 }}>Free Delivery Messaging</s-text>
+                <label style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  <s-text size="small">{settings.fd_enabled ? "Enabled" : "Disabled"}</s-text>
+                  <input
+                    type="checkbox"
+                    checked={settings.fd_enabled || false}
+                    onChange={(e) => setSettings({ ...settings, fd_enabled: e.target.checked })}
+                  />
+                </label>
               </div>
-            </label>
-          </div>
 
-          {/* Section 2: Free Delivery Messaging */}
-          <div
-            style={{
-              border: "1px solid var(--p-color-border, #e5e7eb)",
-              borderRadius: "8px",
-              padding: "16px",
-              display: "grid",
-              gap: 12,
-              background: "var(--p-color-bg-surface, #ffffff)",
-            }}
-          >
-            <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-              <s-text style={{ fontWeight: 600 }}>Free Delivery Messaging</s-text>
-              <s-text size="small" style={{ color: "var(--p-color-text-subdued, #6b7280)" }}>
-                Display progress messages in the cart drawer and cart page
-              </s-text>
-            </div>
-
-            <label style={{ display: "flex", gap: 8, alignItems: "center" }}>
-              <input
-                type="checkbox"
-                checked={settings.fd_enabled || false}
-                onChange={(e) => setSettings({ ...settings, fd_enabled: e.target.checked })}
-              />
-              <s-text>Enable free delivery messaging</s-text>
-            </label>
-
-          {settings.fd_enabled && (
-            <>
+              {/* Content */}
+              <div style={{ padding: "16px", display: "grid", gap: 12 }}>
+                  <s-text size="small" style={{ color: "var(--p-color-text-subdued, #6b7280)" }}>
+                    Display progress messages in the cart drawer and cart page
+                  </s-text>
               <label>
                 <s-text>Progress message</s-text>
                 <input
@@ -304,29 +324,36 @@ export default function FreeDeliveryPage() {
                 </div>
               </label>
 
-              <label>
-                <s-text>Empty cart message (optional)</s-text>
+              <label style={{ display: "block" }}>
+                <s-text>Empty cart message</s-text>
                 <input
                   type="text"
                   value={settings.fd_message_empty || ""}
                   onChange={(e) => setSettings({ ...settings, fd_message_empty: e.target.value })}
-                  placeholder="Leave empty to hide when cart is empty"
+                  placeholder="Free delivery on orders over £50"
                   style={{ width: "100%" }}
                 />
+                <div style={{ display: "flex", alignItems: "center", gap: 6, color: "var(--p-color-text-subdued, #6b7280)", marginTop: 4 }}>
+                  <span style={{ fontSize: 12, flexShrink: 0 }}>💡</span>
+                  <span style={{ fontSize: 12 }}>Leave blank to hide when cart is empty</span>
+                </div>
               </label>
 
-              <div style={{ borderTop: "1px solid var(--p-color-border, #e5e7eb)", paddingTop: 12 }}>
-                <label style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                  <input
-                    type="checkbox"
-                    checked={settings.fd_show_progress_bar || false}
-                    onChange={(e) => setSettings({ ...settings, fd_show_progress_bar: e.target.checked })}
-                  />
-                  <s-text>Show progress bar</s-text>
-                </label>
+              <div style={{ borderTop: "1px solid var(--p-color-border, #e5e7eb)", paddingTop: 12, marginTop: 4 }}>
+                <s-text style={{ fontWeight: 600 }}>Styling</s-text>
+              </div>
+
+              <label style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                <input
+                  type="checkbox"
+                  checked={settings.fd_show_progress_bar || false}
+                  onChange={(e) => setSettings({ ...settings, fd_show_progress_bar: e.target.checked })}
+                />
+                <s-text>Show progress bar</s-text>
+              </label>
 
                 {settings.fd_show_progress_bar && (
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginTop: 12 }}>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
                     <s-color-field
                       label="Progress bar color"
                       value={settings.fd_progress_bar_color || "#22c55e"}
@@ -340,84 +367,315 @@ export default function FreeDeliveryPage() {
                   </div>
                 )}
               </div>
-            </>
-          )}
-          </div>
+            </div>
 
-          {/* Section 3: Announcement Bar */}
+              {/* Section 3: Exclusions */}
+              <div
+                style={{
+                  border: "1px solid var(--p-color-border, #e5e7eb)",
+                  borderRadius: "8px",
+                  overflow: "hidden",
+                  background: "var(--p-color-bg-surface, #ffffff)",
+                }}
+              >
+                {/* Header */}
+                <div
+                  style={{
+                    padding: "12px 16px",
+                    background: "var(--p-color-bg-surface-hover, #f8fafc)",
+                    borderBottom: "1px solid var(--p-color-border, #e5e7eb)",
+                  }}
+                >
+                  <s-text style={{ fontWeight: 600 }}>Exclusions</s-text>
+                </div>
+                {/* Content */}
+                <div style={{ padding: "16px", display: "grid", gap: 12 }}>
+                  <s-text size="small" style={{ color: "var(--p-color-text-subdued, #6b7280)" }}>
+                    Products matching these tags or handles will show the exclusion message instead
+                  </s-text>
+
+                <label style={{ display: "block" }}>
+                  <s-text>Product tags (comma-separated)</s-text>
+                  <input
+                    type="text"
+                    value={excludeTagsText}
+                    onChange={(e) => setExcludeTagsText(e.target.value)}
+                    onBlur={() => {
+                      const tags = excludeTagsText.split(",").map(s => s.trim()).filter(Boolean);
+                      setExcludeTagsText(tags.join(", "));
+                      setSettings({ ...settings, fd_exclude_tags: tags });
+                    }}
+                    placeholder="e.g., no-free-delivery, oversized"
+                    style={{ width: "100%" }}
+                  />
+                </label>
+
+                <label style={{ display: "block" }}>
+                  <s-text>Product handles (comma-separated)</s-text>
+                  <input
+                    type="text"
+                    value={excludeHandlesText}
+                    onChange={(e) => setExcludeHandlesText(e.target.value)}
+                    onBlur={() => {
+                      const handles = excludeHandlesText.split(",").map(s => s.trim()).filter(Boolean);
+                      setExcludeHandlesText(handles.join(", "));
+                      setSettings({ ...settings, fd_exclude_handles: handles });
+                    }}
+                    placeholder="e.g., large-pond-kit, bulky-item"
+                    style={{ width: "100%" }}
+                  />
+                </label>
+
+                <label>
+                  <s-text>Exclusion message (Free Delivery Messaging)</s-text>
+                  <input
+                    type="text"
+                    value={settings.fd_message_excluded || ""}
+                    onChange={(e) => setSettings({ ...settings, fd_message_excluded: e.target.value })}
+                    placeholder="Free delivery not available for some items in your cart"
+                    style={{ width: "100%" }}
+                  />
+                  <div style={{ display: "flex", alignItems: "center", gap: 6, color: "var(--p-color-text-subdued, #6b7280)", marginTop: 4 }}>
+                    <span style={{ fontSize: 12, flexShrink: 0 }}>💡</span>
+                    <span style={{ fontSize: 12 }}>Leave blank to hide messaging when excluded products are in cart</span>
+                  </div>
+                </label>
+
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 75px", gap: 16, alignItems: "start" }}>
+                  <label style={{ display: "block" }}>
+                    <s-text>Exclusion message (Announcement Bar)</s-text>
+                    <input
+                      type="text"
+                      value={settings.fd_announcement_excluded_message || ""}
+                      onChange={(e) => setSettings({ ...settings, fd_announcement_excluded_message: e.target.value })}
+                      placeholder="Free delivery not available for some items"
+                      style={{ width: "100%" }}
+                    />
+                  </label>
+                  <label style={{ display: "block" }}>
+                    <s-text>Timer</s-text>
+                    <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                      <input
+                        type="number"
+                        min="0"
+                        value={settings.fd_announcement_excluded_duration ?? 5}
+                        onChange={(e) => setSettings({ ...settings, fd_announcement_excluded_duration: parseInt(e.target.value) || 0 })}
+                        style={{ width: "100%" }}
+                      />
+                      <span style={{ fontSize: 12, color: "var(--p-color-text-subdued)" }}>s</span>
+                    </div>
+                  </label>
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: 6, color: "var(--p-color-text-subdued, #6b7280)", marginTop: -8 }}>
+                  <span style={{ fontSize: 12, flexShrink: 0 }}>💡</span>
+                  <span style={{ fontSize: 12 }}>Leave blank to hide bar when excluded products are in cart. Timer controls cycling duration.</span>
+                </div>
+                </div>
+              </div>
+            </div>
+
+          {/* Section 4: Announcement Bar */}
           <div
             style={{
               border: "1px solid var(--p-color-border, #e5e7eb)",
               borderRadius: "8px",
-              padding: "16px",
-              display: "grid",
-              gap: 12,
+              overflow: "hidden",
               background: "var(--p-color-bg-surface, #ffffff)",
+              alignSelf: "start",
             }}
           >
-            <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+            {/* Header */}
+            <div
+              style={{
+                padding: "12px 16px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                background: "var(--p-color-bg-surface-hover, #f8fafc)",
+                borderBottom: "1px solid var(--p-color-border, #e5e7eb)",
+              }}
+            >
               <s-text style={{ fontWeight: 600 }}>Announcement Bar</s-text>
-              <s-text size="small" style={{ color: "var(--p-color-text-subdued, #6b7280)" }}>
-                Show a sticky bar at the top of the page with free delivery progress
-              </s-text>
+              <label style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                <s-text size="small">{settings.fd_show_announcement_bar ? "Enabled" : "Disabled"}</s-text>
+                <input
+                  type="checkbox"
+                  checked={settings.fd_show_announcement_bar || false}
+                  onChange={(e) => setSettings({ ...settings, fd_show_announcement_bar: e.target.checked })}
+                />
+              </label>
             </div>
 
-            <label style={{ display: "flex", gap: 8, alignItems: "center" }}>
-              <input
-                type="checkbox"
-                checked={settings.fd_show_announcement_bar || false}
-                onChange={(e) => setSettings({ ...settings, fd_show_announcement_bar: e.target.checked })}
-              />
-              <s-text>Show announcement bar</s-text>
-            </label>
+            {/* Content */}
+            <div style={{ padding: "16px", display: "grid", gap: 12 }}>
+                <s-text size="small" style={{ color: "var(--p-color-text-subdued, #6b7280)" }}>
+                  Show a bar at the top of the page with free delivery progress. Messages cycle automatically based on their timer.
+                </s-text>
 
-            {settings.fd_show_announcement_bar && (
-              <>
-                <label style={{ display: "block" }}>
-                  <s-text>Progress message</s-text>
-                  <input
-                    type="text"
-                    value={settings.fd_announcement_progress_message || ""}
-                    onChange={(e) => setSettings({ ...settings, fd_announcement_progress_message: e.target.value })}
-                    placeholder="Spend {remaining} more for free delivery"
-                    style={{ width: "100%" }}
-                  />
-                  <div style={{ display: "flex", alignItems: "center", gap: 6, color: "var(--p-color-text-subdued, #6b7280)", marginTop: 4 }}>
-                    <span style={{ fontSize: 12, flexShrink: 0 }}>💡</span>
-                    <span style={{ fontSize: 12 }}>Use {"{remaining}"} for amount needed, {"{threshold}"} for total threshold, {"{cart_total}"} for current cart value</span>
+                {/* Progress message + timer */}
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 75px", gap: 16, alignItems: "start" }}>
+                  <label style={{ display: "block" }}>
+                    <s-text>Progress message</s-text>
+                    <input
+                      type="text"
+                      value={settings.fd_announcement_progress_message || ""}
+                      onChange={(e) => setSettings({ ...settings, fd_announcement_progress_message: e.target.value })}
+                      placeholder="Spend {remaining} more for free delivery"
+                      style={{ width: "100%" }}
+                    />
+                  </label>
+                  <label style={{ display: "block" }}>
+                    <s-text>Timer</s-text>
+                    <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                      <input
+                        type="number"
+                        min="0"
+                        value={settings.fd_announcement_progress_duration ?? 5}
+                        onChange={(e) => setSettings({ ...settings, fd_announcement_progress_duration: parseInt(e.target.value) || 0 })}
+                        style={{ width: "100%" }}
+                      />
+                      <span style={{ fontSize: 12, color: "var(--p-color-text-subdued)" }}>s</span>
+                    </div>
+                  </label>
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: 6, color: "var(--p-color-text-subdued, #6b7280)", marginTop: -8 }}>
+                  <span style={{ fontSize: 12, flexShrink: 0 }}>💡</span>
+                  <span style={{ fontSize: 12 }}>Use {"{remaining}"} for amount needed, {"{threshold}"} for total threshold</span>
+                </div>
+
+                {/* Unlocked message + timer */}
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 75px", gap: 16, alignItems: "start" }}>
+                  <label style={{ display: "block" }}>
+                    <s-text>Unlocked message</s-text>
+                    <input
+                      type="text"
+                      value={settings.fd_announcement_unlocked_message || ""}
+                      onChange={(e) => setSettings({ ...settings, fd_announcement_unlocked_message: e.target.value })}
+                      placeholder="You've unlocked free delivery!"
+                      style={{ width: "100%" }}
+                    />
+                  </label>
+                  <label style={{ display: "block" }}>
+                    <s-text>Timer</s-text>
+                    <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                      <input
+                        type="number"
+                        min="0"
+                        value={settings.fd_announcement_unlocked_duration ?? 5}
+                        onChange={(e) => setSettings({ ...settings, fd_announcement_unlocked_duration: parseInt(e.target.value) || 0 })}
+                        style={{ width: "100%" }}
+                      />
+                      <span style={{ fontSize: 12, color: "var(--p-color-text-subdued)" }}>s</span>
+                    </div>
+                  </label>
+                </div>
+
+                {/* Empty cart message + timer */}
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 75px", gap: 16, alignItems: "start" }}>
+                  <label style={{ display: "block" }}>
+                    <s-text>Empty cart message</s-text>
+                    <input
+                      type="text"
+                      value={settings.fd_announcement_empty_message || ""}
+                      onChange={(e) => setSettings({ ...settings, fd_announcement_empty_message: e.target.value })}
+                      placeholder="Free delivery on orders over £50"
+                      style={{ width: "100%" }}
+                    />
+                  </label>
+                  <label style={{ display: "block" }}>
+                    <s-text>Timer</s-text>
+                    <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                      <input
+                        type="number"
+                        min="0"
+                        value={settings.fd_announcement_empty_duration ?? 5}
+                        onChange={(e) => setSettings({ ...settings, fd_announcement_empty_duration: parseInt(e.target.value) || 0 })}
+                        style={{ width: "100%" }}
+                      />
+                      <span style={{ fontSize: 12, color: "var(--p-color-text-subdued)" }}>s</span>
+                    </div>
+                  </label>
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: 6, color: "var(--p-color-text-subdued, #6b7280)", marginTop: -8 }}>
+                  <span style={{ fontSize: 12, flexShrink: 0 }}>💡</span>
+                  <span style={{ fontSize: 12 }}>Leave blank to hide bar when cart is empty</span>
+                </div>
+
+                {/* Additional Messages Section */}
+                <div style={{ borderTop: "1px solid var(--p-color-border, #e5e7eb)", paddingTop: 12, marginTop: 4 }}>
+                  <s-text style={{ fontWeight: 600 }}>Additional Messages</s-text>
+                  <div style={{ marginTop: 4, color: "var(--p-color-text-subdued, #6b7280)", fontSize: 12 }}>
+                    <div style={{ marginBottom: 6 }}>Static messages that cycle alongside the free delivery message.</div>
+                    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                      <span style={{ flexShrink: 0 }}>💡</span>
+                      <span>Use {"{countdown}"} for a live countdown to cutoff time.</span>
+                    </div>
+                    <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 2 }}>
+                      <span style={{ flexShrink: 0 }}>💡</span>
+                      <span>Use **double asterisks** for <strong>bold text</strong>.</span>
+                    </div>
+                    <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 2 }}>
+                      <span style={{ flexShrink: 0 }}>💡</span>
+                      <span>Use [text](url) to add a clickable link.</span>
+                    </div>
                   </div>
-                </label>
+                </div>
 
-                <label style={{ display: "block" }}>
-                  <s-text>Unlocked message</s-text>
-                  <input
-                    type="text"
-                    value={settings.fd_announcement_unlocked_message || ""}
-                    onChange={(e) => setSettings({ ...settings, fd_announcement_unlocked_message: e.target.value })}
-                    placeholder="You've unlocked free delivery!"
-                    style={{ width: "100%" }}
-                  />
-                  <div style={{ display: "flex", alignItems: "center", gap: 6, color: "var(--p-color-text-subdued, #6b7280)", marginTop: 4 }}>
-                    <span style={{ fontSize: 12, flexShrink: 0 }}>💡</span>
-                    <span style={{ fontSize: 12 }}>Shown when customer has reached the threshold</span>
-                  </div>
-                </label>
+                {/* Additional message 1 + timer */}
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 75px", gap: 16, alignItems: "start" }}>
+                  <label style={{ display: "block" }}>
+                    <s-text>Additional message 1</s-text>
+                    <input
+                      type="text"
+                      value={settings.fd_announcement_additional1_message || ""}
+                      onChange={(e) => setSettings({ ...settings, fd_announcement_additional1_message: e.target.value })}
+                      placeholder="Free returns within 30 days"
+                      style={{ width: "100%" }}
+                    />
+                  </label>
+                  <label style={{ display: "block" }}>
+                    <s-text>Timer</s-text>
+                    <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                      <input
+                        type="number"
+                        min="0"
+                        value={settings.fd_announcement_additional1_duration ?? 5}
+                        onChange={(e) => setSettings({ ...settings, fd_announcement_additional1_duration: parseInt(e.target.value) || 0 })}
+                        style={{ width: "100%" }}
+                      />
+                      <span style={{ fontSize: 12, color: "var(--p-color-text-subdued)" }}>s</span>
+                    </div>
+                  </label>
+                </div>
 
-                <label style={{ display: "block" }}>
-                  <s-text>Empty cart message</s-text>
-                  <input
-                    type="text"
-                    value={settings.fd_announcement_empty_message || ""}
-                    onChange={(e) => setSettings({ ...settings, fd_announcement_empty_message: e.target.value })}
-                    placeholder="Free delivery on orders over £50"
-                    style={{ width: "100%" }}
-                  />
-                  <div style={{ display: "flex", alignItems: "center", gap: 6, color: "var(--p-color-text-subdued, #6b7280)", marginTop: 4 }}>
-                    <span style={{ fontSize: 12, flexShrink: 0 }}>💡</span>
-                    <span style={{ fontSize: 12 }}>Leave blank to hide bar when cart is empty</span>
-                  </div>
-                </label>
+                {/* Additional message 2 + timer */}
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 75px", gap: 16, alignItems: "start" }}>
+                  <label style={{ display: "block" }}>
+                    <s-text>Additional message 2</s-text>
+                    <input
+                      type="text"
+                      value={settings.fd_announcement_additional2_message || ""}
+                      onChange={(e) => setSettings({ ...settings, fd_announcement_additional2_message: e.target.value })}
+                      placeholder="New arrivals every week"
+                      style={{ width: "100%" }}
+                    />
+                  </label>
+                  <label style={{ display: "block" }}>
+                    <s-text>Timer</s-text>
+                    <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                      <input
+                        type="number"
+                        min="0"
+                        value={settings.fd_announcement_additional2_duration ?? 5}
+                        onChange={(e) => setSettings({ ...settings, fd_announcement_additional2_duration: parseInt(e.target.value) || 0 })}
+                        style={{ width: "100%" }}
+                      />
+                      <span style={{ fontSize: 12, color: "var(--p-color-text-subdued)" }}>s</span>
+                    </div>
+                  </label>
+                </div>
 
+                {/* Styling Section */}
                 <div style={{ borderTop: "1px solid var(--p-color-border, #e5e7eb)", paddingTop: 12, marginTop: 4 }}>
                   <s-text style={{ fontWeight: 600 }}>Styling</s-text>
                 </div>
@@ -462,89 +720,28 @@ export default function FreeDeliveryPage() {
                     </select>
                   </label>
                 </div>
-              </>
-            )}
-          </div>
 
-          {/* Section 4: Exclusions */}
-          <div
-            style={{
-              border: "1px solid var(--p-color-border, #e5e7eb)",
-              borderRadius: "8px",
-              padding: "16px",
-              display: "grid",
-              gap: 12,
-              background: "var(--p-color-bg-surface, #ffffff)",
-            }}
-          >
-            <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-              <s-text style={{ fontWeight: 600 }}>Exclusions</s-text>
-              <s-text size="small" style={{ color: "var(--p-color-text-subdued, #6b7280)" }}>
-                Products matching these tags or handles will show the exclusion message instead
-              </s-text>
+                <label style={{ display: "block" }}>
+                  <s-text>Content max-width</s-text>
+                  <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                    <input
+                      type="number"
+                      min="0"
+                      value={settings.fd_announcement_content_max_width || ""}
+                      onChange={(e) => setSettings({ ...settings, fd_announcement_content_max_width: e.target.value ? parseInt(e.target.value) : null })}
+                      placeholder="e.g. 1200"
+                      style={{ width: "120px" }}
+                    />
+                    <span style={{ fontSize: 12, color: "var(--p-color-text-subdued)" }}>px</span>
+                  </div>
+                </label>
+                <div style={{ display: "flex", alignItems: "center", gap: 6, color: "var(--p-color-text-subdued, #6b7280)", marginTop: -8 }}>
+                  <span style={{ fontSize: 12, flexShrink: 0 }}>💡</span>
+                  <span style={{ fontSize: 12 }}>Aligns chevrons to page content width. Leave empty for full width.</span>
+                </div>
+
+              </div>
             </div>
-
-            <label style={{ display: "block" }}>
-              <s-text>Product tags (comma-separated)</s-text>
-              <input
-                type="text"
-                value={excludeTagsText}
-                onChange={(e) => setExcludeTagsText(e.target.value)}
-                onBlur={() => {
-                  const tags = excludeTagsText.split(",").map(s => s.trim()).filter(Boolean);
-                  setExcludeTagsText(tags.join(", "));
-                  setSettings({ ...settings, fd_exclude_tags: tags });
-                }}
-                placeholder="e.g., no-free-delivery, oversized"
-                style={{ width: "100%" }}
-              />
-            </label>
-
-            <label style={{ display: "block" }}>
-              <s-text>Product handles (comma-separated)</s-text>
-              <input
-                type="text"
-                value={excludeHandlesText}
-                onChange={(e) => setExcludeHandlesText(e.target.value)}
-                onBlur={() => {
-                  const handles = excludeHandlesText.split(",").map(s => s.trim()).filter(Boolean);
-                  setExcludeHandlesText(handles.join(", "));
-                  setSettings({ ...settings, fd_exclude_handles: handles });
-                }}
-                placeholder="e.g., large-pond-kit, bulky-item"
-                style={{ width: "100%" }}
-              />
-            </label>
-
-            <label>
-              <s-text>Exclusion message (Free Delivery Messaging)</s-text>
-              <input
-                type="text"
-                value={settings.fd_message_excluded || ""}
-                onChange={(e) => setSettings({ ...settings, fd_message_excluded: e.target.value })}
-                placeholder="Free delivery not available for some items in your cart"
-                style={{ width: "100%" }}
-              />
-              <div style={{ display: "flex", alignItems: "center", gap: 6, color: "var(--p-color-text-subdued, #6b7280)", marginTop: 4 }}>
-                <span style={{ fontSize: 12, flexShrink: 0 }}>💡</span>
-                <span style={{ fontSize: 12 }}>Shown in cart drawer and cart page</span>
-              </div>
-            </label>
-
-            <label>
-              <s-text>Exclusion message (Announcement Bar)</s-text>
-              <input
-                type="text"
-                value={settings.fd_announcement_excluded_message || ""}
-                onChange={(e) => setSettings({ ...settings, fd_announcement_excluded_message: e.target.value })}
-                placeholder="Free delivery not available for some items"
-                style={{ width: "100%" }}
-              />
-              <div style={{ display: "flex", alignItems: "center", gap: 6, color: "var(--p-color-text-subdued, #6b7280)", marginTop: 4 }}>
-                <span style={{ fontSize: 12, flexShrink: 0 }}>💡</span>
-                <span style={{ fontSize: 12 }}>Shown in the announcement bar</span>
-              </div>
-            </label>
           </div>
 
           {/* Bottom Save Button */}

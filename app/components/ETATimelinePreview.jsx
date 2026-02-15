@@ -52,9 +52,8 @@ export function ETATimelinePreview({ rule, globalSettings }) {
   const maxDays = rule.settings?.eta_delivery_days_max ?? 5;
 
   // ETA timeline always uses its own border settings
-  // show_eta_border: undefined = true (default), false = hidden
-  const showBorder = rule.settings?.show_eta_border !== false;
-  const borderWidth = showBorder ? (rule.settings?.eta_border_width ?? 0) : 0;
+  // Border shows when thickness > 0
+  const borderWidth = rule.settings?.eta_border_width ?? 0;
   const borderColor = rule.settings?.eta_border_color || "#e5e7eb";
   const borderRadius = rule.settings?.eta_border_radius ?? 8;
   const backgroundColor = rule.settings?.eta_background_color || "";
@@ -64,13 +63,9 @@ export function ETATimelinePreview({ rule, globalSettings }) {
   const gapLabelDate = globalSettings?.eta_gap_label_date ?? 0;
 
   // Determine ETA font family from global settings
-  let etaFontFamily = globalSettings?.eta_preview_theme_font || "inherit";
-  if (globalSettings?.eta_use_theme_font === false) {
-    if (globalSettings?.eta_match_messages_font && globalSettings?.custom_font_family) {
-      etaFontFamily = globalSettings.custom_font_family;
-    } else if (globalSettings?.eta_custom_font_family) {
-      etaFontFamily = globalSettings.eta_custom_font_family;
-    }
+  let etaFontFamily = globalSettings?.eta_preview_theme_font || "'Assistant', sans-serif";
+  if (globalSettings?.eta_use_theme_font === false && globalSettings?.eta_custom_font_family) {
+    etaFontFamily = globalSettings.eta_custom_font_family;
   }
 
   // Determine ETA text styling - per-rule override takes precedence
@@ -547,7 +542,7 @@ export function ETATimelinePreview({ rule, globalSettings }) {
         label={rule.settings?.eta_label_delivery || "Delivered"}
         date={deliveryDateStr}
         icon="delivery"
-        extraMarginRight={minDays !== maxDays && deliveryMinDate.getMonth() !== deliveryMaxDate.getMonth() ? paddingHorizontal : 0}
+        extraMarginRight={minDays !== maxDays && deliveryMinDate.getMonth() !== deliveryMaxDate.getMonth() ? 8 : 0}
       />
     </div>
   );
