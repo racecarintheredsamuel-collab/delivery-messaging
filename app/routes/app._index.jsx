@@ -12,7 +12,8 @@ import { newRuleId, newProfileId } from "../utils/idGenerators";
 import { isHHMM, ruleHasMatch, safeParseNumber, friendlyError, safeLogError, validateConfig } from "../utils/validation";
 import { getSingleIconSize, getTextFontSize, getTextFontWeight, normalizeFontSize, normalizeEtaLabelFontSize, normalizeEtaDateFontSize, normalizeSingleIconSize } from "../utils/styling";
 import { getIconSvg, getConfiguredCustomIcons } from "../utils/icons";
-import { getHolidaysForYear } from "../utils/holidays";
+import { getHolidaysForYear, HOLIDAY_DEFINITIONS } from "../utils/holidays";
+import { CustomDatePicker } from "../components/CustomDatePicker";
 import { PreviewLine } from "../components/PreviewLine";
 import { ETATimelinePreview } from "../components/ETATimelinePreview";
 import {
@@ -351,7 +352,7 @@ function renderWithLineBreaks(text, keyPrefix = '') {
 }
 
 // Replace {arrival}, {express}, and {countdown} placeholders with computed strings for preview
-function replaceDatePlaceholders(text, rule, globalSettings, shopCurrency = 'GBP') {
+function replaceDatePlaceholders(text, rule, globalSettings, shopCurrency = 'GBP', countdownText = '02h 14m') {
   if (!text) return text;
 
   // Format currency helper - strips .00 for whole numbers (£50 not £50.00)
@@ -497,8 +498,8 @@ function replaceDatePlaceholders(text, rule, globalSettings, shopCurrency = 'GBP
     text = text.replace('{express}', formatDate(expressDate));
   }
   if (text.includes('{countdown}')) {
-    // For preview, always show static placeholder (storefront has live updates)
-    text = text.replace('{countdown}', '02h 14m');
+    // Real-time countdown based on cutoff time settings
+    text = text.replace('{countdown}', countdownText);
   }
   // Note: {lb} is handled in rendering, not here (needs to become actual <br /> element)
   return text;
@@ -716,9 +717,67 @@ export default function Index() {
   // Editable global settings state (for Typography and Alignment panels)
   const [globalSettings, setGlobalSettings] = useState(loaderGlobalSettings);
 
-  // Typography and Alignment panel visibility
+  // Typography, Alignment, and Global Settings panel visibility
   const [showTypographyPanel, setShowTypographyPanel] = useState(false);
   const [showAlignmentPanel, setShowAlignmentPanel] = useState(false);
+  const [showGlobalSettingsPanel, setShowGlobalSettingsPanel] = useState(false);
+
+  // Custom holiday management state
+  const [newCustomHoliday, setNewCustomHoliday] = useState("");
+  const [newCustomHolidayLabel, setNewCustomHolidayLabel] = useState("");
+
+  // Helper functions for Global Settings
+  const toggleClosedDay = (day) => {
+    const current = new Set(globalSettings.closed_days || []);
+    if (current.has(day)) {
+      current.delete(day);
+    } else {
+      if (current.size >= 6) return; // Prevent closing all 7 days
+      current.add(day);
+    }
+    setGlobalSettings({ ...globalSettings, closed_days: Array.from(current) });
+  };
+
+  const toggleCourierDay = (day) => {
+    const current = new Set(globalSettings.courier_no_delivery_days || []);
+    if (current.has(day)) {
+      current.delete(day);
+    } else {
+      if (current.size >= 6) return; // Prevent blocking all 7 days
+      current.add(day);
+    }
+    setGlobalSettings({ ...globalSettings, courier_no_delivery_days: Array.from(current) });
+  };
+
+  const addCustomHoliday = () => {
+    if (!newCustomHoliday) return;
+    const current = globalSettings.custom_holidays || [];
+    if (current.some(h => h.date === newCustomHoliday)) {
+      alert("This date is already in your custom holidays list.");
+      return;
+    }
+    const newHoliday = {
+      date: newCustomHoliday,
+      label: newCustomHolidayLabel || "Custom Holiday",
+    };
+    setGlobalSettings({
+      ...globalSettings,
+      custom_holidays: [...current, newHoliday].sort((a, b) => a.date.localeCompare(b.date)),
+    });
+    setNewCustomHoliday("");
+    setNewCustomHolidayLabel("");
+  };
+
+  const removeCustomHoliday = (dateToRemove) => {
+    const current = globalSettings.custom_holidays || [];
+    setGlobalSettings({
+      ...globalSettings,
+      custom_holidays: current.filter(h => h.date !== dateToRemove),
+    });
+  };
+
+  // Real-time countdown for preview (state only - useEffect is after rule is defined)
+  const [countdownText, setCountdownText] = useState('02h 14m');
 
   // Parse and migrate config to v2 format on initial load
   const initialConfig = (() => {
@@ -992,6 +1051,101 @@ export default function Index() {
   const safeSelectedIndex =
     rules.length === 0 ? 0 : Math.min(selectedIndex, rules.length - 1);
   const rule = rules[safeSelectedIndex] ?? null;
+
+  // Real-time countdown for preview (requires rule to be defined)
+  useEffect(() => {
+    const calculateCountdown = () => {
+      const previewTz = globalSettings?.preview_timezone || "";
+      const now = new Date();
+      let shopNow;
+
+      // Convert to shop timezone if set
+      if (previewTz) {
+        try {
+          const fmt = new Intl.DateTimeFormat("en-US", {
+            timeZone: previewTz, year: "numeric", month: "2-digit", day: "2-digit",
+            hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false,
+          });
+          const parts = fmt.formatToParts(now);
+          const g = (t) => parts.find((p) => p.type === t)?.value;
+          shopNow = new Date(Number(g("year")), Number(g("month")) - 1, Number(g("day")), Number(g("hour")), Number(g("minute")), Number(g("second")));
+        } catch { shopNow = now; }
+      } else {
+        shopNow = now;
+      }
+
+      const dayName = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'][shopNow.getDay()];
+
+      // Check for rule overrides (same pattern as replaceDatePlaceholders)
+      const useCutoffOverride = rule?.settings?.override_cutoff_times;
+      const useClosedDaysOverride = rule?.settings?.override_closed_days;
+
+      // Check if today is a closed day (with rule override support)
+      const closedDaysArr = useClosedDaysOverride
+        ? (rule?.settings?.closed_days || [])
+        : (globalSettings?.closed_days || []);
+      const closedDays = new Set(Array.isArray(closedDaysArr) ? closedDaysArr : String(closedDaysArr).split(',').map(d => d.trim().toLowerCase()).filter(Boolean));
+      if (closedDays.has(dayName)) {
+        setCountdownText('closed today');
+        return;
+      }
+
+      // Check if today is a holiday
+      const dateStr = `${shopNow.getFullYear()}-${String(shopNow.getMonth()+1).padStart(2,'0')}-${String(shopNow.getDate()).padStart(2,'0')}`;
+      const customHolidaysArr = globalSettings?.custom_holidays || [];
+      const customHolidays = new Set(Array.isArray(customHolidaysArr) ? customHolidaysArr.map(h => typeof h === 'string' ? h : h?.date).filter(Boolean) : []);
+      const bankHolidayCountry = globalSettings?.bank_holiday_country || "";
+      let isHolidayToday = customHolidays.has(dateStr);
+      if (!isHolidayToday && bankHolidayCountry) {
+        const bankHolidays = getHolidaysForYear(bankHolidayCountry, shopNow.getFullYear());
+        isHolidayToday = bankHolidays.includes(dateStr);
+      }
+      if (isHolidayToday) {
+        setCountdownText('holiday today');
+        return;
+      }
+
+      // Get cutoff time (with rule override support)
+      let cutoffStr = globalSettings?.cutoff_time || '14:00';
+      if (useCutoffOverride && rule?.settings?.cutoff_time?.trim()) {
+        cutoffStr = rule.settings.cutoff_time;
+      }
+      if (dayName === 'sat') {
+        const sat = useCutoffOverride ? rule?.settings?.cutoff_time_sat : globalSettings?.cutoff_time_sat;
+        if (sat?.trim()) cutoffStr = sat;
+      } else if (dayName === 'sun') {
+        const sun = useCutoffOverride ? rule?.settings?.cutoff_time_sun : globalSettings?.cutoff_time_sun;
+        if (sun?.trim()) cutoffStr = sun;
+      }
+
+      // Parse cutoff time and calculate in shop timezone
+      const [hours, minutes] = cutoffStr.split(':').map(Number);
+      const cutoff = new Date(shopNow);
+      cutoff.setHours(hours, minutes, 0, 0);
+
+      // Calculate difference
+      const diff = cutoff.getTime() - shopNow.getTime();
+
+      if (diff <= 0) {
+        setCountdownText('cutoff passed');
+        return;
+      }
+
+      const totalMinutes = Math.floor(diff / 60000);
+      const h = Math.floor(totalMinutes / 60);
+      const m = totalMinutes % 60;
+
+      if (h > 0) {
+        setCountdownText(`${h}h ${m.toString().padStart(2, '0')}m`);
+      } else {
+        setCountdownText(`${m}m`);
+      }
+    };
+
+    calculateCountdown(); // Initial calculation
+    const interval = setInterval(calculateCountdown, 60000); // Update every minute
+    return () => clearInterval(interval);
+  }, [globalSettings?.cutoff_time, globalSettings?.cutoff_time_sat, globalSettings?.cutoff_time_sun, globalSettings?.preview_timezone, globalSettings?.closed_days, globalSettings?.custom_holidays, globalSettings?.bank_holiday_country, rule?.settings?.override_cutoff_times, rule?.settings?.cutoff_time, rule?.settings?.cutoff_time_sat, rule?.settings?.cutoff_time_sun, rule?.settings?.override_closed_days, rule?.settings?.closed_days]);
 
   // Collapsed panel state (stored in localStorage, not metafield)
   const [collapsedPanels, setCollapsedPanels] = useState({
@@ -1296,7 +1450,7 @@ export default function Index() {
               gap: 16,
             }}>
               {/* Rule name input - LEFT */}
-              <div style={{ display: "flex", alignItems: "center", gap: 8, flex: 1, maxWidth: "400px" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, maxWidth: "300px" }}>
                 <input
                   value={rule?.name || ""}
                   onChange={(e) => {
@@ -1343,6 +1497,40 @@ export default function Index() {
                 </svg>
               </div>
 
+              {/* Global buttons - CENTER */}
+              <div style={{ display: "flex", gap: 8 }}>
+                <s-button
+                  variant={showGlobalSettingsPanel ? "primary" : undefined}
+                  onClick={() => {
+                    setShowGlobalSettingsPanel(!showGlobalSettingsPanel);
+                    setShowTypographyPanel(false);
+                    setShowAlignmentPanel(false);
+                  }}
+                >
+                  Global Settings
+                </s-button>
+                <s-button
+                  variant={showTypographyPanel ? "primary" : undefined}
+                  onClick={() => {
+                    setShowTypographyPanel(!showTypographyPanel);
+                    setShowAlignmentPanel(false);
+                    setShowGlobalSettingsPanel(false);
+                  }}
+                >
+                  Global Typography
+                </s-button>
+                <s-button
+                  variant={showAlignmentPanel ? "primary" : undefined}
+                  onClick={() => {
+                    setShowAlignmentPanel(!showAlignmentPanel);
+                    setShowTypographyPanel(false);
+                    setShowGlobalSettingsPanel(false);
+                  }}
+                >
+                  Global Alignment
+                </s-button>
+              </div>
+
               {/* Save button with floppy disk indicator - RIGHT */}
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                 <svg
@@ -1371,34 +1559,17 @@ export default function Index() {
 
             {/* Action row - spans both columns (NOT sticky) */}
             <div style={{ gridColumn: "1 / -1", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              {/* Editor/Typography/Alignment + Collapse/Expand buttons - LEFT */}
+              {/* Editor + Collapse/Expand buttons - LEFT */}
               <div style={{ display: "flex", gap: 8 }}>
                 <s-button
-                  variant={!showTypographyPanel && !showAlignmentPanel ? "primary" : undefined}
+                  variant={!showTypographyPanel && !showAlignmentPanel && !showGlobalSettingsPanel ? "primary" : undefined}
                   onClick={() => {
                     setShowTypographyPanel(false);
                     setShowAlignmentPanel(false);
+                    setShowGlobalSettingsPanel(false);
                   }}
                 >
                   Editor
-                </s-button>
-                <s-button
-                  variant={showTypographyPanel ? "primary" : undefined}
-                  onClick={() => {
-                    setShowTypographyPanel(!showTypographyPanel);
-                    setShowAlignmentPanel(false);
-                  }}
-                >
-                  Typography
-                </s-button>
-                <s-button
-                  variant={showAlignmentPanel ? "primary" : undefined}
-                  onClick={() => {
-                    setShowAlignmentPanel(!showAlignmentPanel);
-                    setShowTypographyPanel(false);
-                  }}
-                >
-                  Alignment
                 </s-button>
                 {rule && (
                   <>
@@ -2200,8 +2371,314 @@ export default function Index() {
               </div>
             )}
 
+            {/* Global Settings Panel */}
+            {showGlobalSettingsPanel && (
+              <div style={{ border: "1px solid var(--p-color-border, #e5e7eb)", borderRadius: 8, padding: 16, background: "var(--p-color-bg-surface, #ffffff)", display: "grid", gap: 16 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <s-heading>Global Settings</s-heading>
+                  <s-button variant="plain" onClick={() => setShowGlobalSettingsPanel(false)}>Close</s-button>
+                </div>
+
+                {/* Preview Timezone */}
+                <div style={{ display: "grid", gap: 8 }}>
+                  <s-text style={{ fontWeight: 600 }}>Preview Timezone</s-text>
+                  <s-text size="small" style={{ color: "var(--p-color-text-subdued, #6b7280)" }}>
+                    Match this to your Shopify store timezone so the preview matches your live storefront.
+                  </s-text>
+                  <select
+                    value={globalSettings?.preview_timezone || ""}
+                    onChange={(e) => setGlobalSettings({ ...globalSettings, preview_timezone: e.target.value })}
+                    style={{ width: "100%" }}
+                  >
+                    <option value="">Browser default</option>
+                    <optgroup label="UTC">
+                      <option value="UTC">UTC</option>
+                    </optgroup>
+                    <optgroup label="Europe">
+                      <option value="Europe/London">Europe/London (GMT+0/+1)</option>
+                      <option value="Europe/Dublin">Europe/Dublin (GMT+0/+1)</option>
+                      <option value="Europe/Paris">Europe/Paris (GMT+1/+2)</option>
+                      <option value="Europe/Berlin">Europe/Berlin (GMT+1/+2)</option>
+                      <option value="Europe/Amsterdam">Europe/Amsterdam (GMT+1/+2)</option>
+                      <option value="Europe/Madrid">Europe/Madrid (GMT+1/+2)</option>
+                      <option value="Europe/Rome">Europe/Rome (GMT+1/+2)</option>
+                      <option value="Europe/Stockholm">Europe/Stockholm (GMT+1/+2)</option>
+                      <option value="Europe/Helsinki">Europe/Helsinki (GMT+2/+3)</option>
+                      <option value="Europe/Athens">Europe/Athens (GMT+2/+3)</option>
+                      <option value="Europe/Moscow">Europe/Moscow (GMT+3)</option>
+                    </optgroup>
+                    <optgroup label="Americas">
+                      <option value="America/New_York">America/New_York (GMT-5/-4)</option>
+                      <option value="America/Chicago">America/Chicago (GMT-6/-5)</option>
+                      <option value="America/Denver">America/Denver (GMT-7/-6)</option>
+                      <option value="America/Los_Angeles">America/Los_Angeles (GMT-8/-7)</option>
+                      <option value="America/Toronto">America/Toronto (GMT-5/-4)</option>
+                      <option value="America/Vancouver">America/Vancouver (GMT-8/-7)</option>
+                      <option value="America/Sao_Paulo">America/Sao_Paulo (GMT-3)</option>
+                    </optgroup>
+                    <optgroup label="Asia / Pacific">
+                      <option value="Asia/Dubai">Asia/Dubai (GMT+4)</option>
+                      <option value="Asia/Kolkata">Asia/Kolkata (GMT+5:30)</option>
+                      <option value="Asia/Singapore">Asia/Singapore (GMT+8)</option>
+                      <option value="Asia/Tokyo">Asia/Tokyo (GMT+9)</option>
+                      <option value="Asia/Shanghai">Asia/Shanghai (GMT+8)</option>
+                      <option value="Asia/Hong_Kong">Asia/Hong_Kong (GMT+8)</option>
+                    </optgroup>
+                    <optgroup label="Oceania">
+                      <option value="Australia/Sydney">Australia/Sydney (GMT+10/+11)</option>
+                      <option value="Australia/Melbourne">Australia/Melbourne (GMT+10/+11)</option>
+                      <option value="Australia/Perth">Australia/Perth (GMT+8)</option>
+                      <option value="Pacific/Auckland">Pacific/Auckland (GMT+12/+13)</option>
+                    </optgroup>
+                    <optgroup label="Africa">
+                      <option value="Africa/Johannesburg">Africa/Johannesburg (GMT+2)</option>
+                      <option value="Africa/Lagos">Africa/Lagos (GMT+1)</option>
+                    </optgroup>
+                  </select>
+                </div>
+
+                {/* Cutoff Times */}
+                <div style={{ display: "grid", gap: 8, borderTop: "1px solid var(--p-color-border, #e5e7eb)", paddingTop: 16 }}>
+                  <s-text style={{ fontWeight: 600 }}>Cutoff Times</s-text>
+                  <s-text size="small" style={{ color: "var(--p-color-text-subdued, #6b7280)" }}>
+                    Orders placed after cutoff time will be processed the next business day.
+                  </s-text>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
+                    <label>
+                      <s-text size="small">Weekday</s-text>
+                      <input
+                        type="time"
+                        value={globalSettings?.cutoff_time || "14:00"}
+                        onChange={(e) => setGlobalSettings({ ...globalSettings, cutoff_time: e.target.value })}
+                        style={{ width: "100%" }}
+                      />
+                    </label>
+                    <label>
+                      <s-text size="small">Saturday</s-text>
+                      <input
+                        type="time"
+                        value={globalSettings?.cutoff_time_sat || ""}
+                        onChange={(e) => setGlobalSettings({ ...globalSettings, cutoff_time_sat: e.target.value })}
+                        style={{ width: "100%" }}
+                        placeholder="Same as weekday"
+                      />
+                    </label>
+                    <label>
+                      <s-text size="small">Sunday</s-text>
+                      <input
+                        type="time"
+                        value={globalSettings?.cutoff_time_sun || ""}
+                        onChange={(e) => setGlobalSettings({ ...globalSettings, cutoff_time_sun: e.target.value })}
+                        style={{ width: "100%" }}
+                        placeholder="Same as weekday"
+                      />
+                    </label>
+                  </div>
+                </div>
+
+                {/* Lead Time */}
+                <div style={{ display: "grid", gap: 8, borderTop: "1px solid var(--p-color-border, #e5e7eb)", paddingTop: 16 }}>
+                  <s-text style={{ fontWeight: 600 }}>Lead Time</s-text>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <input
+                      type="number"
+                      min="0"
+                      max="30"
+                      value={globalSettings?.lead_time ?? 0}
+                      onChange={(e) => setGlobalSettings({ ...globalSettings, lead_time: Number(e.target.value) || 0 })}
+                      style={{ width: 80 }}
+                    />
+                    <s-text size="small" style={{ color: "var(--p-color-text-subdued, #6b7280)" }}>business days before dispatch</s-text>
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 6, color: "var(--p-color-text-subdued, #6b7280)" }}>
+                    <span style={{ fontSize: 12, flexShrink: 0 }}>💡</span>
+                    <span style={{ fontSize: 12 }}>Use 0 for same-day dispatch (before cutoff).</span>
+                  </div>
+                </div>
+
+                {/* Closed Days */}
+                <div style={{ display: "grid", gap: 8, borderTop: "1px solid var(--p-color-border, #e5e7eb)", paddingTop: 16 }}>
+                  <s-text style={{ fontWeight: 600 }}>Closed Days</s-text>
+                  <s-text size="small" style={{ color: "var(--p-color-text-subdued, #6b7280)" }}>
+                    Days your business does not process/ship orders
+                  </s-text>
+                  <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+                    {[["mon", "Mon"], ["tue", "Tue"], ["wed", "Wed"], ["thu", "Thu"], ["fri", "Fri"], ["sat", "Sat"], ["sun", "Sun"]].map(([key, label]) => {
+                      const isSelected = (globalSettings?.closed_days || []).includes(key);
+                      const wouldCloseAll = !isSelected && (globalSettings?.closed_days || []).length >= 6;
+                      return (
+                        <label key={key} style={{ display: "flex", gap: 6, alignItems: "center", opacity: wouldCloseAll ? 0.5 : 1 }}>
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            disabled={wouldCloseAll}
+                            onChange={() => toggleClosedDay(key)}
+                          />
+                          <span>{label}</span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                  {(globalSettings?.closed_days || []).length >= 6 && (
+                    <div style={{ color: "var(--p-color-text-critical, #dc2626)", fontSize: 12 }}>
+                      ⚠️ At least one day must remain open for dispatch.
+                    </div>
+                  )}
+                </div>
+
+                {/* Courier Non-Delivery Days */}
+                <div style={{ display: "grid", gap: 8, borderTop: "1px solid var(--p-color-border, #e5e7eb)", paddingTop: 16 }}>
+                  <s-text style={{ fontWeight: 600 }}>Courier Non-Delivery Days</s-text>
+                  <s-text size="small" style={{ color: "var(--p-color-text-subdued, #6b7280)" }}>
+                    Days your courier does not deliver (used for ETA calculations)
+                  </s-text>
+                  <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+                    {[["mon", "Mon"], ["tue", "Tue"], ["wed", "Wed"], ["thu", "Thu"], ["fri", "Fri"], ["sat", "Sat"], ["sun", "Sun"]].map(([key, label]) => {
+                      const isSelected = (globalSettings?.courier_no_delivery_days || []).includes(key);
+                      const wouldBlockAll = !isSelected && (globalSettings?.courier_no_delivery_days || []).length >= 6;
+                      return (
+                        <label key={key} style={{ display: "flex", gap: 6, alignItems: "center", opacity: wouldBlockAll ? 0.5 : 1 }}>
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            disabled={wouldBlockAll}
+                            onChange={() => toggleCourierDay(key)}
+                          />
+                          <span>{label}</span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                  {(globalSettings?.courier_no_delivery_days || []).length >= 6 && (
+                    <div style={{ color: "var(--p-color-text-critical, #dc2626)", fontSize: 12 }}>
+                      ⚠️ At least one day must remain open for deliveries.
+                    </div>
+                  )}
+                </div>
+
+                {/* Bank Holidays */}
+                <div style={{ display: "grid", gap: 8, borderTop: "1px solid var(--p-color-border, #e5e7eb)", paddingTop: 16 }}>
+                  <s-text style={{ fontWeight: 600 }}>Bank Holidays</s-text>
+                  <s-text size="small" style={{ color: "var(--p-color-text-subdued, #6b7280)" }}>
+                    Select your country to automatically skip bank holidays
+                  </s-text>
+                  <select
+                    value={globalSettings?.bank_holiday_country || ""}
+                    onChange={(e) => setGlobalSettings({ ...globalSettings, bank_holiday_country: e.target.value })}
+                    style={{ width: "100%" }}
+                  >
+                    <option value="">None (no bank holidays)</option>
+                    {Object.entries(HOLIDAY_DEFINITIONS)
+                      .sort(([, a], [, b]) => a.name.localeCompare(b.name))
+                      .map(([code, { name }]) => (
+                        <option key={code} value={code}>{name}</option>
+                      ))}
+                  </select>
+                  {globalSettings?.bank_holiday_country && (
+                    <div style={{ fontSize: 12, color: "var(--p-color-text-subdued, #6b7280)" }}>
+                      Holidays for {new Date().getFullYear()}:{" "}
+                      {getHolidaysForYear(globalSettings.bank_holiday_country, new Date().getFullYear())
+                        .map(date => {
+                          const d = new Date(date + "T00:00:00");
+                          return d.toLocaleDateString("en-GB", { day: "numeric", month: "short" });
+                        })
+                        .join(", ")}
+                    </div>
+                  )}
+                </div>
+
+                {/* Custom Holidays */}
+                <div style={{ display: "grid", gap: 8, borderTop: "1px solid var(--p-color-border, #e5e7eb)", paddingTop: 16 }}>
+                  <s-text style={{ fontWeight: 600 }}>Custom Holidays</s-text>
+                  <s-text size="small" style={{ color: "var(--p-color-text-subdued, #6b7280)" }}>
+                    Add one-off holidays or non-dispatch days (e.g., company events, stocktake days)
+                  </s-text>
+                  <div style={{ display: "grid", gridTemplateColumns: "2fr 2fr 1fr", gap: 12, alignItems: "end" }}>
+                    <div>
+                      <s-text size="small">Date</s-text>
+                      <CustomDatePicker
+                        value={newCustomHoliday}
+                        onChange={setNewCustomHoliday}
+                        placeholder="Select date"
+                      />
+                    </div>
+                    <label>
+                      <s-text size="small">Label (optional)</s-text>
+                      <input
+                        type="text"
+                        value={newCustomHolidayLabel}
+                        onChange={(e) => setNewCustomHolidayLabel(e.target.value)}
+                        placeholder="e.g., Stocktake"
+                        style={{ width: "100%" }}
+                      />
+                    </label>
+                    <div>
+                      <div style={{ height: 20 }} />
+                      <s-button onClick={addCustomHoliday} disabled={!newCustomHoliday}>
+                        Add
+                      </s-button>
+                    </div>
+                  </div>
+                  {(globalSettings?.custom_holidays || []).length > 0 && (
+                    <div style={{ marginTop: 8 }}>
+                      <s-text size="small" style={{ fontWeight: 500 }}>Your custom holidays:</s-text>
+                      <div style={{ display: "grid", gap: 6, marginTop: 8 }}>
+                        {(globalSettings?.custom_holidays || [])
+                          .filter((h) => h && typeof h.date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(h.date))
+                          .map((holiday) => {
+                            const d = new Date(holiday.date + "T00:00:00");
+                            const dateStr = d.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short", year: "numeric" });
+                            const isPast = d < new Date(new Date().toDateString());
+                            return (
+                              <div
+                                key={holiday.date}
+                                style={{
+                                  display: "flex",
+                                  justifyContent: "space-between",
+                                  alignItems: "center",
+                                  padding: "8px 12px",
+                                  background: isPast ? "var(--p-color-bg-surface-secondary, #f9fafb)" : "var(--p-color-bg-success-subdued, #dcfce7)",
+                                  borderRadius: 6,
+                                  opacity: isPast ? 0.6 : 1,
+                                }}
+                              >
+                                <div>
+                                  <s-text size="small" style={{ fontWeight: 500 }}>{dateStr}</s-text>
+                                  {holiday.label && (
+                                    <s-text size="small" style={{ color: "var(--p-color-text-subdued, #6b7280)", marginLeft: 8 }}>
+                                      - {holiday.label}
+                                    </s-text>
+                                  )}
+                                  {isPast && (
+                                    <s-text size="small" style={{ color: "var(--p-color-text-disabled, #9ca3af)", marginLeft: 8 }}>(past)</s-text>
+                                  )}
+                                </div>
+                                <button
+                                  onClick={() => removeCustomHoliday(holiday.date)}
+                                  style={{
+                                    background: "none",
+                                    border: "none",
+                                    cursor: "pointer",
+                                    color: "var(--p-color-text-critical, #dc2626)",
+                                    fontSize: 14,
+                                    padding: "4px 8px",
+                                  }}
+                                  title="Remove this holiday"
+                                >
+                                  ✕
+                                </button>
+                              </div>
+                            );
+                          })}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
               {/* Rule-specific sections (only shown when a rule is selected AND no styling panel is open) */}
-              {rule && !showTypographyPanel && !showAlignmentPanel && (
+              {rule && !showTypographyPanel && !showAlignmentPanel && !showGlobalSettingsPanel && (
                 <>
                   {/* Product Matching Section */}
                 <div
@@ -4886,8 +5363,8 @@ export default function Index() {
                   rel="stylesheet"
                 />
               )}
-              {/* Load preview theme font if Messages or ETA Timeline is using theme font */}
-              {(globalSettings?.use_theme_font !== false || globalSettings?.eta_use_theme_font !== false) &&
+              {/* Load preview theme font if Messages, ETA Timeline, or Special Delivery is using theme font */}
+              {(globalSettings?.use_theme_font !== false || globalSettings?.eta_use_theme_font !== false || globalSettings?.special_delivery_use_theme_font !== false) &&
                globalSettings?.eta_preview_theme_font &&
                globalSettings.eta_preview_theme_font.includes("'") && (
                 <link
@@ -5063,7 +5540,7 @@ export default function Index() {
                                 <>
                                   {rule.settings?.message_line_1 && (
                                     <PreviewLine rule={rule} globalSettings={globalSettings}>
-                                      {parseMarkdownBold(replaceDatePlaceholders(rule.settings.message_line_1, rule, globalSettings, shopCurrency)).map((seg, i) =>
+                                      {parseMarkdownBold(replaceDatePlaceholders(rule.settings.message_line_1, rule, globalSettings, shopCurrency, countdownText)).map((seg, i) =>
                                         seg.bold ? <strong key={i}>{renderWithLineBreaks(seg.text, `l1-${i}`)}</strong> : <span key={i}>{renderWithLineBreaks(seg.text, `l1-${i}`)}</span>
                                       )}
                                     </PreviewLine>
@@ -5071,7 +5548,7 @@ export default function Index() {
 
                                   {rule.settings?.message_line_2 && (
                                     <PreviewLine rule={rule} globalSettings={globalSettings}>
-                                      {parseMarkdownBold(replaceDatePlaceholders(rule.settings.message_line_2, rule, globalSettings, shopCurrency)).map((seg, i) =>
+                                      {parseMarkdownBold(replaceDatePlaceholders(rule.settings.message_line_2, rule, globalSettings, shopCurrency, countdownText)).map((seg, i) =>
                                         seg.bold ? <strong key={i}>{renderWithLineBreaks(seg.text, `l2-${i}`)}</strong> : <span key={i}>{renderWithLineBreaks(seg.text, `l2-${i}`)}</span>
                                       )}
                                     </PreviewLine>
@@ -5079,7 +5556,7 @@ export default function Index() {
 
                                   {rule.settings?.message_line_3 && (
                                     <PreviewLine rule={rule} globalSettings={globalSettings}>
-                                      {parseMarkdownBold(replaceDatePlaceholders(rule.settings.message_line_3, rule, globalSettings, shopCurrency)).map((seg, i) =>
+                                      {parseMarkdownBold(replaceDatePlaceholders(rule.settings.message_line_3, rule, globalSettings, shopCurrency, countdownText)).map((seg, i) =>
                                         seg.bold ? <strong key={i}>{renderWithLineBreaks(seg.text, `l3-${i}`)}</strong> : <span key={i}>{renderWithLineBreaks(seg.text, `l3-${i}`)}</span>
                                       )}
                                     </PreviewLine>

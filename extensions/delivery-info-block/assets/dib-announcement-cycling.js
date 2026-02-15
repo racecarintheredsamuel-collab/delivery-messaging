@@ -115,9 +115,23 @@
 
       const state = window.DeliveryMessaging.getState();
       const dm = window.DeliveryMessaging;
+
+      // Fallback: if state.threshold is 0, read directly from DOM
+      // This handles race condition on first page load
+      let threshold = state.threshold;
+      if (threshold === 0) {
+        const configEl = document.querySelector('[data-threshold]');
+        if (configEl) {
+          const parsed = parseInt(configEl.dataset.threshold, 10);
+          if (!isNaN(parsed) && parsed > 0) {
+            threshold = parsed;
+          }
+        }
+      }
+
       const templateVars = {
         remaining: dm.formatMoney(state.remaining),
-        threshold: dm.formatMoney(state.threshold),
+        threshold: dm.formatMoney(threshold),
         total: dm.formatMoney(state.cartTotal),
         cart_total: dm.formatMoney(state.cartTotal)
       };
