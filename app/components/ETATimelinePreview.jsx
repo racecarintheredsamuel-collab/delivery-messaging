@@ -507,8 +507,8 @@ export function ETATimelinePreview({ rule, globalSettings }) {
             </svg>
           )}
         </div>
-        <div style={{ fontSize: etaLabelFontSize, fontWeight: etaLabelFontWeight, lineHeight: 1, marginBottom: gapLabelDate, fontFamily: etaFontFamily, color: etaLabelColor }}>{label}</div>
-        <div style={{ fontSize: etaDateFontSize, fontWeight: etaDateFontWeight, lineHeight: 1, color: etaDateColor, fontFamily: etaFontFamily, whiteSpace: "nowrap" }}>{date}</div>
+        <div style={{ fontSize: etaLabelFontSize, fontWeight: etaLabelFontWeight, lineHeight: 1.3, marginBottom: gapLabelDate, fontFamily: etaFontFamily, color: etaLabelColor }}>{label}</div>
+        <div style={{ fontSize: etaDateFontSize, fontWeight: etaDateFontWeight, lineHeight: 1.3, color: etaDateColor, fontFamily: etaFontFamily, whiteSpace: "nowrap" }}>{date}</div>
       </div>
     );
   };

@@ -39,9 +39,13 @@ export const loader = async ({ request }) => {
   const shopId = json?.data?.shop?.id;
   const settingsMf = json?.data?.shop?.settings;
 
+  // Track whether we loaded with existing settings (for auto-save safeguard)
+  const hasExistingSettings = !!settingsMf?.value && settingsMf.value !== "{}";
+
   return {
     settings: settingsMf?.value ?? "{}",
     shopId,
+    hasExistingSettings,
   };
 };
 
@@ -112,7 +116,7 @@ export const action = async ({ request }) => {
 // ============================================================================
 
 export default function FreeDeliveryPage() {
-  const { settings: settingsRaw, shopId } = useLoaderData();
+  const { settings: settingsRaw, shopId, hasExistingSettings } = useLoaderData();
   const fetcher = useFetcher();
 
   const [settings, setSettings] = useState(() => {
@@ -122,6 +126,9 @@ export default function FreeDeliveryPage() {
       return {};
     }
   });
+
+  // Track whether we loaded with existing settings (prevents overwriting with empty data)
+  const [loadedWithData] = useState(hasExistingSettings);
 
   const [saveStatus, setSaveStatus] = useState("");
 
@@ -156,6 +163,22 @@ export default function FreeDeliveryPage() {
     }
   }, [fetcher.state, fetcher.data, settings]);
 
+  // Check if current settings appear to have meaningful data
+  const settingsHaveData = () => {
+    const hasThreshold = settings.fd_threshold && settings.fd_threshold > 0;
+    const hasMessages = settings.fd_message_progress || settings.fd_message_reached;
+    return hasThreshold || hasMessages;
+  };
+
+  // Safeguard: prevent saving empty settings if we loaded with existing data
+  const shouldAllowSave = () => {
+    if (loadedWithData && !settingsHaveData()) {
+      console.warn("Blocked save: settings appear empty but we loaded with existing data");
+      return false;
+    }
+    return true;
+  };
+
   // Auto-save after 2 seconds of inactivity
   useEffect(() => {
     if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
@@ -165,6 +188,11 @@ export default function FreeDeliveryPage() {
     if (fetcher.state !== "idle") return;
 
     autoSaveTimerRef.current = setTimeout(() => {
+      // Safeguard: don't auto-save empty settings if we had data
+      if (!shouldAllowSave()) {
+        setSaveStatus("Save blocked: settings appear empty");
+        return;
+      }
       setSaveStatus("Saving...");
       fetcher.submit(
         { settings: JSON.stringify(settings), shopId },
@@ -179,6 +207,14 @@ export default function FreeDeliveryPage() {
 
   const handleSave = () => {
     if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
+
+    // Safeguard: warn before saving empty settings if we had data
+    if (loadedWithData && !settingsHaveData()) {
+      if (!confirm("Settings appear empty. Are you sure you want to save? This may overwrite your existing settings.")) {
+        return;
+      }
+    }
+
     setSaveStatus("Saving...");
     fetcher.submit(
       { settings: JSON.stringify(settings), shopId },
@@ -258,7 +294,7 @@ export default function FreeDeliveryPage() {
                 </div>
               </div>
 
-              {/* Section 2: Free Delivery Messaging */}
+              {/* Section 2: Cart & Mini Cart Messaging */}
             <div
               style={{
                 border: "1px solid var(--p-color-border, #e5e7eb)",
@@ -278,7 +314,7 @@ export default function FreeDeliveryPage() {
                   borderBottom: "1px solid var(--p-color-border, #e5e7eb)",
                 }}
               >
-                <s-text style={{ fontWeight: 600 }}>Free Delivery Messaging</s-text>
+                <s-text style={{ fontWeight: 600 }}>Cart & Mini Cart Messaging</s-text>
                 <label style={{ display: "flex", alignItems: "center", gap: 6 }}>
                   <s-text size="small">{settings.fd_enabled ? "Enabled" : "Disabled"}</s-text>
                   <input
@@ -294,6 +330,26 @@ export default function FreeDeliveryPage() {
                   <s-text size="small" style={{ color: "var(--p-color-text-subdued, #6b7280)" }}>
                     Display progress messages in the cart drawer and cart page
                   </s-text>
+
+                <div style={{ display: "flex", flexDirection: "column", gap: 4, marginTop: -4 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 6, color: "var(--p-color-text-subdued, #6b7280)" }}>
+                    <span style={{ fontSize: 12, flexShrink: 0 }}>💡</span>
+                    <span style={{ fontSize: 12 }}>Placeholders: {"{remaining}"}, {"{threshold}"}, {"{cart_total}"}</span>
+                    <span
+                      title="{remaining} = amount needed for free delivery&#10;{threshold} = total threshold amount&#10;{cart_total} = current cart value"
+                      style={{ cursor: "help", fontSize: 12, color: "var(--p-color-text-subdued)" }}
+                    >ℹ️</span>
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 6, color: "var(--p-color-text-subdued, #6b7280)" }}>
+                    <span style={{ fontSize: 12, flexShrink: 0 }}>💡</span>
+                    <span style={{ fontSize: 12 }}>Formatting: **bold**</span>
+                    <span
+                      title="Use **double asterisks** for bold text"
+                      style={{ cursor: "help", fontSize: 12, color: "var(--p-color-text-subdued)" }}
+                    >ℹ️</span>
+                  </div>
+                </div>
+
               <label>
                 <s-text>Progress message</s-text>
                 <input
@@ -304,8 +360,8 @@ export default function FreeDeliveryPage() {
                   style={{ width: "100%" }}
                 />
                 <div style={{ display: "flex", alignItems: "center", gap: 6, color: "var(--p-color-text-subdued, #6b7280)", marginTop: 4 }}>
-                  <span style={{ fontSize: 12, flexShrink: 0 }}>💡</span>
-                  <span style={{ fontSize: 12 }}>Use {"{remaining}"} for amount needed, {"{threshold}"} for total threshold, {"{cart_total}"} for current cart value</span>
+                  <span style={{ fontSize: 12, flexShrink: 0 }}>📝</span>
+                  <span style={{ fontSize: 12 }}>Defaults to "Spend {"{remaining}"} more for free delivery"</span>
                 </div>
               </label>
 
@@ -319,8 +375,8 @@ export default function FreeDeliveryPage() {
                   style={{ width: "100%" }}
                 />
                 <div style={{ display: "flex", alignItems: "center", gap: 6, color: "var(--p-color-text-subdued, #6b7280)", marginTop: 4 }}>
-                  <span style={{ fontSize: 12, flexShrink: 0 }}>💡</span>
-                  <span style={{ fontSize: 12 }}>Shown when customer has reached the threshold</span>
+                  <span style={{ fontSize: 12, flexShrink: 0 }}>📝</span>
+                  <span style={{ fontSize: 12 }}>Defaults to "You've unlocked free delivery!"</span>
                 </div>
               </label>
 
@@ -334,7 +390,7 @@ export default function FreeDeliveryPage() {
                   style={{ width: "100%" }}
                 />
                 <div style={{ display: "flex", alignItems: "center", gap: 6, color: "var(--p-color-text-subdued, #6b7280)", marginTop: 4 }}>
-                  <span style={{ fontSize: 12, flexShrink: 0 }}>💡</span>
+                  <span style={{ fontSize: 12, flexShrink: 0 }}>📝</span>
                   <span style={{ fontSize: 12 }}>Leave blank to hide when cart is empty</span>
                 </div>
               </label>
@@ -366,6 +422,12 @@ export default function FreeDeliveryPage() {
                     />
                   </div>
                 )}
+
+                <s-color-field
+                  label="Block background color"
+                  value={settings.fd_bar_bg_color || "#f9fafb"}
+                  onInput={(e) => setSettings({ ...settings, fd_bar_bg_color: e.target.value })}
+                />
               </div>
             </div>
 
@@ -427,7 +489,7 @@ export default function FreeDeliveryPage() {
                 </label>
 
                 <label>
-                  <s-text>Exclusion message (Free Delivery Messaging)</s-text>
+                  <s-text>Exclusion message (Cart & Mini Cart Messaging)</s-text>
                   <input
                     type="text"
                     value={settings.fd_message_excluded || ""}
@@ -436,7 +498,7 @@ export default function FreeDeliveryPage() {
                     style={{ width: "100%" }}
                   />
                   <div style={{ display: "flex", alignItems: "center", gap: 6, color: "var(--p-color-text-subdued, #6b7280)", marginTop: 4 }}>
-                    <span style={{ fontSize: 12, flexShrink: 0 }}>💡</span>
+                    <span style={{ fontSize: 12, flexShrink: 0 }}>📝</span>
                     <span style={{ fontSize: 12 }}>Leave blank to hide messaging when excluded products are in cart</span>
                   </div>
                 </label>
@@ -467,7 +529,7 @@ export default function FreeDeliveryPage() {
                   </label>
                 </div>
                 <div style={{ display: "flex", alignItems: "center", gap: 6, color: "var(--p-color-text-subdued, #6b7280)", marginTop: -8 }}>
-                  <span style={{ fontSize: 12, flexShrink: 0 }}>💡</span>
+                  <span style={{ fontSize: 12, flexShrink: 0 }}>📝</span>
                   <span style={{ fontSize: 12 }}>Leave blank to hide bar when excluded products are in cart. Timer controls cycling duration.</span>
                 </div>
                 </div>
@@ -512,6 +574,25 @@ export default function FreeDeliveryPage() {
                   Show a bar at the top of the page with free delivery progress. Messages cycle automatically based on their timer.
                 </s-text>
 
+                <div style={{ display: "flex", flexDirection: "column", gap: 4, marginTop: -4 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 6, color: "var(--p-color-text-subdued, #6b7280)" }}>
+                    <span style={{ fontSize: 12, flexShrink: 0 }}>💡</span>
+                    <span style={{ fontSize: 12 }}>Placeholders: {"{remaining}"}, {"{threshold}"}</span>
+                    <span
+                      title="{remaining} = amount needed for free delivery&#10;{threshold} = total threshold amount"
+                      style={{ cursor: "help", fontSize: 12, color: "var(--p-color-text-subdued)" }}
+                    >ℹ️</span>
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 6, color: "var(--p-color-text-subdued, #6b7280)" }}>
+                    <span style={{ fontSize: 12, flexShrink: 0 }}>💡</span>
+                    <span style={{ fontSize: 12 }}>Formatting: **bold**, [link](url)</span>
+                    <span
+                      title="Use **double asterisks** for bold text&#10;Use [text](url) for clickable links"
+                      style={{ cursor: "help", fontSize: 12, color: "var(--p-color-text-subdued)" }}
+                    >ℹ️</span>
+                  </div>
+                </div>
+
                 {/* Progress message + timer */}
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 75px", gap: 16, alignItems: "start" }}>
                   <label style={{ display: "block" }}>
@@ -537,10 +618,6 @@ export default function FreeDeliveryPage() {
                       <span style={{ fontSize: 12, color: "var(--p-color-text-subdued)" }}>s</span>
                     </div>
                   </label>
-                </div>
-                <div style={{ display: "flex", alignItems: "center", gap: 6, color: "var(--p-color-text-subdued, #6b7280)", marginTop: -8 }}>
-                  <span style={{ fontSize: 12, flexShrink: 0 }}>💡</span>
-                  <span style={{ fontSize: 12 }}>Use {"{remaining}"} for amount needed, {"{threshold}"} for total threshold</span>
                 </div>
 
                 {/* Unlocked message + timer */}
@@ -597,8 +674,8 @@ export default function FreeDeliveryPage() {
                   </label>
                 </div>
                 <div style={{ display: "flex", alignItems: "center", gap: 6, color: "var(--p-color-text-subdued, #6b7280)", marginTop: -8 }}>
-                  <span style={{ fontSize: 12, flexShrink: 0 }}>💡</span>
-                  <span style={{ fontSize: 12 }}>Leave blank to hide bar when cart is empty</span>
+                  <span style={{ fontSize: 12, flexShrink: 0 }}>📝</span>
+                  <span style={{ fontSize: 12 }}>Defaults to "Free delivery on orders over {"{threshold}"}" if blank and no additional messages</span>
                 </div>
 
                 {/* Additional Messages Section */}
@@ -608,15 +685,19 @@ export default function FreeDeliveryPage() {
                     <div style={{ marginBottom: 6 }}>Static messages that cycle alongside the free delivery message.</div>
                     <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                       <span style={{ flexShrink: 0 }}>💡</span>
-                      <span>Use {"{countdown}"} for a live countdown to cutoff time.</span>
+                      <span>Placeholders: {"{countdown}"}</span>
+                      <span
+                        title="{countdown} = live countdown to cutoff time"
+                        style={{ cursor: "help", color: "var(--p-color-text-subdued)" }}
+                      >ℹ️</span>
                     </div>
                     <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 2 }}>
                       <span style={{ flexShrink: 0 }}>💡</span>
-                      <span>Use **double asterisks** for <strong>bold text</strong>.</span>
-                    </div>
-                    <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 2 }}>
-                      <span style={{ flexShrink: 0 }}>💡</span>
-                      <span>Use [text](url) to add a clickable link.</span>
+                      <span>Formatting: **bold**, [link](url)</span>
+                      <span
+                        title="Use **double asterisks** for bold text&#10;Use [text](url) for clickable links"
+                        style={{ cursor: "help", color: "var(--p-color-text-subdued)" }}
+                      >ℹ️</span>
                     </div>
                   </div>
                 </div>
@@ -673,6 +754,10 @@ export default function FreeDeliveryPage() {
                       <span style={{ fontSize: 12, color: "var(--p-color-text-subdued)" }}>s</span>
                     </div>
                   </label>
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: -8, color: "var(--p-color-text-subdued, #6b7280)", fontSize: 12 }}>
+                  <span style={{ flexShrink: 0 }}>💡</span>
+                  <span>{"{countdown}"} uses global settings because the announcement bar isn't product-specific. Product pages show accurate per-rule countdowns.</span>
                 </div>
 
                 {/* Styling Section */}

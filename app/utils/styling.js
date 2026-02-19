@@ -133,8 +133,7 @@ export function normalizeEtaDateFontSize(value, defaultValue = 11) {
 export function getTextFontWeight(weight) {
   const weights = {
     normal: 400,
-    medium: 500,
-    bold: 600,
+    bold: 700,
   };
   return weights[weight] || weights.normal;
 }

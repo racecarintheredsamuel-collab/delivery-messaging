@@ -59,7 +59,8 @@
     return {
       showProgressBar: configEl.dataset.showProgressBar !== 'false',
       progressBarColor: configEl.dataset.progressBarColor || '#22c55e',
-      progressBarBg: configEl.dataset.progressBarBg || '#e5e7eb'
+      progressBarBg: configEl.dataset.progressBarBg || '#e5e7eb',
+      barBgColor: configEl.dataset.barBgColor || '#f9fafb'
     };
   }
 
@@ -76,7 +77,7 @@
       flex-direction: column;
       gap: 8px;
       padding: 12px 16px;
-      background: #f9fafb;
+      background: ${config.barBgColor};
       border-radius: 8px;
       font-size: 14px;
       line-height: 1.4;

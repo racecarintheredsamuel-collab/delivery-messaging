@@ -147,6 +147,13 @@
       return result;
     }
 
+    // Normalize URL - prepend https:// to bare domains
+    function normalizeUrl(url) {
+      if (/^(https?:\/\/|\/)/i.test(url)) return url;
+      if (url.includes('.') && /^[a-z0-9][-a-z0-9]*\./i.test(url)) return 'https://' + url;
+      return null;
+    }
+
     function parseMarkdown(text) {
       if (!text) return text;
       // 1. HTML-escape first (security)
@@ -159,8 +166,9 @@
       if (result.includes('[')) {
         result = result.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (match, linkText, url) => {
           const decodedUrl = url.replace(/&amp;/g, '&');
-          if (!/^(https?:\/\/|\/)/i.test(decodedUrl)) return match;
-          return '<a href="' + decodedUrl + '" target="_blank" rel="noopener" style="color:inherit">' + linkText + '</a>';
+          const finalUrl = normalizeUrl(decodedUrl);
+          if (!finalUrl) return match;
+          return '<a href="' + finalUrl + '" target="_blank" rel="noopener" style="color:inherit">' + linkText + '</a>';
         });
       }
       return result;
@@ -187,10 +195,21 @@
       return text.replace('{countdown}', timeStr);
     }
 
-    function showMessage(index) {
+    function showMessage(index, skipCount = 0) {
       if (!messages[index]) return;
+
+      // Prevent infinite loop if all messages are empty
+      if (skipCount >= messages.length) return;
+
       const msg = messages[index];
       const text = processMessageText(msg);
+
+      // If text is empty, skip to next message
+      if (!text && messages.length > 1) {
+        currentIndex = (currentIndex + 1) % messages.length;
+        showMessage(currentIndex, skipCount + 1);
+        return;
+      }
 
       // Fade out, change, fade in
       messageEl.style.opacity = '0';

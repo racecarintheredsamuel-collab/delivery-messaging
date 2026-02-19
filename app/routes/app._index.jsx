@@ -185,11 +185,17 @@ export const loader = async ({ request }) => {
 
   const shopCurrency = json?.data?.shop?.currencyCode || 'GBP';
 
+  // Track whether we loaded with existing data (for auto-save safeguard)
+  const hasExistingConfig = !!configMf?.value;
+  const hasExistingSettings = !!settingsMf?.value && settingsMf.value !== "{}";
+
   return {
     config: configMf?.value ?? JSON.stringify({ version: 1, rules: [] }),
     globalSettings,
     shopId, // Pass to client for action
     shopCurrency, // For preview formatting
+    hasExistingConfig,
+    hasExistingSettings,
   };
 };
 
@@ -314,11 +320,20 @@ function migrateToV2(config) {
   };
 }
 
-// Parse **bold** markdown syntax into segments
-function parseMarkdownBold(text) {
+// Normalize URL - prepend https:// to bare domains
+function normalizeUrl(url) {
+  if (/^(https?:\/\/|\/)/i.test(url)) return url;
+  // Check if it looks like a domain (starts with alphanumeric, contains a dot)
+  if (url.includes('.') && /^[a-z0-9][-a-z0-9]*\./i.test(url)) return 'https://' + url;
+  return null;
+}
+
+// Parse **bold** and [link](url) markdown syntax into segments
+function parseMarkdown(text) {
   if (!text) return [];
   const parts = [];
-  const regex = /\*\*(.+?)\*\*/g;
+  // Combined regex for bold and links
+  const regex = /\*\*(.+?)\*\*|\[([^\]]+)\]\(([^)]+)\)/g;
   let lastIndex = 0;
   let match;
 
@@ -326,7 +341,18 @@ function parseMarkdownBold(text) {
     if (match.index > lastIndex) {
       parts.push({ text: text.slice(lastIndex, match.index), bold: false });
     }
-    parts.push({ text: match[1], bold: true });
+    if (match[1] !== undefined) {
+      // Bold match: **text**
+      parts.push({ text: match[1], bold: true });
+    } else if (match[2] !== undefined) {
+      // Link match: [text](url)
+      const finalUrl = normalizeUrl(match[3]);
+      if (finalUrl) {
+        parts.push({ text: match[2], bold: false, link: finalUrl });
+      } else {
+        parts.push({ text: match[0], bold: false }); // Keep as plain text if invalid URL
+      }
+    }
     lastIndex = regex.lastIndex;
   }
 
@@ -349,6 +375,16 @@ function renderWithLineBreaks(text, keyPrefix = '') {
       {i < parts.length - 1 && <br />}
     </span>
   ));
+}
+
+// Render a parsed markdown segment with bold and link support
+function renderSegment(seg, i, keyPrefix = '') {
+  const content = renderWithLineBreaks(seg.text, `${keyPrefix}-${i}`);
+  const inner = seg.bold ? <strong key={`${keyPrefix}-${i}-b`}>{content}</strong> : <span key={`${keyPrefix}-${i}-s`}>{content}</span>;
+  if (seg.link) {
+    return <a key={i} href={seg.link} target="_blank" rel="noopener noreferrer" style={{ color: "inherit" }}>{inner}</a>;
+  }
+  return <span key={i}>{inner}</span>;
 }
 
 // Replace {arrival}, {express}, and {countdown} placeholders with computed strings for preview
@@ -712,7 +748,10 @@ const setCollapsedState = (ruleId, section, collapsed) => {
 // ============================================================================
 
 export default function Index() {
-  const { config, globalSettings: loaderGlobalSettings, shopId, shopCurrency } = useLoaderData();
+  const { config, globalSettings: loaderGlobalSettings, shopId, shopCurrency, hasExistingConfig, hasExistingSettings } = useLoaderData();
+
+  // Track whether we loaded with existing data (prevents overwriting with empty data)
+  const [loadedWithData] = useState(hasExistingConfig || hasExistingSettings);
 
   // Editable global settings state (for Typography and Alignment panels)
   const [globalSettings, setGlobalSettings] = useState(loaderGlobalSettings);
@@ -933,6 +972,24 @@ export default function Index() {
     };
   }, []);
 
+  // Check if config has meaningful data (at least one rule)
+  const configHasData = () => {
+    try {
+      const parsed = JSON.parse(draft);
+      if (parsed.version === 2 && parsed.profiles) {
+        return parsed.profiles.some(p => p.rules && p.rules.length > 0);
+      }
+      return parsed.rules && parsed.rules.length > 0;
+    } catch {
+      return false;
+    }
+  };
+
+  // Check if settings have meaningful data
+  const settingsHaveData = () => {
+    return globalSettings.cutoff_time || globalSettings.closed_days?.length > 0;
+  };
+
   // Auto-save config after 2 seconds of inactivity
   useEffect(() => {
     if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
@@ -944,6 +1001,11 @@ export default function Index() {
     if (fetcher.state !== "idle") return;
 
     autoSaveTimerRef.current = setTimeout(() => {
+      // Safeguard: don't auto-save empty config if we had data
+      if (loadedWithData && !configHasData()) {
+        console.warn("Blocked config auto-save: config appears empty but we loaded with existing data");
+        return;
+      }
       fetcher.submit({ config: draft, shopId }, { method: "POST" });
     }, 2000);
 
@@ -964,6 +1026,11 @@ export default function Index() {
     if (fetcher.state !== "idle") return;
 
     settingsAutoSaveTimerRef.current = setTimeout(() => {
+      // Safeguard: don't auto-save empty settings if we had data
+      if (loadedWithData && !settingsHaveData()) {
+        console.warn("Blocked settings auto-save: settings appear empty but we loaded with existing data");
+        return;
+      }
       fetcher.submit({ settings: currentSettingsStr, shopId }, { method: "POST" });
     }, 2000);
 
@@ -1026,17 +1093,30 @@ export default function Index() {
     prevActiveProfileIdRef.current = activeProfileId;
   }, [activeProfileId]);
 
-  // Handle selectRule query parameter (from wizard redirect)
+  // Handle query parameters (from wizard redirect)
   const [searchParams, setSearchParams] = useSearchParams();
   useEffect(() => {
     const selectRuleId = searchParams.get("selectRule");
+    const openSettings = searchParams.get("openSettings");
+    let changed = false;
+
     if (selectRuleId && rules.length > 0) {
       const ruleIndex = rules.findIndex(r => r.id === selectRuleId);
       if (ruleIndex !== -1) {
         setSelectedIndex(ruleIndex);
       }
-      // Clear the param from URL after handling
       searchParams.delete("selectRule");
+      changed = true;
+    }
+
+    if (openSettings === "true") {
+      setShowGlobalSettingsPanel(true);
+      searchParams.delete("openSettings");
+      changed = true;
+    }
+
+    // Clear params from URL after handling
+    if (changed) {
       setSearchParams(searchParams, { replace: true });
     }
   }, [rules, searchParams, setSearchParams]);
@@ -1390,6 +1470,9 @@ export default function Index() {
   return (
     <>
       <style>{`
+        html {
+          scrollbar-gutter: stable;
+        }
         @media (min-width: 900px) {
           .dib-right-column {
             max-height: ${stickyHeight ? `${stickyHeight}px` : "calc(100vh - 200px)"};
@@ -1421,7 +1504,7 @@ export default function Index() {
           }
         }
       `}</style>
-      <s-page heading="Editor">
+      <s-page heading="Messages">
         <s-section>
           <s-box
             padding="base"
@@ -1432,8 +1515,8 @@ export default function Index() {
             <div
               style={{
                 display: "grid",
-                gap: 16,
-                gridTemplateColumns: "1fr 1fr",
+                gap: 12,
+                gridTemplateColumns: "minmax(0, 1fr) minmax(0, 1fr)",
                 alignItems: "start",
               }}
             >
@@ -1442,62 +1525,13 @@ export default function Index() {
               gridColumn: "1 / -1",
               border: "1px solid var(--p-color-border, #e5e7eb)",
               borderRadius: "8px",
-              padding: "16px",
+              padding: "12px",
               background: "var(--p-color-bg-surface, #ffffff)",
               display: "flex",
-              justifyContent: "space-between",
               alignItems: "center",
-              gap: 16,
+              gap: 12,
             }}>
-              {/* Rule name input - LEFT */}
-              <div style={{ display: "flex", alignItems: "center", gap: 8, maxWidth: "300px" }}>
-                <input
-                  value={rule?.name || ""}
-                  onChange={(e) => {
-                    const next = [...rules];
-                    next[safeSelectedIndex] = {
-                      ...rule,
-                      name: e.target.value,
-                    };
-                    setRules(next);
-                  }}
-                  maxLength={22}
-                  aria-label="Rule name"
-                  style={{
-                    fontSize: "20px",
-                    fontWeight: 600,
-                    border: "1px solid var(--p-color-border, #e5e7eb)",
-                    borderRadius: "4px",
-                    padding: "4px 8px",
-                    width: "100%",
-                    outline: "none",
-                    background: "var(--p-color-bg-surface-secondary, #f9fafb)",
-                  }}
-                  onFocus={(e) => {
-                    e.target.style.borderColor = "var(--p-color-border-emphasis, #111827)";
-                    e.target.style.boxShadow = "0 0 0 1px var(--p-color-border-emphasis, #111827)";
-                  }}
-                  onBlur={(e) => {
-                    e.target.style.borderColor = "var(--p-color-border, #e5e7eb)";
-                    e.target.style.boxShadow = "none";
-                  }}
-                  placeholder="Rule name"
-                />
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 20 20"
-                  fill="currentColor"
-                  width="16"
-                  height="16"
-                  style={{ flexShrink: 0, opacity: 0.5 }}
-                  aria-hidden="true"
-                >
-                  <path d="M5.433 13.917l1.262-3.155A4 4 0 017.58 9.42l6.92-6.918a2.121 2.121 0 013 3l-6.92 6.918c-.383.383-.84.685-1.343.886l-3.154 1.262a.5.5 0 01-.65-.65z" />
-                  <path d="M3.5 5.75c0-.69.56-1.25 1.25-1.25H10A.75.75 0 0010 3H4.75A2.75 2.75 0 002 5.75v9.5A2.75 2.75 0 004.75 18h9.5A2.75 2.75 0 0017 15.25V10a.75.75 0 00-1.5 0v5.25c0 .69-.56 1.25-1.25 1.25h-9.5c-.69 0-1.25-.56-1.25-1.25v-9.5z" />
-                </svg>
-              </div>
-
-              {/* Global buttons - CENTER */}
+              {/* Global buttons - LEFT */}
               <div style={{ display: "flex", gap: 8 }}>
                 <s-button
                   variant={showGlobalSettingsPanel ? "primary" : undefined}
@@ -1531,8 +1565,28 @@ export default function Index() {
                 </s-button>
               </div>
 
-              {/* Save button with floppy disk indicator - RIGHT */}
-              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              {/* Profile selector + Save - RIGHT */}
+              <div style={{ display: "flex", alignItems: "center", gap: 8, marginLeft: "auto" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  <span style={{ color: "var(--p-color-text-subdued, #6b7280)", fontSize: "14px" }}>Profile:</span>
+                  <select
+                    value={activeProfileId}
+                    onChange={(e) => setProfiles(profiles, e.target.value)}
+                    aria-label="Select profile"
+                    style={{
+                      fontSize: "14px",
+                      padding: "4px 8px",
+                      borderRadius: "4px",
+                      border: "1px solid var(--p-color-border, #e5e7eb)",
+                      background: "var(--p-color-bg-surface-secondary, #f9fafb)",
+                      cursor: "pointer",
+                    }}
+                  >
+                    {profiles.map((p) => (
+                      <option key={p.id} value={p.id}>{p.name}</option>
+                    ))}
+                  </select>
+                </div>
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
                   viewBox="0 0 24 24"
@@ -1549,6 +1603,12 @@ export default function Index() {
                   variant="primary"
                   onClick={() => {
                     if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
+                    // Safeguard: warn before saving empty config if we had data
+                    if (loadedWithData && !configHasData()) {
+                      if (!confirm("Configuration appears empty. Are you sure you want to save? This may overwrite your existing rules.")) {
+                        return;
+                      }
+                    }
                     fetcher.submit({ config: draft, shopId }, { method: "POST" });
                   }}
                 >
@@ -1558,7 +1618,16 @@ export default function Index() {
             </div>
 
             {/* Action row - spans both columns (NOT sticky) */}
-            <div style={{ gridColumn: "1 / -1", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <div style={{
+              gridColumn: "1 / -1",
+              border: "1px solid var(--p-color-border, #e5e7eb)",
+              borderRadius: "8px",
+              padding: "12px",
+              background: "var(--p-color-bg-surface, #ffffff)",
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center"
+            }}>
               {/* Editor + Collapse/Expand buttons - LEFT */}
               <div style={{ display: "flex", gap: 8 }}>
                 <s-button
@@ -1633,28 +1702,40 @@ export default function Index() {
                   </>
                 )}
               </div>
-              {/* Profile + Add rule + Copy rule - RIGHT */}
+              {/* Rule name + Add rule + Copy rule - RIGHT */}
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                  <span style={{ color: "var(--p-color-text-subdued, #6b7280)", fontSize: "14px" }}>Profile:</span>
-                  <select
-                    value={activeProfileId}
-                    onChange={(e) => setProfiles(profiles, e.target.value)}
-                    aria-label="Select profile"
-                    style={{
-                      fontSize: "14px",
-                      padding: "4px 8px",
-                      borderRadius: "4px",
-                      border: "1px solid var(--p-color-border, #e5e7eb)",
-                      background: "var(--p-color-bg-surface-secondary, #f9fafb)",
-                      cursor: "pointer",
-                    }}
-                  >
-                    {profiles.map((p) => (
-                      <option key={p.id} value={p.id}>{p.name}</option>
-                    ))}
-                  </select>
-                </div>
+                <input
+                  value={rule?.name || ""}
+                  onChange={(e) => {
+                    const next = [...rules];
+                    next[safeSelectedIndex] = {
+                      ...rule,
+                      name: e.target.value,
+                    };
+                    setRules(next);
+                  }}
+                  maxLength={22}
+                  aria-label="Rule name"
+                  style={{
+                    fontSize: "16px",
+                    fontWeight: 600,
+                    border: "1px solid var(--p-color-border, #e5e7eb)",
+                    borderRadius: "4px",
+                    padding: "4px 8px",
+                    width: "180px",
+                    outline: "none",
+                    background: "var(--p-color-bg-surface-secondary, #f9fafb)",
+                  }}
+                  onFocus={(e) => {
+                    e.target.style.borderColor = "var(--p-color-border-emphasis, #111827)";
+                    e.target.style.boxShadow = "0 0 0 1px var(--p-color-border-emphasis, #111827)";
+                  }}
+                  onBlur={(e) => {
+                    e.target.style.borderColor = "var(--p-color-border, #e5e7eb)";
+                    e.target.style.boxShadow = "none";
+                  }}
+                  placeholder="Rule name"
+                />
                 <s-button onClick={addRule}>
                   Add rule
                 </s-button>
@@ -1665,7 +1746,7 @@ export default function Index() {
             </div>
 
             {/* LEFT column: editor (inputs, main work area) */}
-            <div style={{ display: "grid", gap: 12 }}>
+            <div style={{ display: "grid", gap: 12, minWidth: 0 }}>
 
               {/* Typography Panel */}
               {showTypographyPanel && (
@@ -1733,6 +1814,7 @@ export default function Index() {
                         style={{ width: "100%" }}
                       >
                         <option value="">Select font...</option>
+                        <option value="'Assistant', sans-serif">Assistant</option>
                         <option value="'Roboto', sans-serif">Roboto</option>
                         <option value="'Open Sans', sans-serif">Open Sans</option>
                         <option value="'Montserrat', sans-serif">Montserrat</option>
@@ -1788,8 +1870,6 @@ export default function Index() {
                           style={{ width: "100%" }}
                         >
                           <option value="normal">Normal</option>
-                          <option value="medium">Medium</option>
-                          <option value="semibold">Semibold</option>
                           <option value="bold">Bold</option>
                         </select>
                       </div>
@@ -1818,6 +1898,7 @@ export default function Index() {
                         style={{ width: "100%" }}
                       >
                         <option value="">Select font...</option>
+                        <option value="'Assistant', sans-serif">Assistant</option>
                         <option value="'Roboto', sans-serif">Roboto</option>
                         <option value="'Open Sans', sans-serif">Open Sans</option>
                         <option value="'Montserrat', sans-serif">Montserrat</option>
@@ -1876,8 +1957,6 @@ export default function Index() {
                           style={{ width: "100%" }}
                         >
                           <option value="normal">Normal</option>
-                          <option value="medium">Medium</option>
-                          <option value="semibold">Semibold</option>
                           <option value="bold">Bold</option>
                         </select>
                       </div>
@@ -1913,8 +1992,6 @@ export default function Index() {
                           style={{ width: "100%" }}
                         >
                           <option value="normal">Normal</option>
-                          <option value="medium">Medium</option>
-                          <option value="semibold">Semibold</option>
                           <option value="bold">Bold</option>
                         </select>
                       </div>
@@ -2002,8 +2079,6 @@ export default function Index() {
                           style={{ width: "100%" }}
                         >
                           <option value="normal">Normal</option>
-                          <option value="medium">Medium</option>
-                          <option value="semibold">Semibold</option>
                           <option value="bold">Bold</option>
                         </select>
                       </div>
@@ -2039,8 +2114,6 @@ export default function Index() {
                           style={{ width: "100%" }}
                         >
                           <option value="normal">Normal</option>
-                          <option value="medium">Medium</option>
-                          <option value="semibold">Semibold</option>
                           <option value="bold">Bold</option>
                         </select>
                       </div>
@@ -2200,10 +2273,10 @@ export default function Index() {
                       <s-text size="small">Gap: label to date</s-text>
                       <input
                         type="number"
-                        min="0"
+                        min="-3"
                         max="20"
                         value={globalSettings?.eta_gap_label_date ?? 0}
-                        onChange={(e) => setGlobalSettings({ ...globalSettings, eta_gap_label_date: safeParseNumber(e.target.value, 0, 0, 20) })}
+                        onChange={(e) => setGlobalSettings({ ...globalSettings, eta_gap_label_date: safeParseNumber(e.target.value, 0, -3, 20) })}
                         style={{ width: "100%" }}
                       />
                     </div>
@@ -2807,10 +2880,11 @@ export default function Index() {
                   </label>
                       </>)}
 
-                      <label style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                      <label style={{ display: "flex", gap: 6, alignItems: "flex-start" }}>
                         <input
                           type="checkbox"
                           checked={rule.match?.is_fallback || false}
+                          style={{ marginTop: 4 }}
                           onChange={(e) => {
                             const next = [...rules];
                             next[safeSelectedIndex] = {
@@ -2820,13 +2894,12 @@ export default function Index() {
                             setRules(next);
                           }}
                         />
-                        <div style={{ display: "flex", flexDirection: "column" }}>
-                          <s-text>Fallback rule — used when no other rules apply.</s-text>
-                          <span style={{ fontSize: "11px", color: "var(--p-color-text-subdued, #6b7280)" }}>
-                            For best results, place fallback rules at the bottom of your rule list.
-                          </span>
-                        </div>
+                        <s-text>Fallback rule — used when no other rules apply.</s-text>
                       </label>
+                      <div style={{ display: "flex", alignItems: "center", gap: 6, color: "var(--p-color-text-subdued, #6b7280)", marginTop: -8 }}>
+                        <span style={{ fontSize: 12, flexShrink: 0 }}>💡</span>
+                        <span style={{ fontSize: 12 }}>For best results, place fallback rules at the bottom of your rule list.</span>
+                      </div>
 
                   <label>
                     <s-text>Product stock status</s-text>
@@ -3261,12 +3334,14 @@ export default function Index() {
                   {!collapsedPanels.countdown_messages && (
                   <div style={{ padding: "16px", display: "grid", gap: 12 }}>
                     <div style={{ display: "grid", gap: 2, color: "var(--p-color-text-subdued, #6b7280)", fontSize: 12 }}>
-                      <span>💡 Use &#123;countdown&#125; for live countdown timer.</span>
-                      <span>💡 Use &#123;arrival&#125; for estimated delivery date.</span>
-                      <span>💡 Use &#123;express&#125; for next-day delivery date.</span>
-                      <span>💡 Use &#123;threshold&#125; for free delivery threshold amount.</span>
-                      <span>💡 Use &#123;lb&#125; for manual line breaks.</span>
-                      <span>💡 Use **double asterisks** for bold text.</span>
+                      <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                        💡 Placeholders: &#123;countdown&#125;, &#123;arrival&#125;, &#123;express&#125;, &#123;threshold&#125;
+                        <span title={"{countdown} = live countdown timer\n{arrival} = estimated delivery date\n{express} = next-day delivery date\n{threshold} = free delivery threshold"} style={{ cursor: "help" }}>ℹ️</span>
+                      </span>
+                      <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                        💡 Formatting: **bold**, [link](url), &#123;lb&#125;
+                        <span title={"**text** = bold text\n[text](url) = clickable link\n{lb} = manual line break"} style={{ cursor: "help" }}>ℹ️</span>
+                      </span>
                     </div>
 
                     <label>
@@ -3493,7 +3568,13 @@ export default function Index() {
 
                       {(!rule.settings?.show_eta_timeline || !rule.settings?.match_eta_width) && (
                         <label>
-                          <s-text>Max width</s-text>
+                          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                            <s-text>Max width</s-text>
+                            <span
+                              title="Block won't shrink below text width.&#10;Use {lb} for manual line breaks."
+                              style={{ cursor: "help", fontSize: 12, color: "var(--p-color-text-subdued)" }}
+                            >ℹ️</span>
+                          </div>
                           <input
                             type="number"
                             min="0"
@@ -3600,10 +3681,8 @@ export default function Index() {
                               }}
                               style={{ width: "100%" }}
                             >
-                              <option value="normal">Normal (400)</option>
-                              <option value="medium">Medium (500)</option>
-                              <option value="semibold">Semi-bold (600)</option>
-                              <option value="bold">Bold (700)</option>
+                              <option value="normal">Normal</option>
+                              <option value="bold">Bold</option>
                             </select>
                           </label>
                         </div>
@@ -3766,31 +3845,6 @@ export default function Index() {
                       <option value="single">Single larger icon (left)</option>
                     </select>
                   </label>
-
-                  {rule.settings?.icon_layout !== "single" && (
-                    <label>
-                      <s-text>Icon vertical align</s-text>
-                      <select
-                        value={rule.settings?.icon_vertical_align || "top"}
-                        onChange={(e) => {
-                          const next = [...rules];
-                          next[safeSelectedIndex] = {
-                            ...rule,
-                            settings: { ...rule.settings, icon_vertical_align: e.target.value },
-                          };
-                          setRules(next);
-                        }}
-                        style={{ width: "100%" }}
-                      >
-                        <option value="top">Top</option>
-                        <option value="center">Center</option>
-                      </select>
-                      <div style={{ display: "flex", alignItems: "center", gap: 6, color: "var(--p-color-text-subdued, #6b7280)", marginTop: 4 }}>
-                        <span style={{ fontSize: 12, flexShrink: 0 }}>💡</span>
-                        <span style={{ fontSize: 12 }}>Adjusts icon position when message text wraps to multiple lines.</span>
-                      </div>
-                    </label>
-                  )}
 
                   {rule.settings?.icon_layout === "single" && (
                     <label>
@@ -4555,10 +4609,8 @@ export default function Index() {
                             }}
                             style={{ width: "100%" }}
                           >
-                            <option value="normal">Normal (400)</option>
-                            <option value="medium">Medium (500)</option>
-                            <option value="semibold">Semi-bold (600)</option>
-                            <option value="bold">Bold (700)</option>
+                            <option value="normal">Normal</option>
+                            <option value="bold">Bold</option>
                           </select>
                         </label>
                       </div>
@@ -4622,10 +4674,8 @@ export default function Index() {
                             }}
                             style={{ width: "100%" }}
                           >
-                            <option value="normal">Normal (400)</option>
-                            <option value="medium">Medium (500)</option>
-                            <option value="semibold">Semi-bold (600)</option>
-                            <option value="bold">Bold (700)</option>
+                            <option value="normal">Normal</option>
+                            <option value="bold">Bold</option>
                           </select>
                         </label>
                       </div>
@@ -4714,6 +4764,11 @@ export default function Index() {
                     {/* Header input (optional) */}
                     <label>
                       <s-text>Header (optional)</s-text>
+                      <div style={{ display: "flex", alignItems: "center", gap: 6, color: "var(--p-color-text-subdued, #6b7280)", marginTop: 4, marginBottom: 4 }}>
+                        <span style={{ fontSize: 12, flexShrink: 0 }}>💡</span>
+                        <span style={{ fontSize: 12 }}>Formatting: **bold**, [link](url)</span>
+                        <span title={"**text** = bold text\n[text](url) = clickable link"} style={{ cursor: "help", fontSize: 12 }}>ℹ️</span>
+                      </div>
                       <input
                         type="text"
                         value={rule.settings?.special_delivery_header || ""}
@@ -4734,6 +4789,11 @@ export default function Index() {
                     {/* Message textarea */}
                     <label>
                       <s-text>Message</s-text>
+                      <div style={{ display: "flex", alignItems: "center", gap: 6, color: "var(--p-color-text-subdued, #6b7280)", marginTop: 4, marginBottom: 4 }}>
+                        <span style={{ fontSize: 12, flexShrink: 0 }}>💡</span>
+                        <span style={{ fontSize: 12 }}>Formatting: **bold**, [link](url), {"{lb}"}</span>
+                        <span title={"**text** = bold text\n[text](url) = clickable link\n{lb} = manual line break"} style={{ cursor: "help", fontSize: 12 }}>ℹ️</span>
+                      </div>
                       <textarea
                         value={rule.settings?.special_delivery_message || ""}
                         onChange={(e) => {
@@ -4750,10 +4810,6 @@ export default function Index() {
                         placeholder="e.g. **Large Item:** This product ships via pallet delivery.{lb}Please ensure access for delivery vehicle."
                       />
                     </label>
-                    <div style={{ display: "grid", gap: 2, color: "var(--p-color-text-subdued, #6b7280)", fontSize: 11 }}>
-                      <span>Use **double asterisks** for bold text.</span>
-                      <span>Use {"{lb}"} for line breaks.</span>
-                    </div>
 
                     {/* Icon/Image section */}
                     <div style={{ borderTop: "1px solid var(--p-color-border, #e5e7eb)", marginTop: 4, paddingTop: 12 }}>
@@ -5104,7 +5160,13 @@ export default function Index() {
                       {/* Max width - only when not matching ETA width */}
                       {(!rule.settings?.show_eta_timeline || !rule.settings?.special_delivery_match_eta_width) && (
                         <label>
-                          <s-text>Max width</s-text>
+                          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                            <s-text>Max width</s-text>
+                            <span
+                              title="Text wraps within this width."
+                              style={{ cursor: "help", fontSize: 12, color: "var(--p-color-text-subdued)" }}
+                            >ℹ️</span>
+                          </div>
                           <input
                             type="number"
                             min="0"
@@ -5215,8 +5277,6 @@ export default function Index() {
                                 style={{ width: "100%" }}
                               >
                                 <option value="normal">Normal</option>
-                                <option value="medium">Medium</option>
-                                <option value="semibold">Semibold</option>
                                 <option value="bold">Bold</option>
                               </select>
                             </div>
@@ -5283,8 +5343,6 @@ export default function Index() {
                                 style={{ width: "100%" }}
                               >
                                 <option value="normal">Normal</option>
-                                <option value="medium">Medium</option>
-                                <option value="semibold">Semibold</option>
                                 <option value="bold">Bold</option>
                               </select>
                             </div>
@@ -5540,24 +5598,24 @@ export default function Index() {
                                 <>
                                   {rule.settings?.message_line_1 && (
                                     <PreviewLine rule={rule} globalSettings={globalSettings}>
-                                      {parseMarkdownBold(replaceDatePlaceholders(rule.settings.message_line_1, rule, globalSettings, shopCurrency, countdownText)).map((seg, i) =>
-                                        seg.bold ? <strong key={i}>{renderWithLineBreaks(seg.text, `l1-${i}`)}</strong> : <span key={i}>{renderWithLineBreaks(seg.text, `l1-${i}`)}</span>
+                                      {parseMarkdown(replaceDatePlaceholders(rule.settings.message_line_1, rule, globalSettings, shopCurrency, countdownText)).map((seg, i) =>
+                                        renderSegment(seg, i, 'l1')
                                       )}
                                     </PreviewLine>
                                   )}
 
                                   {rule.settings?.message_line_2 && (
                                     <PreviewLine rule={rule} globalSettings={globalSettings}>
-                                      {parseMarkdownBold(replaceDatePlaceholders(rule.settings.message_line_2, rule, globalSettings, shopCurrency, countdownText)).map((seg, i) =>
-                                        seg.bold ? <strong key={i}>{renderWithLineBreaks(seg.text, `l2-${i}`)}</strong> : <span key={i}>{renderWithLineBreaks(seg.text, `l2-${i}`)}</span>
+                                      {parseMarkdown(replaceDatePlaceholders(rule.settings.message_line_2, rule, globalSettings, shopCurrency, countdownText)).map((seg, i) =>
+                                        renderSegment(seg, i, 'l2')
                                       )}
                                     </PreviewLine>
                                   )}
 
                                   {rule.settings?.message_line_3 && (
                                     <PreviewLine rule={rule} globalSettings={globalSettings}>
-                                      {parseMarkdownBold(replaceDatePlaceholders(rule.settings.message_line_3, rule, globalSettings, shopCurrency, countdownText)).map((seg, i) =>
-                                        seg.bold ? <strong key={i}>{renderWithLineBreaks(seg.text, `l3-${i}`)}</strong> : <span key={i}>{renderWithLineBreaks(seg.text, `l3-${i}`)}</span>
+                                      {parseMarkdown(replaceDatePlaceholders(rule.settings.message_line_3, rule, globalSettings, shopCurrency, countdownText)).map((seg, i) =>
+                                        renderSegment(seg, i, 'l3')
                                       )}
                                     </PreviewLine>
                                   )}
@@ -5593,7 +5651,7 @@ export default function Index() {
                               const iconColor = rule.settings.special_delivery_use_main_icon_color !== false
                                 ? (rule.settings.icon_color || "#111827")
                                 : (rule.settings.special_delivery_icon_color || "#111827");
-                              const parsedMessage = parseMarkdownBold(message);
+                              const parsedMessage = parseMarkdown(message);
 
                               // Header styling
                               const header = rule.settings.special_delivery_header || "";
@@ -5716,11 +5774,7 @@ export default function Index() {
                                     )}
                                     {/* Message */}
                                     <div>
-                                      {parsedMessage.map((seg, i) => (
-                                        seg.bold
-                                          ? <strong key={i}>{renderWithLineBreaks(seg.text, `sp-${i}`)}</strong>
-                                          : <span key={i}>{renderWithLineBreaks(seg.text, `sp-${i}`)}</span>
-                                      ))}
+                                      {parsedMessage.map((seg, i) => renderSegment(seg, i, 'sp'))}
                                     </div>
                                   </div>
                                 </div>

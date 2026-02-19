@@ -15,7 +15,6 @@ import { getIconSvg } from "../utils/icons";
 export function PreviewLine({ rule, globalSettings, children }) {
   const isSingleLayout = rule.settings?.icon_layout === "single";
   const showIcon = rule.settings?.show_icon !== false;
-  const shouldCenter = rule.settings?.icon_vertical_align === "center";
 
   // Get effective icon (falls back to "truck" if custom icon no longer configured)
   const getEffectiveIcon = (iconValue) => {
@@ -69,7 +68,7 @@ export function PreviewLine({ rule, globalSettings, children }) {
   };
 
   return (
-    <div style={{ display: "flex", alignItems: shouldCenter ? "center" : "flex-start", gap: (showIcon && !isSingleLayout) ? "0.5em" : 0 }}>
+    <div style={{ display: "flex", alignItems: "center", gap: (showIcon && !isSingleLayout) ? "0.5em" : 0 }}>
       {!isSingleLayout && showIcon && (
         <span
           aria-hidden="true"

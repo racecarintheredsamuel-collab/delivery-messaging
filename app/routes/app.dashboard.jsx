@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLoaderData, useRouteError, useFetcher, useNavigate } from "react-router";
 import { boundary } from "@shopify/shopify-app-react-router/server";
 import { authenticate } from "../shopify.server";
@@ -231,6 +231,239 @@ function MessagePreview({ text }) {
   );
 }
 
+// Setup step accordion component
+function SetupStep({ step, isExpanded, isComplete, onToggle, onMarkComplete, onMarkIncomplete, onAction }) {
+  return (
+    <div
+      style={{
+        borderBottom: "1px solid #e5e7eb",
+      }}
+    >
+      {/* Header row - clickable */}
+      <div
+        onClick={onToggle}
+        style={{
+          display: "flex",
+          alignItems: "center",
+          padding: "16px",
+          cursor: "pointer",
+          background: isExpanded ? "#f9fafb" : "transparent",
+          transition: "background 0.15s ease",
+        }}
+      >
+        {/* Icon - checkmark for core steps, arrow for additional steps */}
+        {step.isAdditional ? (
+          <div
+            style={{
+              width: 24,
+              height: 24,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              marginRight: 12,
+              flexShrink: 0,
+              color: "#9ca3af",
+            }}
+          >
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+              <path d="M3 8H13M13 8L9 4M13 8L9 12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          </div>
+        ) : (
+          <div
+            style={{
+              width: 24,
+              height: 24,
+              borderRadius: "50%",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              marginRight: 12,
+              flexShrink: 0,
+              background: isComplete ? "#22c55e" : "transparent",
+              border: isComplete ? "none" : "2px solid #d1d5db",
+            }}
+          >
+            {isComplete && (
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                <path d="M2.5 7L5.5 10L11.5 4" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            )}
+          </div>
+        )}
+
+        {/* Title */}
+        <div style={{ flex: 1 }}>
+          <span style={{ fontWeight: 500, color: step.isAdditional ? "#374151" : (isComplete ? "#6b7280" : "#111827") }}>
+            {step.title}
+          </span>
+        </div>
+
+        {/* Chevron */}
+        <svg
+          width="20"
+          height="20"
+          viewBox="0 0 20 20"
+          fill="none"
+          style={{
+            transform: isExpanded ? "rotate(90deg)" : "rotate(0deg)",
+            transition: "transform 0.2s ease",
+            color: "#9ca3af",
+          }}
+        >
+          <path d="M7.5 5L12.5 10L7.5 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+        </svg>
+      </div>
+
+      {/* Expanded content */}
+      {isExpanded && (
+        <div style={{ padding: "0 16px 20px 52px" }}>
+          {/* Description */}
+          <p style={{ color: "#6b7280", fontSize: 14, margin: "0 0 16px 0" }}>
+            {step.description}
+          </p>
+
+          {/* Images with steps or placeholder */}
+          {step.images && step.images.length > 0 ? (
+            <div style={{ display: "flex", flexDirection: "column", gap: 16, marginBottom: 16 }}>
+              {(() => {
+                let stepCounter = 1;
+                return step.images.map((imgData, idx) => {
+                  const img = typeof imgData === "string" ? { src: imgData } : imgData;
+                  const startNum = stepCounter;
+                  if (img.steps) stepCounter += img.steps.length;
+                  return (
+                    <div key={idx} style={{ display: "flex", gap: 16, alignItems: "flex-start" }}>
+                      <img
+                        src={img.src}
+                        alt={`${step.title} - Part ${idx + 1}`}
+                        onClick={() => step.onImageClick?.(img.src)}
+                        style={{
+                          width: "50%",
+                          borderRadius: 8,
+                          border: "1px solid #e5e7eb",
+                          cursor: step.onImageClick ? "zoom-in" : "default",
+                        }}
+                      />
+                      {img.steps && (
+                        <div style={{ flex: 1, fontSize: 13 }}>
+                          <ol start={startNum} style={{ margin: 0, paddingLeft: 20 }}>
+                            {img.steps.map((stepText, stepIdx) => (
+                              <li key={stepIdx} style={{ color: "#374151", marginBottom: 6 }}>
+                                {stepText}
+                              </li>
+                            ))}
+                          </ol>
+                        </div>
+                      )}
+                    </div>
+                  );
+                });
+              })()}
+            </div>
+          ) : (
+            <div
+              style={{
+                border: "2px dashed #d1d5db",
+                borderRadius: 8,
+                padding: "32px 16px",
+                textAlign: "center",
+                background: "#fafafa",
+                marginBottom: 16,
+              }}
+            >
+              <span style={{ fontSize: 24, display: "block", marginBottom: 8 }}>📷</span>
+              <span style={{ color: "#9ca3af", fontSize: 13 }}>Screenshot Coming Soon</span>
+            </div>
+          )}
+
+          {/* Action buttons */}
+          <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+            {step.actionUrl ? (
+              <a
+                href={step.actionUrl}
+                target={step.actionUrl.startsWith("/") ? "_self" : "_blank"}
+                rel="noopener noreferrer"
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  padding: "8px 16px",
+                  background: "#2563eb",
+                  color: "white",
+                  borderRadius: 6,
+                  fontSize: 14,
+                  fontWeight: 500,
+                  textDecoration: "none",
+                }}
+              >
+                {step.actionLabel}
+              </a>
+            ) : step.onAction ? (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onAction();
+                }}
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  padding: "8px 16px",
+                  background: "#2563eb",
+                  color: "white",
+                  borderRadius: 6,
+                  fontSize: 14,
+                  fontWeight: 500,
+                  border: "none",
+                  cursor: "pointer",
+                }}
+              >
+                {step.actionLabel}
+              </button>
+            ) : null}
+
+            {step.secondaryUrl && (
+              <a
+                href={step.secondaryUrl}
+                style={{
+                  color: "#2563eb",
+                  fontSize: 14,
+                  textDecoration: "none",
+                }}
+              >
+                {step.secondaryLabel}
+              </a>
+            )}
+
+            {!step.autoComplete && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (isComplete) {
+                    onMarkIncomplete?.();
+                  } else {
+                    onMarkComplete();
+                  }
+                }}
+                style={{
+                  marginLeft: "auto",
+                  color: "#6b7280",
+                  fontSize: 13,
+                  background: "none",
+                  border: "none",
+                  cursor: "pointer",
+                  textDecoration: "underline",
+                }}
+              >
+                {isComplete ? "Mark as Incomplete" : "Mark as Complete"}
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // Icon options for the wizard dropdown
 const WIZARD_ICON_OPTIONS = [
   { value: "truck", label: "Truck" },
@@ -289,6 +522,45 @@ export default function DashboardPage() {
     eta_border_color: "#e5e7eb",
   });
   const ruleTotalSteps = 5;
+
+  // Setup guide state
+  const [expandedStep, setExpandedStep] = useState(null);
+  const [manualCompleted, setManualCompleted] = useState(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const saved = localStorage.getItem("dib_setup_completed");
+        return saved ? new Set(JSON.parse(saved)) : new Set();
+      } catch (e) {
+        return new Set();
+      }
+    }
+    return new Set();
+  });
+  const [lightboxImage, setLightboxImage] = useState(null);
+  const [isDismissed, setIsDismissed] = useState(() => {
+    if (typeof window !== "undefined") {
+      try {
+        return localStorage.getItem("dib_setup_guide_dismissed") === "true";
+      } catch (e) {
+        return false;
+      }
+    }
+    return false;
+  });
+
+  // Persist manual completed steps to localStorage
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      localStorage.setItem("dib_setup_completed", JSON.stringify([...manualCompleted]));
+    }
+  }, [manualCompleted]);
+
+  // Persist dismissed state to localStorage
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      localStorage.setItem("dib_setup_guide_dismissed", isDismissed.toString());
+    }
+  }, [isDismissed]);
 
   const themeEditorUrl = shopDomain
     ? `https://${shopDomain}/admin/themes/current/editor?template=product`
@@ -490,88 +762,293 @@ export default function DashboardPage() {
         </s-box>
       </s-section>
 
-      {/* Step Tiles - 2x2 Grid */}
-      <s-section>
-        <div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
-          {/* Step 1: Add Block to Theme */}
-          <div style={{ flex: "1 1 calc(50% - 8px)", minWidth: 300 }}>
-            <s-box padding="base" background="surface" borderWidth="base" borderRadius="base" style={{ height: "100%" }}>
-              <s-text variant="headingMd"><strong>Step 1: Add the Block to Your Theme</strong></s-text>
-              <s-box paddingBlockStart="base">
-                <s-text>
-                  Install the Delivery Info block on your product pages to show countdown timers, messages, and ETA timelines.
-                </s-text>
-              </s-box>
-              <s-box paddingBlockStart="large">
-                <s-button variant="primary" href={themeEditorUrl} target="_blank">
-                  Open Theme Editor
-                </s-button>
-              </s-box>
-            </s-box>
-          </div>
-
-          {/* Step 2: Free Delivery Bar */}
-          <div style={{ flex: "1 1 calc(50% - 8px)", minWidth: 300 }}>
-            <s-box padding="base" background="surface" borderWidth="base" borderRadius="base" style={{ height: "100%" }}>
-              <s-text variant="headingMd"><strong>Step 2: Add Free Delivery Bar</strong></s-text>
-              <s-box paddingBlockStart="base">
-                <s-text>
-                  Install the Free Delivery Bar app embed to show progress messaging in the cart and mini-cart.
-                </s-text>
-              </s-box>
-              <s-box paddingBlockStart="large">
-                <s-button variant="primary" href={freeDeliveryEditorUrl} target="_blank">
-                  Open Theme Editor (Apps)
-                </s-button>
-              </s-box>
-            </s-box>
-          </div>
-
-          {/* Step 3: Store Settings */}
-          <div style={{ flex: "1 1 calc(50% - 8px)", minWidth: 300 }}>
-            <s-box padding="base" background="surface" borderWidth="base" borderRadius="base" style={{ height: "100%" }}>
-              <s-text variant="headingMd"><strong>Step 3: Set Up Your Store Settings</strong></s-text>
-              <s-box paddingBlockStart="base">
-                <s-text>
-                  Configure your business hours, cutoff times, and bank holidays. These settings apply to all rules.
-                </s-text>
-              </s-box>
-              <s-box paddingBlockStart="large">
-                <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
-                  <s-button variant="primary" onClick={() => setShowSettingsWizard(true)}>
-                    Configure Settings
-                  </s-button>
-                  <s-button href="/app/settings">
-                    Go to Settings
-                  </s-button>
+      {/* Setup Guide Accordion */}
+      {!isDismissed ? (
+        <s-section>
+          <div
+            style={{
+              background: "white",
+              border: "1px solid #e5e7eb",
+              borderRadius: 12,
+              overflow: "hidden",
+            }}
+          >
+            {/* Header */}
+            <div style={{ padding: "20px 20px 16px 20px" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                <div>
+                  <h2 style={{ margin: 0, fontSize: 18, fontWeight: 600, color: "#111827" }}>Setup Guide</h2>
+                  <p style={{ margin: "4px 0 0 0", fontSize: 14, color: "#6b7280" }}>
+                    Get your delivery messages live on your store
+                  </p>
                 </div>
-              </s-box>
-            </s-box>
-          </div>
+                <button
+                  onClick={() => setIsDismissed(true)}
+                  style={{
+                    background: "none",
+                    border: "none",
+                    cursor: "pointer",
+                    padding: 4,
+                    color: "#9ca3af",
+                  }}
+                  title="Dismiss setup guide"
+                >
+                  <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                    <path d="M5 5L15 15M5 15L15 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+                  </svg>
+                </button>
+              </div>
 
-          {/* Step 4: Create a Rule */}
-          <div style={{ flex: "1 1 calc(50% - 8px)", minWidth: 300 }}>
-            <s-box padding="base" background="surface" borderWidth="base" borderRadius="base" style={{ height: "100%" }}>
-              <s-text variant="headingMd"><strong>Step 4: Create a Rule</strong></s-text>
-              <s-box paddingBlockStart="base">
-                <s-text>
-                  Rules determine what delivery information is shown for different products. Create your first rule to get started.
-                </s-text>
-              </s-box>
-              <s-box paddingBlockStart="large">
-                <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
-                  <s-button variant="primary" onClick={() => setShowRuleWizard(true)}>
-                    Create Rule
-                  </s-button>
-                  <s-button href="/app">
-                    Go to Editor
-                  </s-button>
-                </div>
-              </s-box>
-            </s-box>
+              {/* Progress bar - counts steps 1-4 (core setup) */}
+              {(() => {
+                const setupSteps = [
+                  { id: "product_page", countsForProgress: true },
+                  { id: "cart_messaging", countsForProgress: true },
+                  { id: "announcement_bar", countsForProgress: true },
+                  { id: "configure_settings", countsForProgress: true, autoComplete: !!settings?.cutoff_time },
+                  { id: "create_rule", countsForProgress: false, autoComplete: hasRules },
+                ];
+                const progressSteps = setupSteps.filter(s => s.countsForProgress);
+                const completedCount = progressSteps.filter(s => s.autoComplete || manualCompleted.has(s.id)).length;
+                const totalRequired = progressSteps.length;
+                const percent = totalRequired > 0 ? (completedCount / totalRequired) * 100 : 0;
+
+                return (
+                  <div style={{ marginTop: 16 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+                      <span style={{ fontSize: 13, color: "#6b7280" }}>
+                        {completedCount} of {totalRequired} steps completed
+                      </span>
+                    </div>
+                    <div style={{ background: "#e5e7eb", borderRadius: 4, height: 8 }}>
+                      <div
+                        style={{
+                          background: "#22c55e",
+                          borderRadius: 4,
+                          height: "100%",
+                          width: `${percent}%`,
+                          transition: "width 0.3s ease",
+                        }}
+                      />
+                    </div>
+                  </div>
+                );
+              })()}
+            </div>
+
+            {/* Info banner */}
+            <div
+              style={{
+                padding: "12px 16px",
+                background: "#eff6ff",
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+              }}
+            >
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0 }}>
+                <circle cx="8" cy="8" r="7" stroke="#3b82f6" strokeWidth="1.5"/>
+                <path d="M8 7V11M8 5V5.5" stroke="#3b82f6" strokeWidth="1.5" strokeLinecap="round"/>
+              </svg>
+              <span style={{ fontSize: 13, color: "#1e40af" }}>
+                Even if you don't use every block, each can be enabled or disabled directly in the app settings.
+              </span>
+            </div>
+
+            {/* Steps */}
+            <div style={{ borderTop: "1px solid #e5e7eb" }}>
+              {/* Step 1: Product Page Setup */}
+              <SetupStep
+                step={{
+                  id: "product_page",
+                  title: "Product Page Setup",
+                  description: "Add Delivery Messaging, ETA Timeline, or Special Delivery blocks to your product page template.",
+                  actionLabel: "Open Theme Editor",
+                  actionUrl: themeEditorUrl,
+                  images: [
+                    {
+                      src: "/images/setup/product-page-setup-1.png",
+                      steps: [
+                        "Expand the Product Information block",
+                        "Select 'Add block', and one at a time add each of the Messages blocks (Delivery Messaging, ETA Timeline & Special Delivery)",
+                      ],
+                    },
+                    {
+                      src: "/images/setup/product-page-setup-2.png",
+                      steps: [
+                        "Drag the Delivery Messaging block to a suitable position",
+                        "Drag the ETA Timeline block to a suitable position",
+                        "Drag the Special Delivery block to a suitable position",
+                      ],
+                    },
+                  ],
+                  onImageClick: setLightboxImage,
+                }}
+                isExpanded={expandedStep === "product_page"}
+                isComplete={manualCompleted.has("product_page")}
+                onToggle={() => setExpandedStep(expandedStep === "product_page" ? null : "product_page")}
+                onMarkComplete={() => setManualCompleted(prev => new Set([...prev, "product_page"]))}
+                onMarkIncomplete={() => setManualCompleted(prev => { const next = new Set(prev); next.delete("product_page"); return next; })}
+              />
+
+              {/* Step 2: Cart Messaging Setup */}
+              <SetupStep
+                step={{
+                  id: "cart_messaging",
+                  title: "Cart Messaging Setup",
+                  description: "Enable the Cart Messaging app embed to show free delivery progress in your cart drawer and cart page.",
+                  actionLabel: "Open App Embeds",
+                  actionUrl: freeDeliveryEditorUrl,
+                  images: [
+                    {
+                      src: "/images/setup/cart-messaging-setup-1.png",
+                      steps: [
+                        "Select App Embeds from the left hand menu",
+                        "Enable the Cart Messaging App Embed",
+                      ],
+                    },
+                  ],
+                  onImageClick: setLightboxImage,
+                }}
+                isExpanded={expandedStep === "cart_messaging"}
+                isComplete={manualCompleted.has("cart_messaging")}
+                onToggle={() => setExpandedStep(expandedStep === "cart_messaging" ? null : "cart_messaging")}
+                onMarkComplete={() => setManualCompleted(prev => new Set([...prev, "cart_messaging"]))}
+                onMarkIncomplete={() => setManualCompleted(prev => { const next = new Set(prev); next.delete("cart_messaging"); return next; })}
+              />
+
+              {/* Step 3: Announcement Bar Setup */}
+              <SetupStep
+                step={{
+                  id: "announcement_bar",
+                  title: "Announcement Bar Setup",
+                  description: "Add the Delivery Announcement block to your theme's header or announcement bar section.",
+                  actionLabel: "Open Theme Editor",
+                  actionUrl: shopDomain ? `https://${shopDomain}/admin/themes/current/editor` : "#",
+                  images: [
+                    {
+                      src: "/images/setup/announcement-bar-1.png",
+                      steps: [
+                        "Disable Shopify's built-in Announcement Bar",
+                        "Click 'Add section'",
+                        "Choose 'Delivery Announcement' from the Apps menu",
+                      ],
+                    },
+                    {
+                      src: "/images/setup/announcement-bar-2.png",
+                      steps: [
+                        "Drag the Apps block above the page header",
+                        "Adjust margins to page or container width",
+                        "Enable/disable 'Reveal sections on scroll' if available",
+                      ],
+                    },
+                  ],
+                  onImageClick: setLightboxImage,
+                }}
+                isExpanded={expandedStep === "announcement_bar"}
+                isComplete={manualCompleted.has("announcement_bar")}
+                onToggle={() => setExpandedStep(expandedStep === "announcement_bar" ? null : "announcement_bar")}
+                onMarkComplete={() => setManualCompleted(prev => new Set([...prev, "announcement_bar"]))}
+                onMarkIncomplete={() => setManualCompleted(prev => { const next = new Set(prev); next.delete("announcement_bar"); return next; })}
+              />
+
+              {/* Step 4: Configure Store Settings */}
+              <SetupStep
+                step={{
+                  id: "configure_settings",
+                  title: "Configure Store Settings",
+                  description: "Set your business hours, cutoff times, and bank holidays. These settings apply to all rules.",
+                  actionLabel: "Configure Settings",
+                  onAction: () => setShowSettingsWizard(true),
+                  secondaryLabel: "Go to Settings",
+                  secondaryUrl: "/app?openSettings=true",
+                  images: [
+                    {
+                      src: "/images/setup/settings-1.png",
+                      steps: [
+                        "Go into the Messages section of the app by pressing the Messages button in the main menu",
+                        "Select Global Settings from the top menu, the Global Settings will appear in the editor window",
+                      ],
+                    },
+                  ],
+                  onImageClick: setLightboxImage,
+                  autoComplete: true,
+                }}
+                isExpanded={expandedStep === "configure_settings"}
+                isComplete={!!settings?.cutoff_time}
+                onToggle={() => setExpandedStep(expandedStep === "configure_settings" ? null : "configure_settings")}
+                onAction={() => setShowSettingsWizard(true)}
+              />
+
+              {/* Next Steps separator */}
+              <div
+                style={{
+                  padding: "12px 16px",
+                  background: "#f9fafb",
+                  borderTop: "1px solid #e5e7eb",
+                }}
+              >
+                <span style={{ fontSize: 12, fontWeight: 600, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.5px" }}>
+                  Next Steps
+                </span>
+              </div>
+
+              {/* Step 5: Create a Messages Rule */}
+              <SetupStep
+                step={{
+                  id: "create_rule",
+                  title: "Create a Messages Rule",
+                  isAdditional: true,
+                  description: "Rules determine what delivery information is shown for different products. Create your first rule to get started.",
+                  actionLabel: "Create Rule",
+                  onAction: () => setShowRuleWizard(true),
+                  secondaryLabel: "Go to Messages",
+                  secondaryUrl: "/app",
+                  images: [
+                    {
+                      src: "/images/setup/create-a-rule-1.png",
+                      steps: [
+                        "Go to the Messages section by clicking Messages in the main menu",
+                        "Select Editor from the top menu (visible by default)",
+                        "Rename your rule here",
+                        "Use Editor blocks to match products and configure delivery messages",
+                        "The preview updates live as you make changes (may vary based on theme)",
+                        "Save your changes — auto-save triggers a few seconds after each edit",
+                        "Add a new rule or duplicate an existing one",
+                        "View rule priority order in the Rules panel",
+                      ],
+                    },
+                  ],
+                  onImageClick: setLightboxImage,
+                  autoComplete: true,
+                }}
+                isExpanded={expandedStep === "create_rule"}
+                isComplete={hasRules}
+                onToggle={() => setExpandedStep(expandedStep === "create_rule" ? null : "create_rule")}
+                onAction={() => setShowRuleWizard(true)}
+              />
+            </div>
           </div>
-        </div>
-      </s-section>
+        </s-section>
+      ) : (
+        <s-section>
+          <div style={{ textAlign: "center", padding: "8px 0" }}>
+            <button
+              onClick={() => setIsDismissed(false)}
+              style={{
+                background: "none",
+                border: "none",
+                color: "#2563eb",
+                fontSize: 14,
+                cursor: "pointer",
+                textDecoration: "underline",
+              }}
+            >
+              Show Setup Guide
+            </button>
+          </div>
+        </s-section>
+      )}
 
       {/* Settings Wizard Modal */}
       {showSettingsWizard && (
@@ -1233,6 +1710,38 @@ export default function DashboardPage() {
               )}
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Image Lightbox */}
+      {lightboxImage && (
+        <div
+          onClick={() => setLightboxImage(null)}
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: "rgba(0,0,0,0.8)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 1001,
+            cursor: "zoom-out",
+            padding: 24,
+          }}
+        >
+          <img
+            src={lightboxImage}
+            alt="Enlarged view"
+            style={{
+              maxWidth: "90%",
+              maxHeight: "90%",
+              borderRadius: 8,
+              boxShadow: "0 4px 24px rgba(0,0,0,0.3)",
+            }}
+          />
         </div>
       )}
 

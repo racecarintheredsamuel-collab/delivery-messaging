@@ -281,8 +281,6 @@
 {%- endcase %}
 {%- endif -%}
 {%- case special_delivery_font_weight_final -%}
-{%- when 'medium' %}font-weight:500;
-{%- when 'semibold' %}font-weight:600;
 {%- when 'bold' %}font-weight:700;
 {%- else %}font-weight:400;
 {%- endcase %}
@@ -300,8 +298,6 @@ line-height:{{ special_delivery_line_height_final }};
 {%- if special_delivery_header_text_color_final != blank %}color:{{ special_delivery_header_text_color_final }};{%- endif %}
 font-size:{{ special_delivery_header_font_size_final }}px;
 {%- case special_delivery_header_font_weight_final -%}
-{%- when 'medium' %}font-weight:500;
-{%- when 'semibold' %}font-weight:600;
 {%- when 'bold' %}font-weight:700;
 {%- else %}font-weight:400;
 {%- endcase %}

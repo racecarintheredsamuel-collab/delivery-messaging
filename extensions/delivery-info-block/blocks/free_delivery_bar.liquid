@@ -14,6 +14,7 @@
 {%- assign fd_show_progress_bar = true -%}
 {%- assign fd_progress_bar_color = '#22c55e' -%}
 {%- assign fd_progress_bar_bg = '#e5e7eb' -%}
+{%- assign fd_bar_bg_color = '#f9fafb' -%}
 {%- assign fd_exclude_tags = '' -%}
 {%- assign fd_exclude_handles = '' -%}
 
@@ -45,6 +46,9 @@
   {%- if global_settings.fd_progress_bar_bg != blank -%}
     {%- assign fd_progress_bar_bg = global_settings.fd_progress_bar_bg -%}
   {%- endif -%}
+  {%- if global_settings.fd_bar_bg_color != blank -%}
+    {%- assign fd_bar_bg_color = global_settings.fd_bar_bg_color -%}
+  {%- endif -%}
   {%- if global_settings.fd_exclude_tags != blank -%}
     {%- assign fd_exclude_tags = global_settings.fd_exclude_tags | json -%}
   {%- endif -%}
@@ -71,6 +75,7 @@
   data-show-progress-bar="{{ fd_show_progress_bar }}"
   data-progress-bar-color="{{ fd_progress_bar_color }}"
   data-progress-bar-bg="{{ fd_progress_bar_bg }}"
+  data-bar-bg-color="{{ fd_bar_bg_color }}"
 ></div>
 
 {%- comment -%} Scripts for cart drawer injection {%- endcomment -%}
@@ -79,5 +84,5 @@
 
 {%- endif -%}
 {% schema %}
-{"name":"Free Delivery Bar","target":"body","settings":[]}
+{"name":"Cart Messaging","target":"body","settings":[]}
 {% endschema %}
