@@ -2488,7 +2488,7 @@ export default function Index() {
                   </div>
                   {/* Lock button row - fixed height to prevent shift when undo appears */}
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", height: 36 }}>
-                    {lastDeletedProfile && (
+                    {lastDeletedProfile ? (
                       <div style={{
                         display: "flex",
                         alignItems: "center",
@@ -2500,7 +2500,7 @@ export default function Index() {
                         <s-text>Profile "{lastDeletedProfile.profile.name}" deleted.</s-text>
                         <s-button size="small" onClick={undoDeleteProfile}>Undo</s-button>
                       </div>
-                    )}
+                    ) : <div />}
                     <s-button
                       variant="plain"
                       onClick={() => setProfilesLocked(!profilesLocked)}
