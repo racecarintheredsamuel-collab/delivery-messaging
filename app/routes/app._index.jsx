@@ -2492,10 +2492,10 @@ export default function Index() {
                       <div style={{
                         display: "flex",
                         alignItems: "center",
-                        gap: 12,
-                        padding: 10,
+                        gap: 8,
+                        padding: "6px 12px",
                         background: "var(--p-color-bg-caution-subdued, #fef3c7)",
-                        borderRadius: 6,
+                        borderRadius: 4,
                       }}>
                         <s-text>Profile "{lastDeletedProfile.profile.name}" deleted.</s-text>
                         <s-button size="small" onClick={undoDeleteProfile}>Undo</s-button>
@@ -6072,10 +6072,10 @@ export default function Index() {
                     style={{
                       display: "flex",
                       alignItems: "center",
-                      gap: 12,
-                      padding: 10,
+                      gap: 8,
+                      padding: "6px 12px",
                       background: "var(--p-color-bg-caution-subdued, #fef3c7)",
-                      borderRadius: 6,
+                      borderRadius: 4,
                     }}
                   >
                     <s-text>
