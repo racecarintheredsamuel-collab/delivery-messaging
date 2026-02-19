@@ -2487,7 +2487,7 @@ export default function Index() {
                     </div>
                   </div>
                   {/* Lock button row - with undo banner to the left when visible */}
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", minHeight: 32 }}>
                     {lastDeletedProfile ? (
                       <div style={{
                         display: "flex",
