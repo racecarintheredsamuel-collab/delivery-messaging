@@ -2444,7 +2444,7 @@ export default function Index() {
                 </div>
 
                 {/* Profiles Section */}
-                <div style={{ border: "1px solid var(--p-color-border, #e5e7eb)", borderRadius: 8, padding: 16, display: "grid", gap: 12, background: "var(--p-color-bg-surface-secondary, #f9fafb)", minHeight: 145 }}>
+                <div style={{ border: "1px solid var(--p-color-border, #e5e7eb)", borderRadius: 8, padding: 16, display: "grid", gap: 12, background: "var(--p-color-bg-surface-secondary, #f9fafb)", minHeight: 130 }}>
                   <s-heading size="small">Profiles</s-heading>
                   <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                     <input
@@ -2487,21 +2487,20 @@ export default function Index() {
                     </div>
                   </div>
                   {/* Lock button row - with undo banner to the left when visible */}
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 12 }}>
-                    {lastDeletedProfile && (
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                    {lastDeletedProfile ? (
                       <div style={{
                         display: "flex",
                         alignItems: "center",
-                        justifyContent: "space-between",
+                        gap: 12,
                         padding: 10,
                         background: "var(--p-color-bg-caution-subdued, #fef3c7)",
                         borderRadius: 6,
-                        marginRight: "auto",
                       }}>
                         <s-text>Profile "{lastDeletedProfile.profile.name}" deleted.</s-text>
                         <s-button size="small" onClick={undoDeleteProfile}>Undo</s-button>
                       </div>
-                    )}
+                    ) : <div />}
                     <s-button
                       variant="plain"
                       onClick={() => setProfilesLocked(!profilesLocked)}
@@ -6073,7 +6072,7 @@ export default function Index() {
                     style={{
                       display: "flex",
                       alignItems: "center",
-                      justifyContent: "space-between",
+                      gap: 12,
                       padding: 10,
                       background: "var(--p-color-bg-caution-subdued, #fef3c7)",
                       borderRadius: 6,
