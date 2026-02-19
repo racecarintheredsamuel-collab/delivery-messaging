@@ -2447,21 +2447,13 @@ export default function Index() {
                 <div style={{ display: "grid", gap: 8, borderBottom: "1px solid var(--p-color-border, #e5e7eb)", paddingBottom: 16 }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                     <s-text style={{ fontWeight: 600 }}>Profiles</s-text>
-                    <button
+                    <s-button
+                      variant="plain"
                       onClick={() => setProfilesLocked(!profilesLocked)}
                       title={profilesLocked ? "Unlock to enable Add/Copy/Delete" : "Lock to prevent changes"}
-                      style={{
-                        background: "none",
-                        border: "none",
-                        cursor: "pointer",
-                        fontSize: "16px",
-                        padding: "4px 8px",
-                        borderRadius: "4px",
-                        color: profilesLocked ? "var(--p-color-text-subdued, #6b7280)" : "var(--p-color-text-success, #059669)",
-                      }}
                     >
-                      {profilesLocked ? "🔒" : "🔓"}
-                    </button>
+                      {profilesLocked ? "🔒 Locked" : "🔓 Unlocked"}
+                    </s-button>
                   </div>
                   <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                     <input
