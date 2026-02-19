@@ -1341,11 +1341,11 @@ export default function Index() {
     // Remember it for undo
     setLastDeletedProfile({ profile: removed, index: removedIndex });
 
-    // Auto-expire undo after 30s (longer for profiles since they contain multiple rules)
+    // Auto-expire undo after 10s
     undoProfileTimerRef.current = setTimeout(() => {
       setLastDeletedProfile(null);
       undoProfileTimerRef.current = null;
-    }, 30000);
+    }, 10000);
   };
 
   const undoDeleteProfile = () => {
@@ -1427,11 +1427,11 @@ export default function Index() {
     // remember it for undo
     setLastDeleted({ rule: removed, index: idx });
 
-    // auto-expire undo after 6s
+    // auto-expire undo after 10s
     undoTimerRef.current = setTimeout(() => {
       setLastDeleted(null);
       undoTimerRef.current = null;
-    }, 6000);
+    }, 10000);
   }
 
   function undoDelete() {
@@ -2444,7 +2444,7 @@ export default function Index() {
                 </div>
 
                 {/* Profiles Section */}
-                <div style={{ border: "1px solid var(--p-color-border, #e5e7eb)", borderRadius: 8, padding: 16, display: "grid", gap: 12, background: "var(--p-color-bg-surface-secondary, #f9fafb)" }}>
+                <div style={{ border: "1px solid var(--p-color-border, #e5e7eb)", borderRadius: 8, padding: 16, display: "grid", gap: 12, background: "var(--p-color-bg-surface-secondary, #f9fafb)", minHeight: 145 }}>
                   <s-heading size="small">Profiles</s-heading>
                   <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                     <input
@@ -2492,28 +2492,14 @@ export default function Index() {
                       <div style={{
                         display: "flex",
                         alignItems: "center",
-                        gap: 8,
-                        padding: "6px 12px",
-                        background: "var(--p-color-bg-surface-warning, #fef3c7)",
-                        borderRadius: "4px",
-                        fontSize: "13px",
+                        justifyContent: "space-between",
+                        padding: 10,
+                        background: "var(--p-color-bg-caution-subdued, #fef3c7)",
+                        borderRadius: 6,
                         marginRight: "auto",
                       }}>
-                        <span>Profile "{lastDeletedProfile.profile.name}" deleted.</span>
-                        <button
-                        onClick={undoDeleteProfile}
-                        style={{
-                          background: "none",
-                          border: "none",
-                          color: "var(--p-color-text-interactive, #2563eb)",
-                          cursor: "pointer",
-                          textDecoration: "underline",
-                          padding: 0,
-                          fontSize: "13px",
-                        }}
-                      >
-                        Undo
-                      </button>
+                        <s-text>Profile "{lastDeletedProfile.profile.name}" deleted.</s-text>
+                        <s-button size="small" onClick={undoDeleteProfile}>Undo</s-button>
                       </div>
                     )}
                     <s-button
