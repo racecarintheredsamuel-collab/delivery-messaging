@@ -856,7 +856,6 @@ export default function Index() {
   const [lastDeletedProfile, setLastDeletedProfile] = useState(null);
 
   // Profile actions lock (prevents accidental add/copy/delete)
-  // eslint-disable-next-line no-unused-vars
   const [profilesLocked, setProfilesLocked] = useState(true);
 
   // Sticky column height - measured from actual viewport for iframe compatibility
@@ -1307,14 +1306,12 @@ export default function Index() {
     // Note: selectedIndex reset is handled by the effect watching activeProfileId changes
   };
 
-  // Profile management functions (UI not yet implemented)
-  // eslint-disable-next-line no-unused-vars
+  // Profile management functions
   const addProfile = () => {
     const newProfile = defaultProfile(`Profile ${profiles.length + 1}`);
     setProfiles([...profiles, newProfile], newProfile.id);
   };
 
-  // eslint-disable-next-line no-unused-vars
   const copyProfile = () => {
     if (!activeProfile) return;
     const copiedProfile = {
@@ -1326,8 +1323,6 @@ export default function Index() {
     setProfiles([...profiles, copiedProfile], copiedProfile.id);
   };
 
-  // Profile management function (UI not yet implemented)
-  // eslint-disable-next-line no-unused-vars
   const deleteProfileWithUndo = () => {
     if (profiles.length <= 1) return; // Don't delete last profile
 
@@ -1353,8 +1348,6 @@ export default function Index() {
     }, 30000);
   };
 
-  // Profile management function (UI not yet implemented)
-  // eslint-disable-next-line no-unused-vars
   const undoDeleteProfile = () => {
     if (!lastDeletedProfile?.profile) return;
 
@@ -1369,8 +1362,6 @@ export default function Index() {
     setLastDeletedProfile(null);
   };
 
-  // Profile management function (UI not yet implemented)
-  // eslint-disable-next-line no-unused-vars
   const renameProfile = (newName) => {
     const updatedProfiles = profiles.map((p) =>
       p.id === activeProfileId ? { ...p, name: newName } : p
@@ -2450,6 +2441,121 @@ export default function Index() {
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                   <s-heading>Global Settings</s-heading>
                   <s-button variant="plain" onClick={() => setShowGlobalSettingsPanel(false)}>Close</s-button>
+                </div>
+
+                {/* Profiles Section */}
+                <div style={{ display: "grid", gap: 8, borderBottom: "1px solid var(--p-color-border, #e5e7eb)", paddingBottom: 16 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <s-text style={{ fontWeight: 600 }}>Profiles</s-text>
+                    <button
+                      onClick={() => setProfilesLocked(!profilesLocked)}
+                      title={profilesLocked ? "Unlock to enable Add/Copy/Delete" : "Lock to prevent changes"}
+                      style={{
+                        background: "none",
+                        border: "none",
+                        cursor: "pointer",
+                        fontSize: "16px",
+                        padding: "4px 8px",
+                        borderRadius: "4px",
+                        color: profilesLocked ? "var(--p-color-text-subdued, #6b7280)" : "var(--p-color-text-success, #059669)",
+                      }}
+                    >
+                      {profilesLocked ? "🔒" : "🔓"}
+                    </button>
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                    <input
+                      type="text"
+                      value={activeProfile?.name || ""}
+                      onChange={(e) => renameProfile(e.target.value)}
+                      placeholder="Profile name"
+                      style={{
+                        flex: 1,
+                        padding: "6px 10px",
+                        borderRadius: "4px",
+                        border: "1px solid var(--p-color-border, #e5e7eb)",
+                        fontSize: "14px",
+                      }}
+                    />
+                    <div style={{ display: "flex", gap: 4 }}>
+                      <button
+                        onClick={addProfile}
+                        disabled={profilesLocked}
+                        title="Add new profile"
+                        style={{
+                          padding: "6px 10px",
+                          borderRadius: "4px",
+                          border: "1px solid var(--p-color-border, #e5e7eb)",
+                          background: profilesLocked ? "var(--p-color-bg-surface-disabled, #f3f4f6)" : "var(--p-color-bg-surface, #ffffff)",
+                          cursor: profilesLocked ? "not-allowed" : "pointer",
+                          opacity: profilesLocked ? 0.5 : 1,
+                          fontSize: "13px",
+                        }}
+                      >
+                        + Add
+                      </button>
+                      <button
+                        onClick={copyProfile}
+                        disabled={profilesLocked}
+                        title="Copy current profile"
+                        style={{
+                          padding: "6px 10px",
+                          borderRadius: "4px",
+                          border: "1px solid var(--p-color-border, #e5e7eb)",
+                          background: profilesLocked ? "var(--p-color-bg-surface-disabled, #f3f4f6)" : "var(--p-color-bg-surface, #ffffff)",
+                          cursor: profilesLocked ? "not-allowed" : "pointer",
+                          opacity: profilesLocked ? 0.5 : 1,
+                          fontSize: "13px",
+                        }}
+                      >
+                        Copy
+                      </button>
+                      <button
+                        onClick={deleteProfileWithUndo}
+                        disabled={profilesLocked || profiles.length <= 1}
+                        title={profiles.length <= 1 ? "Cannot delete last profile" : "Delete current profile"}
+                        style={{
+                          padding: "6px 10px",
+                          borderRadius: "4px",
+                          border: "1px solid var(--p-color-border, #e5e7eb)",
+                          background: (profilesLocked || profiles.length <= 1) ? "var(--p-color-bg-surface-disabled, #f3f4f6)" : "var(--p-color-bg-surface, #ffffff)",
+                          cursor: (profilesLocked || profiles.length <= 1) ? "not-allowed" : "pointer",
+                          opacity: (profilesLocked || profiles.length <= 1) ? 0.5 : 1,
+                          fontSize: "13px",
+                          color: (profilesLocked || profiles.length <= 1) ? "inherit" : "var(--p-color-text-critical, #dc2626)",
+                        }}
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  </div>
+                  {lastDeletedProfile && (
+                    <div style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 8,
+                      padding: "8px 12px",
+                      background: "var(--p-color-bg-surface-warning, #fef3c7)",
+                      borderRadius: "4px",
+                      fontSize: "13px",
+                    }}>
+                      <span>Profile "{lastDeletedProfile.profile.name}" deleted.</span>
+                      <button
+                        onClick={undoDeleteProfile}
+                        style={{
+                          background: "none",
+                          border: "none",
+                          color: "var(--p-color-text-interactive, #2563eb)",
+                          cursor: "pointer",
+                          textDecoration: "underline",
+                          padding: 0,
+                          fontSize: "13px",
+                        }}
+                      >
+                        Undo
+                      </button>
+                    </div>
+                  )}
                 </div>
 
                 {/* Preview Timezone */}
