@@ -178,6 +178,7 @@
 {%- if s.special_delivery_use_main_icon_color == false or s.special_delivery_use_main_icon_color == 'false' -%}{%- assign special_delivery_use_main_icon_color_final = false -%}{%- endif -%}
 {%- if s.special_delivery_show_border == true or s.special_delivery_show_border == 'true' -%}{%- assign special_delivery_show_border_final = true -%}{%- endif -%}
 {%- if s.special_delivery_border_thickness != blank -%}{%- assign special_delivery_border_thickness_final = s.special_delivery_border_thickness -%}{%- endif -%}
+{%- if special_delivery_border_thickness_final > 0 -%}{%- assign special_delivery_show_border_final = true -%}{%- endif -%}
 {%- if s.special_delivery_border_color != blank -%}{%- assign special_delivery_border_color_final = s.special_delivery_border_color -%}{%- endif -%}
 {%- if s.special_delivery_border_radius != blank -%}{%- assign special_delivery_border_radius_final = s.special_delivery_border_radius -%}{%- endif -%}
 {%- if s.special_delivery_background_color != blank -%}{%- assign special_delivery_background_color_final = s.special_delivery_background_color -%}{%- endif -%}

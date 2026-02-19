@@ -199,6 +199,7 @@
 {%- endif -%}
 {%- if s.show_border != blank -%}{%- assign show_border_final = s.show_border -%}{%- endif -%}
 {%- if s.border_thickness != blank -%}{%- assign border_thickness_final = s.border_thickness -%}{%- endif -%}
+{%- if border_thickness_final > 0 -%}{%- assign show_border_final = true -%}{%- endif -%}
 {%- if s.border_color != blank -%}{%- assign border_color_final = s.border_color -%}{%- endif -%}
 {%- if s.border_radius != blank -%}{%- assign border_radius_final = s.border_radius -%}{%- endif -%}
 {%- if s.background_color != blank -%}{%- assign background_color_final = s.background_color -%}{%- endif -%}

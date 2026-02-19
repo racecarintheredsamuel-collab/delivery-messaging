@@ -221,6 +221,7 @@
 {%- if s.show_eta_border == true or s.show_eta_border == 'true' -%}{%- assign show_eta_border_final = true -%}{%- endif -%}
 {%- if s.show_eta_border == false or s.show_eta_border == 'false' -%}{%- assign show_eta_border_final = false -%}{%- endif -%}
 {%- if s.eta_border_width != blank -%}{%- assign eta_border_width_final = s.eta_border_width -%}{%- endif -%}
+{%- if eta_border_width_final > 0 -%}{%- assign show_eta_border_final = true -%}{%- endif -%}
 {%- if s.eta_border_color != blank -%}{%- assign eta_border_color_final = s.eta_border_color -%}{%- endif -%}
 {%- if s.eta_border_radius != blank -%}{%- assign eta_border_radius_final = s.eta_border_radius -%}{%- endif -%}
 {%- if s.eta_background_color != blank -%}{%- assign eta_background_color_final = s.eta_background_color -%}{%- endif -%}
