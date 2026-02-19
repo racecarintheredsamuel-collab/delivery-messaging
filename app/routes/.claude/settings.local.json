@@ -37,7 +37,10 @@
       "WebFetch(domain:gist.github.com)",
       "Bash(grep:*)",
       "Bash(shopify app deploy:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(git rm:*)",
+      "Bash(shopify app dev:*)",
+      "Bash(git ls-tree:*)"
     ]
   }
 }

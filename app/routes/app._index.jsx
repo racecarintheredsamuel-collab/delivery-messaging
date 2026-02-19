@@ -2444,17 +2444,8 @@ export default function Index() {
                 </div>
 
                 {/* Profiles Section */}
-                <div style={{ display: "grid", gap: 8, borderBottom: "1px solid var(--p-color-border, #e5e7eb)", paddingBottom: 16 }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                    <s-text style={{ fontWeight: 600 }}>Profiles</s-text>
-                    <s-button
-                      variant="plain"
-                      onClick={() => setProfilesLocked(!profilesLocked)}
-                      title={profilesLocked ? "Unlock to enable Add/Copy/Delete" : "Lock to prevent changes"}
-                    >
-                      {profilesLocked ? "🔒 Locked" : "🔓 Unlocked"}
-                    </s-button>
-                  </div>
+                <div style={{ border: "1px solid var(--p-color-border, #e5e7eb)", borderRadius: 8, padding: 16, display: "grid", gap: 12, background: "var(--p-color-bg-surface-secondary, #f9fafb)" }}>
+                  <s-heading size="small">Profiles</s-heading>
                   <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                     <input
                       type="text"
@@ -2470,69 +2461,46 @@ export default function Index() {
                       }}
                     />
                     <div style={{ display: "flex", gap: 4 }}>
-                      <button
+                      <s-button
                         onClick={addProfile}
                         disabled={profilesLocked}
                         title="Add new profile"
-                        style={{
-                          padding: "6px 10px",
-                          borderRadius: "4px",
-                          border: "1px solid var(--p-color-border, #e5e7eb)",
-                          background: profilesLocked ? "var(--p-color-bg-surface-disabled, #f3f4f6)" : "var(--p-color-bg-surface, #ffffff)",
-                          cursor: profilesLocked ? "not-allowed" : "pointer",
-                          opacity: profilesLocked ? 0.5 : 1,
-                          fontSize: "13px",
-                        }}
                       >
-                        + Add
-                      </button>
-                      <button
+                        Add
+                      </s-button>
+                      <s-button
                         onClick={copyProfile}
                         disabled={profilesLocked}
                         title="Copy current profile"
-                        style={{
-                          padding: "6px 10px",
-                          borderRadius: "4px",
-                          border: "1px solid var(--p-color-border, #e5e7eb)",
-                          background: profilesLocked ? "var(--p-color-bg-surface-disabled, #f3f4f6)" : "var(--p-color-bg-surface, #ffffff)",
-                          cursor: profilesLocked ? "not-allowed" : "pointer",
-                          opacity: profilesLocked ? 0.5 : 1,
-                          fontSize: "13px",
-                        }}
                       >
                         Copy
-                      </button>
-                      <button
+                      </s-button>
+                      <s-button
+                        variant="plain"
+                        tone="critical"
                         onClick={deleteProfileWithUndo}
                         disabled={profilesLocked || profiles.length <= 1}
                         title={profiles.length <= 1 ? "Cannot delete last profile" : "Delete current profile"}
-                        style={{
-                          padding: "6px 10px",
-                          borderRadius: "4px",
-                          border: "1px solid var(--p-color-border, #e5e7eb)",
-                          background: (profilesLocked || profiles.length <= 1) ? "var(--p-color-bg-surface-disabled, #f3f4f6)" : "var(--p-color-bg-surface, #ffffff)",
-                          cursor: (profilesLocked || profiles.length <= 1) ? "not-allowed" : "pointer",
-                          opacity: (profilesLocked || profiles.length <= 1) ? 0.5 : 1,
-                          fontSize: "13px",
-                          color: (profilesLocked || profiles.length <= 1) ? "inherit" : "var(--p-color-text-critical, #dc2626)",
-                        }}
                       >
                         Delete
-                      </button>
+                      </s-button>
                     </div>
                   </div>
-                  {lastDeletedProfile && (
-                    <div style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 8,
-                      padding: "8px 12px",
-                      background: "var(--p-color-bg-surface-warning, #fef3c7)",
-                      borderRadius: "4px",
-                      fontSize: "13px",
-                    }}>
-                      <span>Profile "{lastDeletedProfile.profile.name}" deleted.</span>
-                      <button
+                  {/* Lock button row - with undo banner to the left when visible */}
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 12 }}>
+                    {lastDeletedProfile && (
+                      <div style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 8,
+                        padding: "6px 12px",
+                        background: "var(--p-color-bg-surface-warning, #fef3c7)",
+                        borderRadius: "4px",
+                        fontSize: "13px",
+                        marginRight: "auto",
+                      }}>
+                        <span>Profile "{lastDeletedProfile.profile.name}" deleted.</span>
+                        <button
                         onClick={undoDeleteProfile}
                         style={{
                           background: "none",
@@ -2546,13 +2514,21 @@ export default function Index() {
                       >
                         Undo
                       </button>
-                    </div>
-                  )}
+                      </div>
+                    )}
+                    <s-button
+                      variant="plain"
+                      onClick={() => setProfilesLocked(!profilesLocked)}
+                      title={profilesLocked ? "Unlock to enable Add/Copy/Delete" : "Lock to prevent changes"}
+                    >
+                      {profilesLocked ? "🔒 Locked" : "🔓 Unlocked"}
+                    </s-button>
+                  </div>
                 </div>
 
                 {/* Preview Timezone */}
-                <div style={{ display: "grid", gap: 8 }}>
-                  <s-text style={{ fontWeight: 600 }}>Preview Timezone</s-text>
+                <div style={{ border: "1px solid var(--p-color-border, #e5e7eb)", borderRadius: 8, padding: 16, display: "grid", gap: 12, background: "var(--p-color-bg-surface-secondary, #f9fafb)" }}>
+                  <s-heading size="small">Preview Timezone</s-heading>
                   <s-text size="small" style={{ color: "var(--p-color-text-subdued, #6b7280)" }}>
                     Match this to your Shopify store timezone so the preview matches your live storefront.
                   </s-text>
@@ -2609,8 +2585,8 @@ export default function Index() {
                 </div>
 
                 {/* Cutoff Times */}
-                <div style={{ display: "grid", gap: 8, borderTop: "1px solid var(--p-color-border, #e5e7eb)", paddingTop: 16 }}>
-                  <s-text style={{ fontWeight: 600 }}>Cutoff Times</s-text>
+                <div style={{ border: "1px solid var(--p-color-border, #e5e7eb)", borderRadius: 8, padding: 16, display: "grid", gap: 12, background: "var(--p-color-bg-surface-secondary, #f9fafb)" }}>
+                  <s-heading size="small">Cutoff Times</s-heading>
                   <s-text size="small" style={{ color: "var(--p-color-text-subdued, #6b7280)" }}>
                     Orders placed after cutoff time will be processed the next business day.
                   </s-text>
@@ -2648,8 +2624,8 @@ export default function Index() {
                 </div>
 
                 {/* Lead Time */}
-                <div style={{ display: "grid", gap: 8, borderTop: "1px solid var(--p-color-border, #e5e7eb)", paddingTop: 16 }}>
-                  <s-text style={{ fontWeight: 600 }}>Lead Time</s-text>
+                <div style={{ border: "1px solid var(--p-color-border, #e5e7eb)", borderRadius: 8, padding: 16, display: "grid", gap: 12, background: "var(--p-color-bg-surface-secondary, #f9fafb)" }}>
+                  <s-heading size="small">Lead Time</s-heading>
                   <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                     <input
                       type="number"
@@ -2668,8 +2644,8 @@ export default function Index() {
                 </div>
 
                 {/* Closed Days */}
-                <div style={{ display: "grid", gap: 8, borderTop: "1px solid var(--p-color-border, #e5e7eb)", paddingTop: 16 }}>
-                  <s-text style={{ fontWeight: 600 }}>Closed Days</s-text>
+                <div style={{ border: "1px solid var(--p-color-border, #e5e7eb)", borderRadius: 8, padding: 16, display: "grid", gap: 12, background: "var(--p-color-bg-surface-secondary, #f9fafb)" }}>
+                  <s-heading size="small">Closed Days</s-heading>
                   <s-text size="small" style={{ color: "var(--p-color-text-subdued, #6b7280)" }}>
                     Days your business does not process/ship orders
                   </s-text>
@@ -2698,8 +2674,8 @@ export default function Index() {
                 </div>
 
                 {/* Courier Non-Delivery Days */}
-                <div style={{ display: "grid", gap: 8, borderTop: "1px solid var(--p-color-border, #e5e7eb)", paddingTop: 16 }}>
-                  <s-text style={{ fontWeight: 600 }}>Courier Non-Delivery Days</s-text>
+                <div style={{ border: "1px solid var(--p-color-border, #e5e7eb)", borderRadius: 8, padding: 16, display: "grid", gap: 12, background: "var(--p-color-bg-surface-secondary, #f9fafb)" }}>
+                  <s-heading size="small">Courier Non-Delivery Days</s-heading>
                   <s-text size="small" style={{ color: "var(--p-color-text-subdued, #6b7280)" }}>
                     Days your courier does not deliver (used for ETA calculations)
                   </s-text>
@@ -2728,8 +2704,8 @@ export default function Index() {
                 </div>
 
                 {/* Bank Holidays */}
-                <div style={{ display: "grid", gap: 8, borderTop: "1px solid var(--p-color-border, #e5e7eb)", paddingTop: 16 }}>
-                  <s-text style={{ fontWeight: 600 }}>Bank Holidays</s-text>
+                <div style={{ border: "1px solid var(--p-color-border, #e5e7eb)", borderRadius: 8, padding: 16, display: "grid", gap: 12, background: "var(--p-color-bg-surface-secondary, #f9fafb)" }}>
+                  <s-heading size="small">Bank Holidays</s-heading>
                   <s-text size="small" style={{ color: "var(--p-color-text-subdued, #6b7280)" }}>
                     Select your country to automatically skip bank holidays
                   </s-text>
@@ -2759,8 +2735,8 @@ export default function Index() {
                 </div>
 
                 {/* Custom Holidays */}
-                <div style={{ display: "grid", gap: 8, borderTop: "1px solid var(--p-color-border, #e5e7eb)", paddingTop: 16 }}>
-                  <s-text style={{ fontWeight: 600 }}>Custom Holidays</s-text>
+                <div style={{ border: "1px solid var(--p-color-border, #e5e7eb)", borderRadius: 8, padding: 16, display: "grid", gap: 12, background: "var(--p-color-bg-surface-secondary, #f9fafb)" }}>
+                  <s-heading size="small">Custom Holidays</s-heading>
                   <s-text size="small" style={{ color: "var(--p-color-text-subdued, #6b7280)" }}>
                     Add one-off holidays or non-dispatch days (e.g., company events, stocktake days)
                   </s-text>
