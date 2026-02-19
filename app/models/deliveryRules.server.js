@@ -3,6 +3,7 @@ import { safeLogError } from "../utils/validation";
 const NAMESPACE = "delivery_rules";
 const CONFIG_KEY = "config";
 const SETTINGS_KEY = "settings";
+const ICONS_KEY = "icons";
 
 const CONFIG_NAME = "Delivery Info — Rule Configuration";
 const CONFIG_DESCRIPTION =
@@ -11,6 +12,10 @@ const CONFIG_DESCRIPTION =
 const SETTINGS_NAME = "Delivery Info — Global Settings";
 const SETTINGS_DESCRIPTION =
   "Global settings managed by the Delivery Info app.";
+
+const ICONS_NAME = "Delivery Info — Icon Library";
+const ICONS_DESCRIPTION =
+  "Built-in icons for the Delivery Info app. Managed automatically.";
 
 const GET_DEFINITION = `#graphql
   query GetDeliveryRulesDefinition($namespace: String!, $key: String!) {
@@ -127,47 +132,36 @@ async function ensureMetafieldDefinition(admin, key, name, description) {
   return { ok: true, created: true, updated: false };
 }
 
-// In-memory cache for definition status (per-process, resets on deploy)
-// Key: shop domain extracted from admin context, Value: timestamp
-const definitionCache = new Map();
-const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
-
-export async function ensureDeliveryRulesDefinition(admin, shopDomain = null) {
-  // Check cache - skip API calls if recently verified
-  if (shopDomain) {
-    const cached = definitionCache.get(shopDomain);
-    if (cached && Date.now() - cached < CACHE_TTL_MS) {
-      return { ok: true, cached: true };
-    }
-  }
-
-  // Run both definition checks in parallel
-  const [configResult, settingsResult] = await Promise.all([
+export async function ensureDeliveryRulesDefinition(admin) {
+  // Run all definition checks in parallel
+  // No caching - ensureMetafieldDefinition already checks if definition exists
+  const [configResult, settingsResult, iconsResult] = await Promise.all([
     ensureMetafieldDefinition(admin, CONFIG_KEY, CONFIG_NAME, CONFIG_DESCRIPTION),
     ensureMetafieldDefinition(admin, SETTINGS_KEY, SETTINGS_NAME, SETTINGS_DESCRIPTION),
+    ensureMetafieldDefinition(admin, ICONS_KEY, ICONS_NAME, ICONS_DESCRIPTION),
   ]);
 
   // Return combined result
-  if (!configResult.ok || !settingsResult.ok) {
+  if (!configResult.ok || !settingsResult.ok || !iconsResult.ok) {
     return {
       ok: false,
       errors: [
         ...(configResult.errors || []),
         ...(settingsResult.errors || []),
+        ...(iconsResult.errors || []),
       ],
     };
-  }
-
-  // Cache successful result
-  if (shopDomain) {
-    definitionCache.set(shopDomain, Date.now());
   }
 
   return {
     ok: true,
     config: configResult,
     settings: settingsResult,
+    icons: iconsResult,
   };
 }
+
+// Export keys for use in other files
+export { ICONS_KEY };
 
 

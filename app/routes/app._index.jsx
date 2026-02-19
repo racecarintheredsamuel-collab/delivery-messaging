@@ -11,7 +11,7 @@ import { ChevronDownIcon, ChevronRightIcon } from "../components/icons/ChevronIc
 import { newRuleId, newProfileId } from "../utils/idGenerators";
 import { isHHMM, ruleHasMatch, safeParseNumber, friendlyError, safeLogError, validateConfig } from "../utils/validation";
 import { getSingleIconSize, getTextFontSize, getTextFontWeight, normalizeFontSize, normalizeEtaLabelFontSize, normalizeEtaDateFontSize, normalizeSingleIconSize } from "../utils/styling";
-import { getIconSvg, getConfiguredCustomIcons } from "../utils/icons";
+import { getIconSvg, getConfiguredCustomIcons, generateIconsMetafield } from "../utils/icons";
 import { getHolidaysForYear, HOLIDAY_DEFINITIONS } from "../utils/holidays";
 import { CustomDatePicker } from "../components/CustomDatePicker";
 import { PreviewLine } from "../components/PreviewLine";
@@ -24,6 +24,7 @@ import {
   METAFIELD_NAMESPACE,
   CONFIG_KEY,
   SETTINGS_KEY,
+  ICONS_KEY,
 } from "../graphql/queries";
 
 // ============================================================================
@@ -93,15 +94,17 @@ export const loader = async ({ request }) => {
   const { admin, session } = await authenticate.admin(request);
   const shopDomain = session?.shop;
 
-  // Pass shop domain for caching (skips API calls if recently verified)
-  await ensureDeliveryRulesDefinition(admin, shopDomain);
+  // Ensure all metafield definitions exist (config, settings, icons)
+  const defResult = await ensureDeliveryRulesDefinition(admin);
+  console.log("[ICONS DEBUG] Definition result:", JSON.stringify(defResult));
 
-  // Fetch both config and settings metafields
+  // Fetch config, settings, and icons metafields
   const res = await admin.graphql(GET_SHOP_DELIVERY_DATA, {
     variables: {
       namespace: METAFIELD_NAMESPACE,
       configKey: CONFIG_KEY,
       settingsKey: SETTINGS_KEY,
+      iconsKey: ICONS_KEY,
     },
   });
 
@@ -113,6 +116,8 @@ export const loader = async ({ request }) => {
   const shopId = json?.data?.shop?.id;
   const configMf = json?.data?.shop?.config;
   const settingsMf = json?.data?.shop?.settings;
+  const iconsMf = json?.data?.shop?.icons;
+  console.log("[ICONS DEBUG] iconsMf exists:", !!iconsMf?.value);
 
   // Create default config if it doesn't exist (first install)
   if (!configMf?.value) {
@@ -148,6 +153,42 @@ export const loader = async ({ request }) => {
     }
     const errors = setJson?.data?.metafieldsSet?.userErrors ?? [];
     if (errors.length) safeLogError("Failed to set default config", errors);
+  }
+
+  // Create icons metafield if it doesn't exist (stores preset icons for Liquid templates)
+  if (!iconsMf?.value) {
+    console.log("[ICONS DEBUG] Creating icons metafield...");
+    const iconsData = generateIconsMetafield();
+    const iconsDataStr = JSON.stringify(iconsData);
+    console.log("[ICONS DEBUG] Icons data size:", iconsDataStr.length, "bytes, keys:", Object.keys(iconsData).length);
+    const setIconsRes = await admin.graphql(SET_METAFIELDS, {
+      variables: {
+        metafields: [
+          {
+            ownerId: shopId,
+            namespace: METAFIELD_NAMESPACE,
+            key: ICONS_KEY,
+            type: "json",
+            value: JSON.stringify(iconsData),
+          },
+        ],
+      },
+    });
+
+    const setIconsJson = await setIconsRes.json();
+    console.log("[ICONS DEBUG] Mutation response:", JSON.stringify(setIconsJson));
+    if (setIconsJson.errors) {
+      console.error("[ICONS DEBUG] GraphQL errors:", setIconsJson.errors);
+      safeLogError("Failed to set icons metafield", setIconsJson.errors);
+    }
+    const iconsErrors = setIconsJson?.data?.metafieldsSet?.userErrors ?? [];
+    if (iconsErrors.length) {
+      console.error("[ICONS DEBUG] User errors:", iconsErrors);
+      safeLogError("Failed to set icons metafield", iconsErrors);
+    }
+    if (!setIconsJson.errors && !iconsErrors.length) {
+      console.log("[ICONS DEBUG] Icons metafield created successfully!");
+    }
   }
 
   // Parse global settings

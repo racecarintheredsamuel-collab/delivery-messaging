@@ -8,7 +8,7 @@
  * Used by both Editor (app._index) and Settings (app.settings) pages
  */
 export const GET_SHOP_DELIVERY_DATA = `#graphql
-  query GetShopDeliveryData($namespace: String!, $configKey: String!, $settingsKey: String!) {
+  query GetShopDeliveryData($namespace: String!, $configKey: String!, $settingsKey: String!, $iconsKey: String!) {
     shop {
       id
       currencyCode
@@ -18,6 +18,11 @@ export const GET_SHOP_DELIVERY_DATA = `#graphql
         value
       }
       settings: metafield(namespace: $namespace, key: $settingsKey) {
+        id
+        type
+        value
+      }
+      icons: metafield(namespace: $namespace, key: $iconsKey) {
         id
         type
         value

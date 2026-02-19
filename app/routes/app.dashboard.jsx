@@ -2,15 +2,18 @@ import { useState, useEffect } from "react";
 import { useLoaderData, useRouteError, useFetcher, useNavigate } from "react-router";
 import { boundary } from "@shopify/shopify-app-react-router/server";
 import { authenticate } from "../shopify.server";
+import { ensureDeliveryRulesDefinition } from "../models/deliveryRules.server";
 import { newRuleId } from "../utils/idGenerators";
 import { HOLIDAY_DEFINITIONS } from "../utils/holidays";
-import { getIconSvg } from "../utils/icons";
+import { getIconSvg, generateIconsMetafield } from "../utils/icons";
 import {
   GET_SHOP_DELIVERY_DATA,
+  SET_METAFIELDS,
   SET_METAFIELDS_MINIMAL,
   METAFIELD_NAMESPACE,
   CONFIG_KEY,
   SETTINGS_KEY,
+  ICONS_KEY,
 } from "../graphql/queries";
 
 // ============================================================================
@@ -21,12 +24,17 @@ export const loader = async ({ request }) => {
   const { admin, session } = await authenticate.admin(request);
   const shopDomain = session?.shop;
 
-  // Fetch current config to check if rules exist
+  // Ensure all metafield definitions exist (config, settings, icons)
+  const defResult = await ensureDeliveryRulesDefinition(admin);
+  console.log("[ICONS DEBUG - DASHBOARD] Definition result:", JSON.stringify(defResult));
+
+  // Fetch current config, settings, and icons
   const res = await admin.graphql(GET_SHOP_DELIVERY_DATA, {
     variables: {
       namespace: METAFIELD_NAMESPACE,
       configKey: CONFIG_KEY,
-      settingsKey: "delivery_rules_settings",
+      settingsKey: SETTINGS_KEY,
+      iconsKey: ICONS_KEY,
     },
   });
 
@@ -34,6 +42,43 @@ export const loader = async ({ request }) => {
   const shopId = json?.data?.shop?.id;
   const configMf = json?.data?.shop?.config;
   const settingsMf = json?.data?.shop?.settings;
+  const iconsMf = json?.data?.shop?.icons;
+  console.log("[ICONS DEBUG - DASHBOARD] iconsMf exists:", !!iconsMf?.value);
+
+  // Create icons metafield if it doesn't exist (stores preset icons for Liquid templates)
+  if (!iconsMf?.value) {
+    console.log("[ICONS DEBUG - DASHBOARD] Creating icons metafield...");
+    const iconsData = generateIconsMetafield();
+    const iconsDataStr = JSON.stringify(iconsData);
+    console.log("[ICONS DEBUG - DASHBOARD] Icons data size:", iconsDataStr.length, "bytes, keys:", Object.keys(iconsData).length);
+
+    const setIconsRes = await admin.graphql(SET_METAFIELDS, {
+      variables: {
+        metafields: [
+          {
+            ownerId: shopId,
+            namespace: METAFIELD_NAMESPACE,
+            key: ICONS_KEY,
+            type: "json",
+            value: iconsDataStr,
+          },
+        ],
+      },
+    });
+
+    const setIconsJson = await setIconsRes.json();
+    console.log("[ICONS DEBUG - DASHBOARD] Mutation response:", JSON.stringify(setIconsJson));
+    if (setIconsJson.errors) {
+      console.error("[ICONS DEBUG - DASHBOARD] GraphQL errors:", setIconsJson.errors);
+    }
+    const iconsErrors = setIconsJson?.data?.metafieldsSet?.userErrors ?? [];
+    if (iconsErrors.length) {
+      console.error("[ICONS DEBUG - DASHBOARD] User errors:", iconsErrors);
+    }
+    if (!setIconsJson.errors && !iconsErrors.length) {
+      console.log("[ICONS DEBUG - DASHBOARD] Icons metafield created successfully!");
+    }
+  }
 
   let hasRules = false;
   let config = null;
