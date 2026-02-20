@@ -5269,7 +5269,7 @@ export default function Index() {
                           </div>
                           <input
                             type="number"
-                            min="100"
+                            min="0"
                             value={rule.settings?.special_delivery_max_width ?? 600}
                             onChange={(e) => {
                               const next = [...rules];
@@ -5278,18 +5278,6 @@ export default function Index() {
                                 settings: { ...rule.settings, special_delivery_max_width: Number(e.target.value) || 0 },
                               };
                               setRules(next);
-                            }}
-                            onBlur={(e) => {
-                              const v = Number(e.target.value) || 0;
-                              const clamped = v === 0 ? 0 : Math.max(100, v);
-                              if (clamped !== v) {
-                                const next = [...rules];
-                                next[safeSelectedIndex] = {
-                                  ...rule,
-                                  settings: { ...rule.settings, special_delivery_max_width: clamped },
-                                };
-                                setRules(next);
-                              }
                             }}
                             style={{ width: "100%" }}
                           />
