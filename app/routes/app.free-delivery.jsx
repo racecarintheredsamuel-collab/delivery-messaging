@@ -687,14 +687,6 @@ export default function FreeDeliveryPage() {
                     <div style={{ marginBottom: 6 }}>Static messages that cycle alongside the free delivery message.</div>
                     <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                       <span style={{ flexShrink: 0 }}>💡</span>
-                      <span>Placeholders: {"{countdown}"}</span>
-                      <span
-                        title="{countdown} = live countdown to cutoff time"
-                        style={{ cursor: "help", color: "var(--p-color-text-subdued)" }}
-                      >ℹ️</span>
-                    </div>
-                    <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 2 }}>
-                      <span style={{ flexShrink: 0 }}>💡</span>
                       <span>Formatting: **bold**, [link](url)</span>
                       <span
                         title="Use **double asterisks** for bold text&#10;Use [text](url) for clickable links"
@@ -756,10 +748,6 @@ export default function FreeDeliveryPage() {
                       <span style={{ fontSize: 12, color: "var(--p-color-text-subdued)" }}>s</span>
                     </div>
                   </label>
-                </div>
-                <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: -8, color: "var(--p-color-text-subdued, #6b7280)", fontSize: 12 }}>
-                  <span style={{ flexShrink: 0 }}>💡</span>
-                  <span>{"{countdown}"} uses global settings because the announcement bar isn't product-specific. Product pages show accurate per-rule countdowns.</span>
                 </div>
 
                 {/* Styling Section */}
