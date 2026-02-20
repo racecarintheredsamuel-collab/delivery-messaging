@@ -322,7 +322,37 @@ font-weight:inherit;
 {%- endif -%}
 <div class="dib-special-content" style="min-width:0;display:flex;flex-direction:column;{%- if special_delivery_header_final != blank -%}gap:{{ special_delivery_header_gap_final }}px;{%- endif -%}">
 {%- if special_delivery_header_final != blank -%}
-<div class="dib-special-header">{{ special_delivery_header_final }}</div>
+{%- capture header_html -%}
+{%- assign header_temp = special_delivery_header_final -%}
+{%- if header_temp contains '[' and header_temp contains '](' and header_temp contains ')' -%}
+{%- assign link_parts = header_temp | split: '](' -%}
+{%- for lp in link_parts -%}
+{%- if forloop.first -%}
+{%- if lp contains '[' -%}
+{%- assign before_link = lp | split: '[' | first -%}
+{%- assign link_text = lp | split: '[' | last -%}
+{{ before_link }}<a href="{%- else -%}{{ lp }}{%- endif -%}
+{%- else -%}
+{%- assign url_and_rest = lp | split: ')' -%}
+{{ url_and_rest[0] }}">{{ link_text }}</a>{{ url_and_rest[1] }}
+{%- endif -%}
+{%- endfor -%}
+{%- else -%}
+{{ header_temp }}
+{%- endif -%}
+{%- endcapture -%}
+{%- capture header_final -%}
+{%- if header_html contains '**' -%}
+{%- assign parts = header_html | split: '**' -%}
+{%- for part in parts -%}
+{%- assign mod = forloop.index | modulo: 2 -%}
+{%- if mod == 0 -%}<strong>{{ part }}</strong>{%- else -%}{{ part }}{%- endif -%}
+{%- endfor -%}
+{%- else -%}
+{{ header_html }}
+{%- endif -%}
+{%- endcapture -%}
+<div class="dib-special-header">{{ header_final }}</div>
 {%- endif -%}
 <div class="dib-special-text">{{ message_html }}</div>
 </div>
