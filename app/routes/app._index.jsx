@@ -725,7 +725,7 @@ function defaultRule() {
       show_special_delivery: false,
       special_delivery_header: "",
       special_delivery_message: "",
-      special_delivery_icon_size: "medium",
+      special_delivery_icon_size: 24,
       special_delivery_icon_color: "#111827",
       special_delivery_use_main_icon_color: true,
       // Special Delivery - Border Styling
