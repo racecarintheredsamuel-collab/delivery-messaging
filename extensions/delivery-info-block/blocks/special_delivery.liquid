@@ -1,105 +1,12 @@
 {%- assign uid = 'special-' | append: block.id -%}{%- assign show_special_delivery_final = false -%}{%- assign special_delivery_message_final = '' -%}{%- assign special_delivery_icon_final = '' -%}{%- assign special_delivery_icon_style_final = 'solid' -%}{%- assign special_delivery_icon_size_final = 24 -%}{%- assign special_delivery_icon_alignment_final = 'top' -%}{%- assign special_delivery_icon_color_final = '#111827' -%}{%- assign special_delivery_use_main_icon_color_final = true -%}{%- assign icon_color = '#111827' -%}{%- assign special_delivery_use_theme_font_final = true -%}{%- assign special_delivery_match_messages_font_final = false -%}{%- assign special_delivery_custom_font_family_final = '' -%}{%- assign special_delivery_use_theme_text_styling_final = true -%}{%- assign special_delivery_text_color_final = '#374151' -%}{%- assign special_delivery_font_size_final = 'medium' -%}{%- assign special_delivery_font_weight_final = 'normal' -%}{%- assign special_delivery_header_final = '' -%}{%- assign special_delivery_header_use_theme_text_styling_final = true -%}{%- assign special_delivery_header_text_color_final = '#111827' -%}{%- assign special_delivery_header_font_size_final = 16 -%}{%- assign special_delivery_header_font_weight_final = 'semibold' -%}{%- assign special_delivery_header_gap_final = 4 -%}{%- assign special_delivery_line_height_final = 1.4 -%}{%- assign messages_custom_font_family = '' -%}{%- assign special_delivery_margin_top = 0 -%}{%- assign special_delivery_margin_bottom = 0 -%}{%- assign special_delivery_alignment = 'left' -%}{%- assign special_delivery_alignment_mobile = 'left' -%}{%- assign special_delivery_text_alignment_final = 'left' -%}{%- assign special_delivery_padding_left = 8 -%}{%- assign special_delivery_padding_right = 12 -%}{%- assign special_delivery_padding_vertical = 10 -%}{%- assign special_delivery_icon_gap = 12 -%}{%- assign special_delivery_show_border_final = false -%}{%- assign special_delivery_border_thickness_final = 1 -%}{%- assign special_delivery_border_color_final = '#e5e7eb' -%}{%- assign special_delivery_border_radius_final = 8 -%}{%- assign special_delivery_background_color_final = '' -%}{%- assign special_delivery_match_eta_border_final = false -%}{%- assign special_delivery_match_eta_width_final = false -%}{%- assign special_delivery_max_width_final = 600 -%}{%- assign eta_border_width = 1 -%}{%- assign eta_border_color = '#e5e7eb' -%}{%- assign eta_border_radius = 8 -%}{%- assign show_eta_timeline = false -%}{%- assign show_eta_border = false -%}{%- assign rules_json = shop.metafields.delivery_rules.config.value -%}{%- assign rules_obj = nil -%}{%- assign rules = nil -%}
-{%- if rules_json != blank -%}
-{%- assign rules_obj = rules_json | parse_json -%}
-{%- if rules_obj.version == 2 -%}
-{%- assign active_profile_id = rules_obj.activeProfileId | strip -%}
-{%- assign found_profile = false -%}
-{%- for profile in rules_obj.profiles -%}
-{%- assign profile_id_check = profile.id | strip -%}
-{%- if profile_id_check == active_profile_id -%}
-{%- assign rules = profile.rules -%}
-{%- assign found_profile = true -%}
-{%- break -%}
-{%- endif -%}
-{%- endfor -%}
-{%- if found_profile == false and rules_obj.profiles.size > 0 -%}
-{%- assign rules = rules_obj.profiles.first.rules -%}
-{%- endif -%}
-{%- else -%}
-{%- assign rules = rules_obj.rules -%}
-{%- endif -%}
-{%- endif -%}
-{%- assign global_settings_json = shop.metafields.delivery_rules.settings.value -%}
-{%- assign global_settings = nil -%}
-{%- if global_settings_json != blank -%}
-{%- assign global_settings = global_settings_json | parse_json -%}
-{%- endif -%}
+{%- if rules_json != blank -%}{%- assign rules_obj = rules_json | parse_json -%}{%- if rules_obj.version == 2 -%}{%- assign active_profile_id = rules_obj.activeProfileId | strip -%}{%- assign found_profile = false -%}{%- for profile in rules_obj.profiles -%}{%- assign profile_id_check = profile.id | strip -%}{%- if profile_id_check == active_profile_id -%}{%- assign rules = profile.rules -%}{%- assign found_profile = true -%}{%- break -%}{%- endif -%}{%- endfor -%}{%- if found_profile == false and rules_obj.profiles.size > 0 -%}{%- assign rules = rules_obj.profiles.first.rules -%}{%- endif -%}{%- else -%}{%- assign rules = rules_obj.rules -%}{%- endif -%}{%- endif -%}{%- assign global_settings_json = shop.metafields.delivery_rules.settings.value -%}{%- assign global_settings = nil -%}{%- if global_settings_json != blank -%}{%- assign global_settings = global_settings_json | parse_json -%}{%- endif -%}
 {%- if global_settings != nil -%}{%- if global_settings.special_delivery_use_theme_font == false -%}{%- assign special_delivery_use_theme_font_final = false -%}{%- endif -%}{%- if global_settings.special_delivery_match_messages_font == true -%}{%- assign special_delivery_match_messages_font_final = true -%}{%- endif -%}{%- if global_settings.special_delivery_custom_font_family != blank -%}{%- assign special_delivery_custom_font_family_final = global_settings.special_delivery_custom_font_family -%}{%- endif -%}{%- if global_settings.special_delivery_use_theme_text_styling == false -%}{%- assign special_delivery_use_theme_text_styling_final = false -%}{%- endif -%}{%- if global_settings.special_delivery_text_color != blank -%}{%- assign special_delivery_text_color_final = global_settings.special_delivery_text_color -%}{%- endif -%}{%- if global_settings.special_delivery_font_size != blank -%}{%- assign special_delivery_font_size_final = global_settings.special_delivery_font_size -%}{%- endif -%}{%- if global_settings.special_delivery_font_weight != blank -%}{%- assign special_delivery_font_weight_final = global_settings.special_delivery_font_weight -%}{%- endif -%}{%- if global_settings.special_delivery_header_use_theme_text_styling == false -%}{%- assign special_delivery_header_use_theme_text_styling_final = false -%}{%- endif -%}{%- if global_settings.special_delivery_header_text_color != blank -%}{%- assign special_delivery_header_text_color_final = global_settings.special_delivery_header_text_color -%}{%- endif -%}{%- if global_settings.special_delivery_header_font_size != blank -%}{%- assign special_delivery_header_font_size_final = global_settings.special_delivery_header_font_size -%}{%- endif -%}{%- if global_settings.special_delivery_header_font_weight != blank -%}{%- assign special_delivery_header_font_weight_final = global_settings.special_delivery_header_font_weight -%}{%- endif -%}{%- if global_settings.special_delivery_header_gap != blank -%}{%- assign special_delivery_header_gap_final = global_settings.special_delivery_header_gap -%}{%- endif -%}{%- if global_settings.special_delivery_line_height != blank -%}{%- assign special_delivery_line_height_final = global_settings.special_delivery_line_height -%}{%- endif -%}{%- if global_settings.custom_font_family != blank -%}{%- assign messages_custom_font_family = global_settings.custom_font_family -%}{%- endif -%}{%- if global_settings.special_delivery_margin_top != blank -%}{%- assign special_delivery_margin_top = global_settings.special_delivery_margin_top -%}{%- endif -%}{%- if global_settings.special_delivery_margin_bottom != blank -%}{%- assign special_delivery_margin_bottom = global_settings.special_delivery_margin_bottom -%}{%- endif -%}{%- if global_settings.special_delivery_alignment != blank -%}{%- assign special_delivery_alignment = global_settings.special_delivery_alignment -%}{%- endif -%}{%- if global_settings.special_delivery_alignment_mobile != blank -%}{%- assign special_delivery_alignment_mobile = global_settings.special_delivery_alignment_mobile -%}{%- endif -%}{%- if global_settings.special_delivery_padding_left != blank -%}{%- assign special_delivery_padding_left = global_settings.special_delivery_padding_left -%}{%- endif -%}{%- if global_settings.special_delivery_padding_right != blank -%}{%- assign special_delivery_padding_right = global_settings.special_delivery_padding_right -%}{%- endif -%}{%- if global_settings.special_delivery_padding_vertical != blank -%}{%- assign special_delivery_padding_vertical = global_settings.special_delivery_padding_vertical -%}{%- endif -%}{%- if global_settings.special_delivery_icon_gap != blank -%}{%- assign special_delivery_icon_gap = global_settings.special_delivery_icon_gap -%}{%- endif -%}{%- endif -%}
-{%- assign any_rule_matched = false -%}
-{%- if product and rules and rules.size > 0 -%}
-{%- assign product_handle = product.handle -%}
-{%- for r in rules -%}
-{%- assign m = r.match -%}
-{%- assign handle_match = false -%}
-{%- assign tag_match = false -%}
-{%- if m.product_handles and m.product_handles.size > 0 and m.product_handles contains product_handle -%}
-{%- assign handle_match = true -%}
-{%- endif -%}
-{%- if m.tags and m.tags.size > 0 -%}
-{%- for tg in m.tags -%}
-{%- if product.tags contains tg -%}
-{%- assign tag_match = true -%}
-{% break %}
-{%- endif -%}
-{%- endfor -%}
-{%- endif -%}
-{%- assign stock_match = true -%}
-{%- assign stock_status_value = m.stock_status | default: 'any' -%}
-{%- if stock_status_value != 'any' -%}
-{%- assign has_stock = false -%}
-{%- assign is_pre_order = false -%}
-{%- assign is_mixed_stock = false -%}
-{%- assign has_in_stock_variant = false -%}
-{%- assign has_out_of_stock_variant = false -%}
-{%- assign has_preorder_variant = false -%}
-{%- for variant in product.variants -%}
-{%- if variant.available and variant.inventory_quantity > 0 -%}
-{%- assign has_in_stock_variant = true -%}
-{%- elsif variant.available and variant.inventory_quantity <= 0 -%}
-{%- assign has_preorder_variant = true -%}
-{%- elsif variant.available == false -%}
-{%- assign has_out_of_stock_variant = true -%}
-{%- endif -%}
-{%- endfor -%}
-{%- assign status_count = 0 -%}
-{%- if has_in_stock_variant -%}{%- assign status_count = status_count | plus: 1 -%}{%- endif -%}
-{%- if has_out_of_stock_variant -%}{%- assign status_count = status_count | plus: 1 -%}{%- endif -%}
-{%- if has_preorder_variant -%}{%- assign status_count = status_count | plus: 1 -%}{%- endif -%}
-{%- if status_count > 1 -%}{%- assign is_mixed_stock = true -%}{%- endif -%}
-{%- if product.available -%}
-{%- assign has_stock = true -%}
-{%- if has_in_stock_variant == false and has_preorder_variant -%}{%- assign is_pre_order = true -%}{%- endif -%}
-{%- endif -%}
-{%- if stock_status_value == 'in_stock' and has_stock == false -%}{%- assign stock_match = false -%}{%- endif -%}
-{%- if stock_status_value == 'in_stock' and is_pre_order == true -%}{%- assign stock_match = false -%}{%- endif -%}
-{%- if stock_status_value == 'in_stock' and is_mixed_stock == true -%}{%- assign stock_match = false -%}{%- endif -%}
-{%- if stock_status_value == 'out_of_stock' and has_stock == true -%}{%- assign stock_match = false -%}{%- endif -%}
-{%- if stock_status_value == 'pre_order' and is_pre_order == false -%}{%- assign stock_match = false -%}{%- endif -%}
-{%- if stock_status_value == 'pre_order' and is_mixed_stock == true -%}{%- assign stock_match = false -%}{%- endif -%}
-{%- if stock_status_value == 'mixed_stock' and is_mixed_stock == false -%}{%- assign stock_match = false -%}{%- endif -%}
-{%- endif -%}
-{%- assign final_match = false -%}
-{%- if m.is_fallback == true or m.is_fallback == 'true' -%}
-{%- if stock_match -%}{%- assign final_match = true -%}{%- endif -%}
-{%- elsif handle_match or tag_match -%}
-{%- if stock_match -%}{%- assign final_match = true -%}{%- endif -%}
-{%- endif -%}
-{%- if final_match -%}{%- assign any_rule_matched = true -%}{%- assign s = r.settings -%}{%- if s.icon_color != blank -%}{%- assign icon_color = s.icon_color -%}{%- endif -%}{%- if s.show_eta_timeline == true or s.show_eta_timeline == 'true' -%}{%- assign show_eta_timeline = true -%}{%- endif -%}{%- if s.show_eta_border == true or s.show_eta_border == 'true' -%}{%- assign show_eta_border = true -%}{%- endif -%}{%- if s.eta_border_width != blank -%}{%- assign eta_border_width = s.eta_border_width -%}{%- endif -%}{%- if s.eta_border_color != blank -%}{%- assign eta_border_color = s.eta_border_color -%}{%- endif -%}{%- if s.eta_border_radius != blank -%}{%- assign eta_border_radius = s.eta_border_radius -%}{%- endif -%}{%- if s.show_special_delivery == true or s.show_special_delivery == 'true' -%}{%- assign show_special_delivery_final = true -%}{%- endif -%}{%- if s.show_special_delivery == false or s.show_special_delivery == 'false' -%}{%- assign show_special_delivery_final = false -%}{%- endif -%}{%- if s.special_delivery_header != blank -%}{%- assign special_delivery_header_final = s.special_delivery_header -%}{%- endif -%}{%- if s.special_delivery_message != blank -%}{%- assign special_delivery_message_final = s.special_delivery_message -%}{%- endif -%}{%- if s.special_delivery_icon != blank -%}{%- assign special_delivery_icon_final = s.special_delivery_icon -%}{%- endif -%}{%- if s.special_delivery_icon_style != blank -%}{%- assign special_delivery_icon_style_final = s.special_delivery_icon_style -%}{%- endif -%}{%- if s.special_delivery_icon_size != blank -%}{%- assign special_delivery_icon_size_final = s.special_delivery_icon_size -%}{%- endif -%}{%- if s.special_delivery_icon_alignment != blank -%}{%- assign special_delivery_icon_alignment_final = s.special_delivery_icon_alignment -%}{%- endif -%}{%- if s.special_delivery_icon_color != blank -%}{%- assign special_delivery_icon_color_final = s.special_delivery_icon_color -%}{%- endif -%}{%- if s.special_delivery_use_main_icon_color == true or s.special_delivery_use_main_icon_color == 'true' -%}{%- assign special_delivery_use_main_icon_color_final = true -%}{%- endif -%}{%- if s.special_delivery_use_main_icon_color == false or s.special_delivery_use_main_icon_color == 'false' -%}{%- assign special_delivery_use_main_icon_color_final = false -%}{%- endif -%}{%- if s.special_delivery_show_border == true or s.special_delivery_show_border == 'true' -%}{%- assign special_delivery_show_border_final = true -%}{%- endif -%}{%- if s.special_delivery_border_thickness != blank -%}{%- assign special_delivery_border_thickness_final = s.special_delivery_border_thickness -%}{%- endif -%}{%- if special_delivery_border_thickness_final > 0 -%}{%- assign special_delivery_show_border_final = true -%}{%- endif -%}{%- if s.special_delivery_border_color != blank -%}{%- assign special_delivery_border_color_final = s.special_delivery_border_color -%}{%- endif -%}{%- if s.special_delivery_border_radius != blank -%}{%- assign special_delivery_border_radius_final = s.special_delivery_border_radius -%}{%- endif -%}{%- if s.special_delivery_background_color != blank -%}{%- assign special_delivery_background_color_final = s.special_delivery_background_color -%}{%- endif -%}{%- if s.special_delivery_match_eta_border == true or s.special_delivery_match_eta_border == 'true' -%}{%- assign special_delivery_match_eta_border_final = true -%}{%- assign special_delivery_show_border_final = true -%}{%- assign special_delivery_border_thickness_final = eta_border_width -%}{%- assign special_delivery_border_color_final = eta_border_color -%}{%- assign special_delivery_border_radius_final = eta_border_radius -%}{%- endif -%}{%- if s.special_delivery_match_eta_width == true or s.special_delivery_match_eta_width == 'true' -%}{%- assign special_delivery_match_eta_width_final = true -%}{%- endif -%}{%- if s.special_delivery_max_width != blank -%}{%- assign special_delivery_max_width_final = s.special_delivery_max_width -%}{%- endif -%}
+{%- assign any_rule_matched = false -%}{%- if product and rules and rules.size > 0 -%}{%- assign product_handle = product.handle -%}{%- for r in rules -%}{%- assign m = r.match -%}{%- assign handle_match = false -%}{%- assign tag_match = false -%}{%- if m.product_handles and m.product_handles.size > 0 and m.product_handles contains product_handle -%}{%- assign handle_match = true -%}{%- endif -%}{%- if m.tags and m.tags.size > 0 -%}{%- for tg in m.tags -%}{%- if product.tags contains tg -%}{%- assign tag_match = true -%}{% break %}{%- endif -%}{%- endfor -%}{%- endif -%}{%- assign stock_match = true -%}{%- assign stock_status_value = m.stock_status | default: 'any' -%}{%- if stock_status_value != 'any' -%}{%- assign has_stock = false -%}{%- assign is_pre_order = false -%}{%- assign is_mixed_stock = false -%}{%- assign has_in_stock_variant = false -%}{%- assign has_out_of_stock_variant = false -%}{%- assign has_preorder_variant = false -%}{%- for variant in product.variants -%}{%- if variant.available and variant.inventory_quantity > 0 -%}{%- assign has_in_stock_variant = true -%}{%- elsif variant.available and variant.inventory_quantity <= 0 -%}{%- assign has_preorder_variant = true -%}{%- elsif variant.available == false -%}{%- assign has_out_of_stock_variant = true -%}{%- endif -%}{%- endfor -%}{%- assign status_count = 0 -%}{%- if has_in_stock_variant -%}{%- assign status_count = status_count | plus: 1 -%}{%- endif -%}{%- if has_out_of_stock_variant -%}{%- assign status_count = status_count | plus: 1 -%}{%- endif -%}{%- if has_preorder_variant -%}{%- assign status_count = status_count | plus: 1 -%}{%- endif -%}{%- if status_count > 1 -%}{%- assign is_mixed_stock = true -%}{%- endif -%}{%- if product.available -%}{%- assign has_stock = true -%}{%- if has_in_stock_variant == false and has_preorder_variant -%}{%- assign is_pre_order = true -%}{%- endif -%}{%- endif -%}{%- if stock_status_value == 'in_stock' and has_stock == false -%}{%- assign stock_match = false -%}{%- endif -%}{%- if stock_status_value == 'in_stock' and is_pre_order == true -%}{%- assign stock_match = false -%}{%- endif -%}{%- if stock_status_value == 'in_stock' and is_mixed_stock == true -%}{%- assign stock_match = false -%}{%- endif -%}{%- if stock_status_value == 'out_of_stock' and has_stock == true -%}{%- assign stock_match = false -%}{%- endif -%}{%- if stock_status_value == 'pre_order' and is_pre_order == false -%}{%- assign stock_match = false -%}{%- endif -%}{%- if stock_status_value == 'pre_order' and is_mixed_stock == true -%}{%- assign stock_match = false -%}{%- endif -%}{%- if stock_status_value == 'mixed_stock' and is_mixed_stock == false -%}{%- assign stock_match = false -%}{%- endif -%}{%- endif -%}{%- assign final_match = false -%}{%- if m.is_fallback == true or m.is_fallback == 'true' -%}{%- if stock_match -%}{%- assign final_match = true -%}{%- endif -%}{%- elsif handle_match or tag_match -%}
+{%- if stock_match -%}{%- assign final_match = true -%}{%- endif -%}{%- endif -%}{%- if final_match -%}{%- assign any_rule_matched = true -%}{%- assign s = r.settings -%}{%- if s.icon_color != blank -%}{%- assign icon_color = s.icon_color -%}{%- endif -%}{%- if s.show_eta_timeline == true or s.show_eta_timeline == 'true' -%}{%- assign show_eta_timeline = true -%}{%- endif -%}{%- if s.show_eta_border == true or s.show_eta_border == 'true' -%}{%- assign show_eta_border = true -%}{%- endif -%}{%- if s.eta_border_width != blank -%}{%- assign eta_border_width = s.eta_border_width -%}{%- endif -%}{%- if s.eta_border_color != blank -%}{%- assign eta_border_color = s.eta_border_color -%}{%- endif -%}{%- if s.eta_border_radius != blank -%}{%- assign eta_border_radius = s.eta_border_radius -%}{%- endif -%}{%- if s.show_special_delivery == true or s.show_special_delivery == 'true' -%}{%- assign show_special_delivery_final = true -%}{%- endif -%}{%- if s.show_special_delivery == false or s.show_special_delivery == 'false' -%}{%- assign show_special_delivery_final = false -%}{%- endif -%}{%- if s.special_delivery_header != blank -%}{%- assign special_delivery_header_final = s.special_delivery_header -%}{%- endif -%}{%- if s.special_delivery_message != blank -%}{%- assign special_delivery_message_final = s.special_delivery_message -%}{%- endif -%}{%- if s.special_delivery_icon != blank -%}{%- assign special_delivery_icon_final = s.special_delivery_icon -%}{%- endif -%}{%- if s.special_delivery_icon_style != blank -%}{%- assign special_delivery_icon_style_final = s.special_delivery_icon_style -%}{%- endif -%}{%- if s.special_delivery_icon_size != blank -%}{%- assign special_delivery_icon_size_final = s.special_delivery_icon_size -%}{%- endif -%}{%- if s.special_delivery_icon_alignment != blank -%}{%- assign special_delivery_icon_alignment_final = s.special_delivery_icon_alignment -%}{%- endif -%}{%- if s.special_delivery_icon_color != blank -%}{%- assign special_delivery_icon_color_final = s.special_delivery_icon_color -%}{%- endif -%}{%- if s.special_delivery_use_main_icon_color == true or s.special_delivery_use_main_icon_color == 'true' -%}{%- assign special_delivery_use_main_icon_color_final = true -%}{%- endif -%}{%- if s.special_delivery_use_main_icon_color == false or s.special_delivery_use_main_icon_color == 'false' -%}{%- assign special_delivery_use_main_icon_color_final = false -%}{%- endif -%}{%- if s.special_delivery_show_border == true or s.special_delivery_show_border == 'true' -%}{%- assign special_delivery_show_border_final = true -%}{%- endif -%}{%- if s.special_delivery_border_thickness != blank -%}{%- assign special_delivery_border_thickness_final = s.special_delivery_border_thickness -%}{%- endif -%}{%- if special_delivery_border_thickness_final > 0 -%}{%- assign special_delivery_show_border_final = true -%}{%- endif -%}{%- if s.special_delivery_border_color != blank -%}{%- assign special_delivery_border_color_final = s.special_delivery_border_color -%}{%- endif -%}{%- if s.special_delivery_border_radius != blank -%}{%- assign special_delivery_border_radius_final = s.special_delivery_border_radius -%}{%- endif -%}{%- if s.special_delivery_background_color != blank -%}{%- assign special_delivery_background_color_final = s.special_delivery_background_color -%}{%- endif -%}{%- if s.special_delivery_match_eta_border == true or s.special_delivery_match_eta_border == 'true' -%}{%- assign special_delivery_match_eta_border_final = true -%}{%- assign special_delivery_show_border_final = true -%}{%- assign special_delivery_border_thickness_final = eta_border_width -%}{%- assign special_delivery_border_color_final = eta_border_color -%}{%- assign special_delivery_border_radius_final = eta_border_radius -%}{%- endif -%}{%- if s.special_delivery_match_eta_width == true or s.special_delivery_match_eta_width == 'true' -%}{%- assign special_delivery_match_eta_width_final = true -%}{%- endif -%}{%- if s.special_delivery_max_width != blank -%}{%- assign special_delivery_max_width_final = s.special_delivery_max_width -%}{%- endif -%}
 {%- if s.special_delivery_override_global_text_styling == true or s.special_delivery_override_global_text_styling == 'true' -%}{%- assign special_delivery_use_theme_text_styling_final = false -%}{%- if s.special_delivery_text_color != blank -%}{%- assign special_delivery_text_color_final = s.special_delivery_text_color -%}{%- endif -%}{%- if s.special_delivery_font_size != blank -%}{%- assign special_delivery_font_size_final = s.special_delivery_font_size -%}{%- endif -%}{%- if s.special_delivery_font_weight != blank -%}{%- assign special_delivery_font_weight_final = s.special_delivery_font_weight -%}{%- endif -%}{%- endif -%}{%- if s.special_delivery_override_global_header_styling == true or s.special_delivery_override_global_header_styling == 'true' -%}{%- assign special_delivery_header_use_theme_text_styling_final = false -%}{%- if s.special_delivery_header_color != blank -%}{%- assign special_delivery_header_text_color_final = s.special_delivery_header_color -%}{%- endif -%}{%- if s.special_delivery_header_font_size != blank -%}{%- assign special_delivery_header_font_size_final = s.special_delivery_header_font_size -%}{%- endif -%}{%- if s.special_delivery_header_font_weight != blank -%}{%- assign special_delivery_header_font_weight_final = s.special_delivery_header_font_weight -%}{%- endif -%}{%- endif -%}{%- if s.special_delivery_text_alignment != blank -%}{%- assign special_delivery_text_alignment_final = s.special_delivery_text_alignment -%}{%- endif -%}{% break %}{%- endif -%}{%- endfor -%}{%- endif -%}
 {%- assign special_delivery_svg_resolved = '' -%}{%- assign special_delivery_url_resolved = '' -%}{%- assign special_delivery_is_preset = false -%}{%- if special_delivery_icon_final != blank -%}{%- if special_delivery_icon_final contains 'custom-' -%}{%- assign custom_idx_str = special_delivery_icon_final | remove: 'custom-' -%}{%- assign custom_idx = custom_idx_str | minus: 1 -%}{%- if global_settings != nil and global_settings.custom_icons != blank and global_settings.custom_icons.size > custom_idx -%}{%- assign custom_icon = global_settings.custom_icons[custom_idx] -%}{%- if custom_icon.svg != blank -%}{%- assign special_delivery_svg_resolved = custom_icon.svg -%}{%- elsif custom_icon.url != blank -%}{%- assign special_delivery_url_resolved = custom_icon.url -%}{%- endif -%}{%- endif -%}{%- else -%}{%- assign special_delivery_is_preset = true -%}{%- endif -%}{%- endif -%}
 {%- assign icon_px = special_delivery_icon_size_final | default: 24 -%}{%- assign icon_align_css = 'flex-start' -%}{%- case special_delivery_icon_alignment_final -%}{%- when 'center' -%}{%- assign icon_align_css = 'center' -%}{%- when 'bottom' -%}{%- assign icon_align_css = 'flex-end' -%}{%- endcase -%}{%- assign final_icon_color = icon_color -%}{%- if special_delivery_use_main_icon_color_final == false -%}{%- assign final_icon_color = special_delivery_icon_color_final -%}{%- endif -%}
-{%- assign final_font_family = '' -%}{%- if special_delivery_use_theme_font_final == false -%}{%- if special_delivery_match_messages_font_final and messages_custom_font_family != blank -%}{%- assign final_font_family = messages_custom_font_family -%}{%- elsif special_delivery_custom_font_family_final != blank -%}
-{%- assign final_font_family = special_delivery_custom_font_family_final -%}
-{%- endif -%}
-{%- endif -%}
-{%- assign message_with_lb = special_delivery_message_final | replace: '{lb}', '<br>' -%}
-{%- capture message_with_links -%}{%- assign msg_temp = message_with_lb -%}{%- if msg_temp contains '[' and msg_temp contains '](' and msg_temp contains ')' -%}{%- assign link_parts = msg_temp | split: '](' -%}{%- for lp in link_parts -%}{%- if forloop.first -%}{%- if lp contains '[' -%}{%- assign before_link = lp | split: '[' | first -%}{%- assign link_text = lp | split: '[' | last -%}{{ before_link }}<a href="{%- else -%}{{ lp }}{%- endif -%}{%- else -%}{%- assign url_and_rest = lp | split: ')' -%}{{ url_and_rest[0] }}">{{ link_text }}</a>{{ url_and_rest[1] }}{%- endif -%}{%- endfor -%}{%- else -%}{{ msg_temp }}{%- endif -%}{%- endcapture -%}
-{%- capture message_html -%}{%- if message_with_links contains '**' -%}{%- assign parts = message_with_links | split: '**' -%}{%- for part in parts -%}{%- assign mod = forloop.index | modulo: 2 -%}{%- if mod == 0 -%}<strong>{{ part }}</strong>{%- else -%}{{ part }}{%- endif -%}{%- endfor -%}{%- else -%}{{ message_with_links }}{%- endif -%}{%- endcapture -%}
-{%- assign should_show_block = false -%}
-{%- if any_rule_matched and show_special_delivery_final and special_delivery_message_final != blank -%}
-{%- assign should_show_block = true -%}
-{%- endif -%}
-{%- if request.design_mode -%}
+{%- assign final_font_family = '' -%}{%- if special_delivery_use_theme_font_final == false -%}{%- if special_delivery_match_messages_font_final and messages_custom_font_family != blank -%}{%- assign final_font_family = messages_custom_font_family -%}{%- elsif special_delivery_custom_font_family_final != blank -%}{%- assign final_font_family = special_delivery_custom_font_family_final -%}{%- endif -%}{%- endif -%}{%- assign message_with_lb = special_delivery_message_final | replace: '{lb}', '<br>' -%}{%- capture message_with_links -%}{%- assign mt = message_with_lb -%}{%- if mt contains '[' and mt contains '](' and mt contains ')' -%}{%- assign lp = mt | split: '](' -%}{%- assign bl = lp[0] | split: '[' | first -%}{%- assign lt = lp[0] | split: '[' | last -%}{%- assign ur = lp[1] | split: ')' -%}{{ bl }}<a href="{{ ur[0] }}">{{ lt }}</a>{{ ur[1] }}{%- else -%}{{ mt }}{%- endif -%}{%- endcapture -%}{%- capture message_html -%}{%- if message_with_links contains '**' -%}{%- assign parts = message_with_links | split: '**' -%}{%- for part in parts -%}{%- assign mod = forloop.index | modulo: 2 -%}{%- if mod == 0 -%}<strong>{{ part }}</strong>{%- else -%}{{ part }}{%- endif -%}{%- endfor -%}{%- else -%}{{ message_with_links }}{%- endif -%}{%- endcapture -%}{%- assign should_show_block = false -%}{%- if any_rule_matched and show_special_delivery_final and special_delivery_message_final != blank -%}{%- assign should_show_block = true -%}{%- endif -%}{%- if request.design_mode -%}
 {{ 'dib-messages.css' | asset_url | stylesheet_tag }}
 <div style="text-align:{{ special_delivery_alignment }}"><div class="dib-placeholder"><div><b>Special Delivery</b><br><span>Enable "Show Special Delivery" in rules to display here.</span></div></div></div>
 {%- elsif should_show_block -%}
@@ -109,8 +16,7 @@
 {%- if special_delivery_use_theme_text_styling_final == false -%}
 {%- if special_delivery_text_color_final != blank %}color:{{ special_delivery_text_color_final }};{%- endif %}
 {%- assign sd_font_size_num = special_delivery_font_size_final | plus: 0 -%}
-{%- if sd_font_size_num > 0 -%}font-size:{{ special_delivery_font_size_final }}px;
-{%- else -%}
+{%- if sd_font_size_num > 0 -%}font-size:{{ special_delivery_font_size_final }}px;{%- else -%}
 {%- case special_delivery_font_size_final -%}
 {%- when 'xsmall' %}font-size:12px;
 {%- when 'small' %}font-size:14px;
@@ -123,14 +29,8 @@
 {%- when 'bold' %}font-weight:700;
 {%- else %}font-weight:400;
 {%- endcase %}
-{%- else -%}
-font-weight:inherit;
-{%- endif -%}
-line-height:{{ special_delivery_line_height_final }};
-}
-{%- if final_font_family != blank %}
-#{{ uid }} .dib-special-text{font-family:{{ final_font_family }}}
-{%- endif %}
+{%- else -%}font-weight:inherit;{%- endif -%}line-height:{{ special_delivery_line_height_final }};}
+{%- if final_font_family != blank %}#{{ uid }} .dib-special-text{font-family:{{ final_font_family }}}{%- endif %}
 {%- if special_delivery_header_final != blank -%}
 #{{ uid }} .dib-special-header{
 {%- if special_delivery_header_use_theme_text_styling_final == false -%}
@@ -140,13 +40,8 @@ font-size:{{ special_delivery_header_font_size_final }}px;
 {%- when 'bold' %}font-weight:700;
 {%- else %}font-weight:400;
 {%- endcase %}
-{%- else -%}
-font-weight:inherit;
-{%- endif -%}
-}
-{%- if final_font_family != blank %}
-#{{ uid }} .dib-special-header{font-family:{{ final_font_family }}}
-{%- endif %}
+{%- else -%}font-weight:inherit;{%- endif -%}}
+{%- if final_font_family != blank %}#{{ uid }} .dib-special-header{font-family:{{ final_font_family }}}{%- endif %}
 {%- endif -%}
 #{{ uid }} a{color:revert;text-decoration:revert}
 </style>
@@ -157,11 +52,11 @@ font-weight:inherit;
 {%- elsif special_delivery_svg_resolved != blank -%}
 <div class="dib-special-icon" style="width:{{ icon_px }}px;height:{{ icon_px }}px;flex-shrink:0;color:{{ final_icon_color }};">{{ special_delivery_svg_resolved }}</div>
 {%- elsif special_delivery_url_resolved != blank -%}
-<img src="{{ special_delivery_url_resolved }}" alt="" class="dib-special-icon" style="width:{{ icon_px }}px;height:{{ icon_px }}px;flex-shrink:0;object-fit:contain;" loading="lazy">
+<img src="{{ special_delivery_url_resolved }}" alt="" width="{{ icon_px }}" height="{{ icon_px }}" class="dib-special-icon" style="width:{{ icon_px }}px;height:{{ icon_px }}px;flex-shrink:0;object-fit:contain;" loading="lazy">
 {%- endif -%}
 <div class="dib-special-content" style="min-width:0;display:flex;flex-direction:column;{%- if special_delivery_header_final != blank -%}gap:{{ special_delivery_header_gap_final }}px;{%- endif -%}">
 {%- if special_delivery_header_final != blank -%}
-{%- capture header_html -%}{%- assign header_temp = special_delivery_header_final -%}{%- if header_temp contains '[' and header_temp contains '](' and header_temp contains ')' -%}{%- assign link_parts = header_temp | split: '](' -%}{%- for lp in link_parts -%}{%- if forloop.first -%}{%- if lp contains '[' -%}{%- assign before_link = lp | split: '[' | first -%}{%- assign link_text = lp | split: '[' | last -%}{{ before_link }}<a href="{%- else -%}{{ lp }}{%- endif -%}{%- else -%}{%- assign url_and_rest = lp | split: ')' -%}{{ url_and_rest[0] }}">{{ link_text }}</a>{{ url_and_rest[1] }}{%- endif -%}{%- endfor -%}{%- else -%}{{ header_temp }}{%- endif -%}{%- endcapture -%}
+{%- capture header_html -%}{%- assign ht = special_delivery_header_final -%}{%- if ht contains '[' and ht contains '](' and ht contains ')' -%}{%- assign lp = ht | split: '](' -%}{%- assign bl = lp[0] | split: '[' | first -%}{%- assign lt = lp[0] | split: '[' | last -%}{%- assign ur = lp[1] | split: ')' -%}{{ bl }}<a href="{{ ur[0] }}">{{ lt }}</a>{{ ur[1] }}{%- else -%}{{ ht }}{%- endif -%}{%- endcapture -%}
 {%- capture header_final -%}{%- if header_html contains '**' -%}{%- assign parts = header_html | split: '**' -%}{%- for part in parts -%}{%- assign mod = forloop.index | modulo: 2 -%}{%- if mod == 0 -%}<strong>{{ part }}</strong>{%- else -%}{{ part }}{%- endif -%}{%- endfor -%}{%- else -%}{{ header_html }}{%- endif -%}{%- endcapture -%}
 <div class="dib-special-header">{{ header_final }}</div>
 {%- endif -%}
