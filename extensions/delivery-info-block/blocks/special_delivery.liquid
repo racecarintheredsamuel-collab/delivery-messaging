@@ -246,15 +246,34 @@
 {%- endif -%}
 {%- endif -%}
 {%- assign message_with_lb = special_delivery_message_final | replace: '{lb}', '<br>' -%}
+{%- capture message_with_links -%}
+{%- assign msg_temp = message_with_lb -%}
+{%- if msg_temp contains '[' and msg_temp contains '](' and msg_temp contains ')' -%}
+{%- assign link_parts = msg_temp | split: '](' -%}
+{%- for lp in link_parts -%}
+{%- if forloop.first -%}
+{%- if lp contains '[' -%}
+{%- assign before_link = lp | split: '[' | first -%}
+{%- assign link_text = lp | split: '[' | last -%}
+{{ before_link }}<a href="{%- else -%}{{ lp }}{%- endif -%}
+{%- else -%}
+{%- assign url_and_rest = lp | split: ')' -%}
+{{ url_and_rest[0] }}">{{ link_text }}</a>{{ url_and_rest[1] }}
+{%- endif -%}
+{%- endfor -%}
+{%- else -%}
+{{ msg_temp }}
+{%- endif -%}
+{%- endcapture -%}
 {%- capture message_html -%}
-{%- if message_with_lb contains '**' -%}
-{%- assign parts = message_with_lb | split: '**' -%}
+{%- if message_with_links contains '**' -%}
+{%- assign parts = message_with_links | split: '**' -%}
 {%- for part in parts -%}
 {%- assign mod = forloop.index | modulo: 2 -%}
 {%- if mod == 0 -%}<strong>{{ part }}</strong>{%- else -%}{{ part }}{%- endif -%}
 {%- endfor -%}
 {%- else -%}
-{{ message_with_lb }}
+{{ message_with_links }}
 {%- endif -%}
 {%- endcapture -%}
 {%- assign should_show_block = false -%}

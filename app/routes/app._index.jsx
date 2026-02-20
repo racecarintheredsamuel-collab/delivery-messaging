@@ -5767,6 +5767,7 @@ export default function Index() {
 
                               // Header styling
                               const header = rule.settings.special_delivery_header || "";
+                              const parsedHeader = parseMarkdown(header);
                               const headerGap = globalSettings?.special_delivery_header_gap ?? 4;
                               const headerColor = rule.settings.special_delivery_override_global_header_styling
                                 ? (rule.settings.special_delivery_header_color || "#111827")
@@ -5881,7 +5882,7 @@ export default function Index() {
                                         fontSize: headerFontSize,
                                         fontWeight: headerFontWeight,
                                       }}>
-                                        {header}
+                                        {parsedHeader.map((seg, i) => renderSegment(seg, i, 'sph'))}
                                       </div>
                                     )}
                                     {/* Message */}
