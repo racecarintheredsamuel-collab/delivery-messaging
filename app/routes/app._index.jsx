@@ -5281,7 +5281,7 @@ export default function Index() {
                             }}
                             onBlur={(e) => {
                               const v = Number(e.target.value) || 0;
-                              const clamped = v === 0 ? 0 : Math.max(100, v);
+                              const clamped = v === 0 ? 0 : Math.max(200, v);
                               if (clamped !== v) {
                                 const next = [...rules];
                                 next[safeSelectedIndex] = {
