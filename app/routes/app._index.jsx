@@ -5269,13 +5269,13 @@ export default function Index() {
                           </div>
                           <input
                             type="number"
-                            min="0"
+                            min="100"
                             value={rule.settings?.special_delivery_max_width ?? 600}
                             onChange={(e) => {
                               const next = [...rules];
                               next[safeSelectedIndex] = {
                                 ...rule,
-                                settings: { ...rule.settings, special_delivery_max_width: Number(e.target.value) || 0 },
+                                settings: { ...rule.settings, special_delivery_max_width: ((v) => v === 0 ? 0 : Math.max(100, v))(Number(e.target.value) || 0) },
                               };
                               setRules(next);
                             }}
