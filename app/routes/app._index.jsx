@@ -5275,9 +5275,21 @@ export default function Index() {
                               const next = [...rules];
                               next[safeSelectedIndex] = {
                                 ...rule,
-                                settings: { ...rule.settings, special_delivery_max_width: ((v) => v === 0 ? 0 : Math.max(100, v))(Number(e.target.value) || 0) },
+                                settings: { ...rule.settings, special_delivery_max_width: Number(e.target.value) || 0 },
                               };
                               setRules(next);
+                            }}
+                            onBlur={(e) => {
+                              const v = Number(e.target.value) || 0;
+                              const clamped = v === 0 ? 0 : Math.max(100, v);
+                              if (clamped !== v) {
+                                const next = [...rules];
+                                next[safeSelectedIndex] = {
+                                  ...rule,
+                                  settings: { ...rule.settings, special_delivery_max_width: clamped },
+                                };
+                                setRules(next);
+                              }
                             }}
                             style={{ width: "100%" }}
                           />
