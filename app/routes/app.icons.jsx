@@ -15,6 +15,7 @@ import {
   METAFIELD_NAMESPACE,
   CONFIG_KEY,
   SETTINGS_KEY,
+  ICONS_KEY,
 } from "../graphql/queries";
 
 // ============================================================================
@@ -46,6 +47,7 @@ export const loader = async ({ request }) => {
       namespace: METAFIELD_NAMESPACE,
       configKey: CONFIG_KEY,
       settingsKey: SETTINGS_KEY,
+      iconsKey: ICONS_KEY,
     },
   });
 
