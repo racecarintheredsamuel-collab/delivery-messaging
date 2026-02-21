@@ -84,8 +84,8 @@ function defaultGlobalSettings() {
     special_delivery_header_gap: 4,
     special_delivery_line_height: 1.4,
     // Link styling
-    link_color: "inherit",
-    link_decoration: "inherit",
+    link_color: "#2563eb",
+    link_decoration: "underline",
   };
 }
 
@@ -422,11 +422,15 @@ function renderWithLineBreaks(text, keyPrefix = '') {
 }
 
 // Render a parsed markdown segment with bold and link support
-function renderSegment(seg, i, keyPrefix = '') {
+function renderSegment(seg, i, keyPrefix = '', globalSettings = null) {
   const content = renderWithLineBreaks(seg.text, `${keyPrefix}-${i}`);
   const inner = seg.bold ? <strong key={`${keyPrefix}-${i}-b`}>{content}</strong> : <span key={`${keyPrefix}-${i}-s`}>{content}</span>;
   if (seg.link) {
-    return <a key={i} href={seg.link} target="_blank" rel="noopener noreferrer" style={{ color: "inherit" }}>{inner}</a>;
+    const linkStyle = {
+      color: globalSettings?.link_color || "#2563eb",
+      textDecoration: globalSettings?.link_decoration || "underline"
+    };
+    return <a key={i} href={seg.link} target="_blank" rel="noopener noreferrer" style={linkStyle}>{inner}</a>;
   }
   return <span key={i}>{inner}</span>;
 }
@@ -2161,27 +2165,25 @@ export default function Index() {
                 <div style={{ border: "1px solid var(--p-color-border, #e5e7eb)", borderRadius: 8, padding: 16, display: "grid", gap: 12, background: "var(--p-color-bg-surface-secondary, #f9fafb)" }}>
                   <s-heading size="small">Link Styling</s-heading>
                   <s-text size="small" style={{ color: "var(--p-color-text-subdued, #6b7280)" }}>
-                    Style links created from [text](url) markdown in messages. Use "inherit" to match surrounding text.
+                    Style links created from [text](url) markdown in messages.
                   </s-text>
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
                     <div>
                       <s-text size="small">Color</s-text>
-                      <input
-                        type="text"
-                        value={globalSettings?.link_color || "inherit"}
-                        onChange={(e) => setGlobalSettings({ ...globalSettings, link_color: e.target.value })}
-                        placeholder="inherit or #hex"
-                        style={{ width: "100%" }}
+                      <s-color-field
+                        label=""
+                        value={globalSettings?.link_color || "#2563eb"}
+                        onInput={(e) => setGlobalSettings({ ...globalSettings, link_color: e.detail?.value ?? e.target?.value ?? "#2563eb" })}
+                        onChange={(e) => setGlobalSettings({ ...globalSettings, link_color: e.detail?.value ?? e.target?.value ?? "#2563eb" })}
                       />
                     </div>
                     <div>
                       <s-text size="small">Decoration</s-text>
                       <select
-                        value={globalSettings?.link_decoration || "inherit"}
+                        value={globalSettings?.link_decoration || "underline"}
                         onChange={(e) => setGlobalSettings({ ...globalSettings, link_decoration: e.target.value })}
                         style={{ width: "100%" }}
                       >
-                        <option value="inherit">Inherit from theme</option>
                         <option value="underline">Underline</option>
                         <option value="none">None</option>
                       </select>
@@ -5746,7 +5748,7 @@ export default function Index() {
                                   {rule.settings?.message_line_1 && (
                                     <PreviewLine rule={rule} globalSettings={globalSettings}>
                                       {parseMarkdown(replaceDatePlaceholders(rule.settings.message_line_1, rule, globalSettings, shopCurrency, countdownText)).map((seg, i) =>
-                                        renderSegment(seg, i, 'l1')
+                                        renderSegment(seg, i, 'l1', globalSettings)
                                       )}
                                     </PreviewLine>
                                   )}
@@ -5754,7 +5756,7 @@ export default function Index() {
                                   {rule.settings?.message_line_2 && (
                                     <PreviewLine rule={rule} globalSettings={globalSettings}>
                                       {parseMarkdown(replaceDatePlaceholders(rule.settings.message_line_2, rule, globalSettings, shopCurrency, countdownText)).map((seg, i) =>
-                                        renderSegment(seg, i, 'l2')
+                                        renderSegment(seg, i, 'l2', globalSettings)
                                       )}
                                     </PreviewLine>
                                   )}
@@ -5762,7 +5764,7 @@ export default function Index() {
                                   {rule.settings?.message_line_3 && (
                                     <PreviewLine rule={rule} globalSettings={globalSettings}>
                                       {parseMarkdown(replaceDatePlaceholders(rule.settings.message_line_3, rule, globalSettings, shopCurrency, countdownText)).map((seg, i) =>
-                                        renderSegment(seg, i, 'l3')
+                                        renderSegment(seg, i, 'l3', globalSettings)
                                       )}
                                     </PreviewLine>
                                   )}
@@ -5917,12 +5919,12 @@ export default function Index() {
                                         fontSize: headerFontSize,
                                         fontWeight: headerFontWeight,
                                       }}>
-                                        {parsedHeader.map((seg, i) => renderSegment(seg, i, 'sph'))}
+                                        {parsedHeader.map((seg, i) => renderSegment(seg, i, 'sph', globalSettings))}
                                       </div>
                                     )}
                                     {/* Message */}
                                     <div>
-                                      {parsedMessage.map((seg, i) => renderSegment(seg, i, 'sp'))}
+                                      {parsedMessage.map((seg, i) => renderSegment(seg, i, 'sp', globalSettings))}
                                     </div>
                                   </div>
                                 </div>
