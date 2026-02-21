@@ -2168,7 +2168,7 @@ export default function Index() {
                   <s-text size="small" style={{ color: "var(--p-color-text-subdued, #6b7280)" }}>
                     Style links created from [text](url) markdown in messages.
                   </s-text>
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, alignItems: "end" }}>
                     <div>
                       <s-text size="small">Color</s-text>
                       <s-color-field
@@ -2193,7 +2193,7 @@ export default function Index() {
                   {/* Hover Effects */}
                   <div style={{ borderTop: "1px solid var(--p-color-border, #e5e7eb)", paddingTop: 12, marginTop: 4 }}>
                     <s-text size="small" style={{ fontWeight: 600, marginBottom: 8, display: "block" }}>Hover Effects</s-text>
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12, alignItems: "end" }}>
                       <div>
                         <s-text size="small">Color</s-text>
                         <s-color-field
