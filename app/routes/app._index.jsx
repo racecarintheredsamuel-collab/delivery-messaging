@@ -430,11 +430,8 @@ function renderSegment(seg, i, keyPrefix = '', globalSettings = null) {
   const content = renderWithLineBreaks(seg.text, `${keyPrefix}-${i}`);
   const inner = seg.bold ? <strong key={`${keyPrefix}-${i}-b`}>{content}</strong> : <span key={`${keyPrefix}-${i}-s`}>{content}</span>;
   if (seg.link) {
-    const linkStyle = {
-      color: globalSettings?.link_color || "#2563eb",
-      textDecoration: globalSettings?.link_decoration || "underline"
-    };
-    return <a key={i} href={seg.link} target="_blank" rel="noopener noreferrer" style={linkStyle}>{inner}</a>;
+    // Use class for hover support - styles injected via <style> tag in preview
+    return <a key={i} href={seg.link} target="_blank" rel="noopener noreferrer" className="dib-link-preview">{inner}</a>;
   }
   return <span key={i}>{inner}</span>;
 }
@@ -5637,6 +5634,19 @@ export default function Index() {
                 }}
               >
                 <s-heading>Preview</s-heading>
+                {/* Link hover styles for preview */}
+                <style>{`
+                  .dib-link-preview {
+                    color: ${globalSettings?.link_color || "#2563eb"};
+                    text-decoration: ${globalSettings?.link_decoration || "underline"};
+                    transition: all 0.15s ease;
+                  }
+                  .dib-link-preview:hover {
+                    color: ${globalSettings?.link_hover_color || "#1d4ed8"};
+                    text-decoration: ${globalSettings?.link_hover_decoration || "underline"};
+                    opacity: ${globalSettings?.link_hover_opacity ?? 1};
+                  }
+                `}</style>
 
                 <div style={{ minHeight: 80, overflow: "hidden", overscrollBehavior: "contain", padding: "8px 0", minWidth: 0 }}>
                   <div
