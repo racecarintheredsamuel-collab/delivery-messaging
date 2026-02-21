@@ -12,7 +12,6 @@
 {%- if max_width_final and max_width_final > 0 and match_eta_width_final != true %}#{{ uid }}{width:min({{ max_width_final }}px,100%);min-width:fit-content}{% endif -%}
 {%- if match_eta_width_final == true and show_eta_timeline_final == true %}#{{ uid }}{display:block}{% endif -%}
 .dib-messages-block-{{ uid }}:has(#{{ uid }} .dib-container:not(:has(.dib-line:not(.dib-has-countdown), .dib-has-countdown.is-ready))){display:none}
-#{{ uid }} a{color:revert;text-decoration:revert}
 </style>
 {%- capture dib_icon_markup -%}
 {%- if icon_final contains 'custom-' -%}
