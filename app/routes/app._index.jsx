@@ -83,6 +83,9 @@ function defaultGlobalSettings() {
     special_delivery_header_font_weight: "semibold",
     special_delivery_header_gap: 4,
     special_delivery_line_height: 1.4,
+    // Link styling
+    link_color: "inherit",
+    link_decoration: "inherit",
   };
 }
 
@@ -2152,6 +2155,38 @@ export default function Index() {
                     </div>
                   </div>
                   )}
+                </div>
+
+                {/* Link Styling */}
+                <div style={{ border: "1px solid var(--p-color-border, #e5e7eb)", borderRadius: 8, padding: 16, display: "grid", gap: 12, background: "var(--p-color-bg-surface-secondary, #f9fafb)" }}>
+                  <s-heading size="small">Link Styling</s-heading>
+                  <s-text size="small" style={{ color: "var(--p-color-text-subdued, #6b7280)" }}>
+                    Style links created from [text](url) markdown in messages. Use "inherit" to match surrounding text.
+                  </s-text>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                    <div>
+                      <s-text size="small">Color</s-text>
+                      <input
+                        type="text"
+                        value={globalSettings?.link_color || "inherit"}
+                        onChange={(e) => setGlobalSettings({ ...globalSettings, link_color: e.target.value })}
+                        placeholder="inherit or #hex"
+                        style={{ width: "100%" }}
+                      />
+                    </div>
+                    <div>
+                      <s-text size="small">Decoration</s-text>
+                      <select
+                        value={globalSettings?.link_decoration || "inherit"}
+                        onChange={(e) => setGlobalSettings({ ...globalSettings, link_decoration: e.target.value })}
+                        style={{ width: "100%" }}
+                      >
+                        <option value="inherit">Inherit from theme</option>
+                        <option value="underline">Underline</option>
+                        <option value="none">None</option>
+                      </select>
+                    </div>
+                  </div>
                 </div>
               </div>
             )}
