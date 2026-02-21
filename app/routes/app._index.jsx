@@ -2168,41 +2168,48 @@ export default function Index() {
                   <s-text size="small" style={{ color: "var(--p-color-text-subdued, #6b7280)" }}>
                     Style links created from [text](url) markdown in messages.
                   </s-text>
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, alignItems: "end" }}>
+
+                  {/* Color - full width */}
+                  <div>
+                    <s-text size="small">Color</s-text>
+                    <s-color-field
+                      label=""
+                      value={globalSettings?.link_color || "#2563eb"}
+                      onInput={(e) => setGlobalSettings({ ...globalSettings, link_color: e.detail?.value ?? e.target?.value ?? "#2563eb" })}
+                      onChange={(e) => setGlobalSettings({ ...globalSettings, link_color: e.detail?.value ?? e.target?.value ?? "#2563eb" })}
+                    />
+                  </div>
+
+                  {/* Decoration - full width */}
+                  <div>
+                    <s-text size="small">Decoration</s-text>
+                    <select
+                      value={globalSettings?.link_decoration || "underline"}
+                      onChange={(e) => setGlobalSettings({ ...globalSettings, link_decoration: e.target.value })}
+                      style={{ width: "100%" }}
+                    >
+                      <option value="underline">Underline</option>
+                      <option value="none">None</option>
+                    </select>
+                  </div>
+
+                  {/* Hover Effects */}
+                  <div style={{ borderTop: "1px solid var(--p-color-border, #e5e7eb)", paddingTop: 12, marginTop: 4, display: "grid", gap: 12 }}>
+                    <s-text size="small" style={{ fontWeight: 600 }}>Hover Effects</s-text>
+
+                    {/* Hover Color - full width */}
                     <div>
                       <s-text size="small">Color</s-text>
                       <s-color-field
                         label=""
-                        value={globalSettings?.link_color || "#2563eb"}
-                        onInput={(e) => setGlobalSettings({ ...globalSettings, link_color: e.detail?.value ?? e.target?.value ?? "#2563eb" })}
-                        onChange={(e) => setGlobalSettings({ ...globalSettings, link_color: e.detail?.value ?? e.target?.value ?? "#2563eb" })}
+                        value={globalSettings?.link_hover_color || "#1d4ed8"}
+                        onInput={(e) => setGlobalSettings({ ...globalSettings, link_hover_color: e.detail?.value ?? e.target?.value ?? "#1d4ed8" })}
+                        onChange={(e) => setGlobalSettings({ ...globalSettings, link_hover_color: e.detail?.value ?? e.target?.value ?? "#1d4ed8" })}
                       />
                     </div>
-                    <div>
-                      <s-text size="small">Decoration</s-text>
-                      <select
-                        value={globalSettings?.link_decoration || "underline"}
-                        onChange={(e) => setGlobalSettings({ ...globalSettings, link_decoration: e.target.value })}
-                        style={{ width: "100%" }}
-                      >
-                        <option value="underline">Underline</option>
-                        <option value="none">None</option>
-                      </select>
-                    </div>
-                  </div>
-                  {/* Hover Effects */}
-                  <div style={{ borderTop: "1px solid var(--p-color-border, #e5e7eb)", paddingTop: 12, marginTop: 4 }}>
-                    <s-text size="small" style={{ fontWeight: 600, marginBottom: 8, display: "block" }}>Hover Effects</s-text>
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12, alignItems: "end" }}>
-                      <div>
-                        <s-text size="small">Color</s-text>
-                        <s-color-field
-                          label=""
-                          value={globalSettings?.link_hover_color || "#1d4ed8"}
-                          onInput={(e) => setGlobalSettings({ ...globalSettings, link_hover_color: e.detail?.value ?? e.target?.value ?? "#1d4ed8" })}
-                          onChange={(e) => setGlobalSettings({ ...globalSettings, link_hover_color: e.detail?.value ?? e.target?.value ?? "#1d4ed8" })}
-                        />
-                      </div>
+
+                    {/* Hover Decoration + Opacity - 50% each */}
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
                       <div>
                         <s-text size="small">Decoration</s-text>
                         <select
