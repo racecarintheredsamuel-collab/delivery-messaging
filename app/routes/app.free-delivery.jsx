@@ -815,6 +815,80 @@ export default function FreeDeliveryPage() {
                   <span style={{ fontSize: 12 }}>Aligns chevrons to page content width. Leave empty for full width.</span>
                 </div>
 
+                {/* Link Styling */}
+                <div style={{ borderTop: "1px solid var(--p-color-border, #e5e7eb)", paddingTop: 12, marginTop: 8, display: "grid", gap: 12 }}>
+                  <s-text style={{ fontWeight: 600 }}>Link Styling</s-text>
+                  <s-text size="small" style={{ color: "var(--p-color-text-subdued, #6b7280)" }}>
+                    Style links created from [text](url) markdown.
+                  </s-text>
+
+                  {/* Color - full width */}
+                  <div>
+                    <s-text size="small">Color</s-text>
+                    <s-color-field
+                      label=""
+                      value={settings.fd_announcement_link_color || "#ffffff"}
+                      onInput={(e) => setSettings({ ...settings, fd_announcement_link_color: e.target.value })}
+                    />
+                  </div>
+
+                  {/* Decoration - full width */}
+                  <div>
+                    <s-text size="small">Decoration</s-text>
+                    <select
+                      value={settings.fd_announcement_link_decoration || "underline"}
+                      onChange={(e) => setSettings({ ...settings, fd_announcement_link_decoration: e.target.value })}
+                      style={{ width: "100%" }}
+                    >
+                      <option value="underline">Underline</option>
+                      <option value="none">None</option>
+                    </select>
+                  </div>
+
+                  {/* Hover Effects */}
+                  <div style={{ borderTop: "1px solid var(--p-color-border, #e5e7eb)", paddingTop: 12, marginTop: 4, display: "grid", gap: 12 }}>
+                    <s-text size="small" style={{ fontWeight: 600 }}>Hover Effects</s-text>
+
+                    {/* Hover Color - full width */}
+                    <div>
+                      <s-text size="small">Color</s-text>
+                      <s-color-field
+                        label=""
+                        value={settings.fd_announcement_link_hover_color || "#e5e7eb"}
+                        onInput={(e) => setSettings({ ...settings, fd_announcement_link_hover_color: e.target.value })}
+                      />
+                    </div>
+
+                    {/* Hover Decoration + Opacity - 50% each */}
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                      <div>
+                        <s-text size="small">Decoration</s-text>
+                        <select
+                          value={settings.fd_announcement_link_hover_decoration || "underline"}
+                          onChange={(e) => setSettings({ ...settings, fd_announcement_link_hover_decoration: e.target.value })}
+                          style={{ width: "100%" }}
+                        >
+                          <option value="underline">Underline</option>
+                          <option value="none">None</option>
+                        </select>
+                      </div>
+                      <div>
+                        <s-text size="small">Opacity</s-text>
+                        <select
+                          value={settings.fd_announcement_link_hover_opacity ?? 1}
+                          onChange={(e) => setSettings({ ...settings, fd_announcement_link_hover_opacity: parseFloat(e.target.value) })}
+                          style={{ width: "100%" }}
+                        >
+                          <option value="1">100% (no fade)</option>
+                          <option value="0.8">80%</option>
+                          <option value="0.7">70%</option>
+                          <option value="0.6">60%</option>
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
               </div>
             </div>
           </div>

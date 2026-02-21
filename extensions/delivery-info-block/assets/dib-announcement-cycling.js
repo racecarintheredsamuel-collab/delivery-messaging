@@ -156,19 +156,35 @@
 
     function parseMarkdown(text) {
       if (!text) return text;
+
+      // Inject link styles once
+      if (!document.getElementById('dib-fd-link-styles')) {
+        const configEl = target.querySelector('.dib-cycling-config');
+        const lc = configEl?.getAttribute('data-link-color') || '#ffffff';
+        const ld = configEl?.getAttribute('data-link-decoration') || 'underline';
+        const hc = configEl?.getAttribute('data-link-hover-color') || '#e5e7eb';
+        const hd = configEl?.getAttribute('data-link-hover-decoration') || 'underline';
+        const ho = configEl?.getAttribute('data-link-hover-opacity') || '1';
+
+        const s = document.createElement('style');
+        s.id = 'dib-fd-link-styles';
+        s.textContent = '.dib-fd-link{color:' + lc + ';text-decoration:' + ld + ';transition:all .15s ease}.dib-fd-link:hover{color:' + hc + ';text-decoration:' + hd + ';opacity:' + ho + '}';
+        document.head.appendChild(s);
+      }
+
       // 1. HTML-escape first (security)
       let result = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
       // 2. Process bold: **text** → <strong>text</strong>
       if (result.includes('**')) {
         result = result.split('**').map((part, i) => i % 2 === 1 ? '<strong>' + part + '</strong>' : part).join('');
       }
-      // 3. Process links: [text](url) → <a href="url">text</a>
+      // 3. Process links: [text](url) → <a href="url" class="dib-fd-link">text</a>
       if (result.includes('[')) {
         result = result.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (match, linkText, url) => {
           const decodedUrl = url.replace(/&amp;/g, '&');
           const finalUrl = normalizeUrl(decodedUrl);
           if (!finalUrl) return match;
-          return '<a href="' + finalUrl + '" target="_blank" rel="noopener" style="color:inherit">' + linkText + '</a>';
+          return '<a href="' + finalUrl + '" target="_blank" rel="noopener" class="dib-fd-link">' + linkText + '</a>';
         });
       }
       return result;

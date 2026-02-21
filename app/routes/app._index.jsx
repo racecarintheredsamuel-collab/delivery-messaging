@@ -90,6 +90,12 @@ function defaultGlobalSettings() {
     link_hover_color: "#1d4ed8",
     link_hover_decoration: "underline",
     link_hover_opacity: 1,
+    // Announcement bar link styling
+    fd_announcement_link_color: "#ffffff",
+    fd_announcement_link_decoration: "underline",
+    fd_announcement_link_hover_color: "#e5e7eb",
+    fd_announcement_link_hover_decoration: "underline",
+    fd_announcement_link_hover_opacity: 1,
   };
 }
 
