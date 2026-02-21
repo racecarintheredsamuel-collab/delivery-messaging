@@ -168,7 +168,7 @@
 
         const s = document.createElement('style');
         s.id = 'dib-fd-link-styles';
-        s.textContent = '.dib-fd-link{color:' + lc + ';text-decoration:' + ld + ';transition:all .15s ease}.dib-fd-link:hover{color:' + hc + ';text-decoration:' + hd + ';opacity:' + ho + '}';
+        s.textContent = '.dib-fd-announcement .dib-fd-link{color:' + lc + ';text-decoration:' + ld + ';transition:all .15s ease}.dib-fd-announcement .dib-fd-link:hover{color:' + hc + ';text-decoration:' + hd + ';opacity:' + ho + '}';
         document.head.appendChild(s);
       }
 
