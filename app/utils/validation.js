@@ -170,6 +170,8 @@ export const settingsSchema = z.object({
   fd_announcement_bar_height: z.string().optional(),
   // Free delivery exclusion rules (array of up to 5 rules)
   fd_exclusion_rules: z.array(fdExclusionRuleSchema).max(5).optional(),
+  // Multi-match fallback message (when cart matches multiple exclusion rules)
+  fd_exclusion_multi_match_message: z.string().optional(),
 }).passthrough();
 
 /**

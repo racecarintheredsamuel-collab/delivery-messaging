@@ -73,8 +73,12 @@
       let fdType = 'progress';
 
       if (state.excluded) {
-        // Use matched rule's announcement message if available
-        if (state.excludedRule && state.excludedRule.announcement_message) {
+        // Check for multi-match first (cart has products matching multiple rules)
+        if (state.multiMatch) {
+          fdTemplate = target.dataset.multiMatchMessage || "Some items in your cart aren't eligible for free delivery";
+          fdDuration = excludedDuration;
+        } else if (state.excludedRule && state.excludedRule.announcement_message) {
+          // Use matched rule's announcement message if available
           fdTemplate = state.excludedRule.announcement_message;
           fdDuration = state.excludedRule.announcement_duration || excludedDuration;
         } else {

@@ -59,6 +59,9 @@
   {%- if global_settings.fd_exclude_handles != blank -%}
     {%- assign fd_exclude_handles = global_settings.fd_exclude_handles | json -%}
   {%- endif -%}
+  {%- if global_settings.fd_exclusion_multi_match_message != blank -%}
+    {%- assign fd_multi_match_message = global_settings.fd_exclusion_multi_match_message -%}
+  {%- endif -%}
 {%- endif -%}
 
 {%- comment -%} Default excluded message {%- endcomment -%}
@@ -86,6 +89,7 @@
   data-progress-bar-color="{{ fd_progress_bar_color }}"
   data-progress-bar-bg="{{ fd_progress_bar_bg }}"
   data-bar-bg-color="{{ fd_bar_bg_color }}"
+  data-multi-match-message="{{ fd_multi_match_message | escape }}"
 ></div>
 
 <style>

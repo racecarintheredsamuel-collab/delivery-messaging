@@ -646,6 +646,26 @@ export default function FreeDeliveryPage() {
                       {exclusionRules.length} of 5
                     </s-text>
                   </div>
+
+                  {/* Multi-match fallback message - only show when 2+ rules */}
+                  {exclusionRules.length >= 2 && (
+                    <div style={{ borderTop: "1px solid var(--p-color-border, #e5e7eb)", paddingTop: 12, marginTop: 4 }}>
+                      <label style={{ display: "block" }}>
+                        <s-text size="small">Multi-match message</s-text>
+                        <input
+                          type="text"
+                          value={settings.fd_exclusion_multi_match_message || ""}
+                          onChange={(e) => setSettings({ ...settings, fd_exclusion_multi_match_message: e.target.value })}
+                          placeholder="Leave blank for default message"
+                          style={{ width: "100%" }}
+                        />
+                        <div style={{ display: "flex", alignItems: "center", gap: 6, color: "var(--p-color-text-subdued, #6b7280)", marginTop: 4 }}>
+                          <span style={{ fontSize: 12, flexShrink: 0 }}>💡</span>
+                          <span style={{ fontSize: 12 }}>Shown when cart has products matching multiple exclusion rules</span>
+                        </div>
+                      </label>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
