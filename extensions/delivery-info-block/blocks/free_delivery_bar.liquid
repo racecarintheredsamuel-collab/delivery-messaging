@@ -83,6 +83,16 @@
   data-bar-bg-color="{{ fd_bar_bg_color }}"
 ></div>
 
+<style>
+.dib-fd-bar.dib-fd-celebrate {
+  animation: dib-fd-pulse 0.4s ease-out;
+}
+@keyframes dib-fd-pulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.02); opacity: 0.9; }
+}
+</style>
+
 {%- comment -%} Scripts for cart drawer injection {%- endcomment -%}
 <script src="{{ 'dib-free-delivery.js' | asset_url }}" defer></script>
 <script src="{{ 'delivery-messaging.js' | asset_url }}" defer></script>
