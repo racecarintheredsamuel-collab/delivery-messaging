@@ -5686,11 +5686,13 @@ export default function Index() {
                   .dib-link-preview {
                     color: ${globalSettings?.link_color || "#2563eb"};
                     text-decoration: ${globalSettings?.link_decoration || "underline"};
+                    text-decoration-thickness: ${globalSettings?.link_thickness || "1px"};
                     transition: all 0.15s ease;
                   }
                   .dib-link-preview:hover {
                     color: ${globalSettings?.link_hover_color || "#1d4ed8"};
                     text-decoration: ${globalSettings?.link_hover_decoration || "underline"};
+                    text-decoration-thickness: ${globalSettings?.link_hover_thickness || "2px"};
                     opacity: ${globalSettings?.link_hover_opacity ?? 1};
                   }
                 `}</style>
