@@ -42,6 +42,11 @@
   {%- assign fd_empty_message = 'Free delivery on orders over {threshold}' -%}
 {%- endif -%}
 
+{%- comment -%} Default excluded message {%- endcomment -%}
+{%- if fd_excluded_message == blank -%}
+  {%- assign fd_excluded_message = "Some items in your cart aren't eligible for free delivery" -%}
+{%- endif -%}
+
 {%- assign ct = global_settings.cutoff_time | default: '14:00' -%}
 {%- assign cts = global_settings.cutoff_time_sat | default: '' -%}
 {%- assign ctu = global_settings.cutoff_time_sun | default: '' -%}

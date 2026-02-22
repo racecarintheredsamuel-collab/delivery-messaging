@@ -57,6 +57,11 @@
   {%- endif -%}
 {%- endif -%}
 
+{%- comment -%} Default excluded message {%- endcomment -%}
+{%- if fd_message_excluded == blank -%}
+  {%- assign fd_message_excluded = "Some items in your cart aren't eligible for free delivery" -%}
+{%- endif -%}
+
 {%- comment -%} Output config and scripts if cart messaging is enabled {%- endcomment -%}
 {%- if fd_enabled -%}
 
