@@ -311,6 +311,11 @@
     }
 
     function onCartUpdate(state) {
+      // Don't start until cart data is actually loaded
+      if (state.lastUpdated === null) {
+        return; // Cart fetch not complete yet, keep placeholder
+      }
+
       // Check if cart state actually changed (not just a refresh)
       const cartStateKey = `${state.cartTotal}-${state.isEmpty}-${state.excluded}-${state.unlocked}`;
 
@@ -320,7 +325,7 @@
         currentIndex = 0;
         startCycle();
       } else if (lastCartState === null) {
-        // First load
+        // First load with real data
         startCycle();
       }
 
