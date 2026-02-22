@@ -5,6 +5,7 @@
 
 import { getEtaIconPaths } from "../utils/icons";
 import { normalizeEtaLabelFontSize, normalizeEtaDateFontSize } from "../utils/styling";
+import { getHolidaysForYear } from "../utils/holidays";
 
 /**
  * Safely parse a HH:MM time string with validation
@@ -201,112 +202,9 @@ export function ETATimelinePreview({ rule, globalSettings }) {
       : []
   );
 
-  // Bank holidays calculation (matches storefront JS country codes)
+  // Bank holidays - use the shared holidays.js utility (supports all 26 countries)
   const getBankHolidays = (country, year) => {
-    const formatDateStr = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-    const addDays = (d, n) => new Date(d.getTime() + n * 86400000);
-    const getNthWeekday = (y, month, weekday, n) => {
-      if (n > 0) {
-        const first = new Date(y, month, 1);
-        let diff = (weekday - first.getDay() + 7) % 7;
-        return new Date(y, month, 1 + diff + (n - 1) * 7);
-      } else {
-        const last = new Date(y, month + 1, 0);
-        let diff = (last.getDay() - weekday + 7) % 7;
-        return new Date(y, month + 1, -diff + (n + 1) * 7);
-      }
-    };
-
-    // Easter calculation (Anonymous Gregorian algorithm)
-    const getEaster = (y) => {
-      const a = y % 19, b = Math.floor(y / 100), c = y % 100;
-      const d = Math.floor(b / 4), e = b % 4, f = Math.floor((b + 8) / 25);
-      const g = Math.floor((b - f + 1) / 3), h = (19 * a + b - d - g + 15) % 30;
-      const i = Math.floor(c / 4), k = c % 4, l = (32 + 2 * e + 2 * i - h - k) % 7;
-      const m = Math.floor((a + 11 * h + 22 * l) / 451);
-      const month = Math.floor((h + l - 7 * m + 114) / 31) - 1;
-      const day = ((h + l - 7 * m + 114) % 31) + 1;
-      return new Date(y, month, day);
-    };
-
-    const easter = getEaster(year);
-
-    // GB (United Kingdom) - used by settings page
-    if (country === "GB") {
-      const earlyMay = getNthWeekday(year, 4, 1, 1); // First Monday of May
-      const springBank = getNthWeekday(year, 4, 1, -1); // Last Monday of May
-      const summerBank = getNthWeekday(year, 7, 1, -1); // Last Monday of August
-      return [
-        `${year}-01-01`, formatDateStr(addDays(easter, -2)), formatDateStr(addDays(easter, 1)),
-        formatDateStr(earlyMay), formatDateStr(springBank), formatDateStr(summerBank),
-        `${year}-12-25`, `${year}-12-26`
-      ];
-    }
-    if (country === "US") {
-      const mlkDay = getNthWeekday(year, 0, 1, 3); // 3rd Monday of Jan
-      const presidentsDay = getNthWeekday(year, 1, 1, 3); // 3rd Monday of Feb
-      const memorialDay = getNthWeekday(year, 4, 1, -1); // Last Monday of May
-      const laborDay = getNthWeekday(year, 8, 1, 1); // 1st Monday of Sep
-      const columbusDay = getNthWeekday(year, 9, 1, 2); // 2nd Monday of Oct
-      const thanksgiving = getNthWeekday(year, 10, 4, 4); // 4th Thursday of Nov
-      return [
-        `${year}-01-01`, formatDateStr(mlkDay), formatDateStr(presidentsDay),
-        formatDateStr(memorialDay), `${year}-06-19`, `${year}-07-04`,
-        formatDateStr(laborDay), formatDateStr(columbusDay), `${year}-11-11`,
-        formatDateStr(thanksgiving), `${year}-12-25`
-      ];
-    }
-    if (country === "AU") {
-      let ausDay = new Date(year, 0, 26);
-      if (ausDay.getDay() === 0) ausDay = new Date(year, 0, 27);
-      else if (ausDay.getDay() === 6) ausDay = new Date(year, 0, 28);
-      const queensBirthday = getNthWeekday(year, 5, 1, 2); // 2nd Monday of June
-      return [
-        `${year}-01-01`, formatDateStr(ausDay), formatDateStr(addDays(easter, -2)),
-        formatDateStr(addDays(easter, 1)), `${year}-04-25`, formatDateStr(queensBirthday),
-        `${year}-12-25`, `${year}-12-26`
-      ];
-    }
-    if (country === "CA") {
-      const familyDay = getNthWeekday(year, 1, 1, 3); // 3rd Monday of Feb
-      let victoriaDay = new Date(year, 4, 24);
-      while (victoriaDay.getDay() !== 1) victoriaDay = addDays(victoriaDay, -1);
-      const civicHoliday = getNthWeekday(year, 7, 1, 1); // 1st Monday of Aug
-      const labourDay = getNthWeekday(year, 8, 1, 1); // 1st Monday of Sep
-      const thanksgiving = getNthWeekday(year, 9, 1, 2); // 2nd Monday of Oct
-      return [
-        `${year}-01-01`, formatDateStr(familyDay), formatDateStr(addDays(easter, -2)),
-        formatDateStr(victoriaDay), `${year}-07-01`, formatDateStr(civicHoliday),
-        formatDateStr(labourDay), formatDateStr(thanksgiving), `${year}-11-11`,
-        `${year}-12-25`, `${year}-12-26`
-      ];
-    }
-    if (country === "DE") {
-      return [
-        `${year}-01-01`, formatDateStr(addDays(easter, -2)), formatDateStr(addDays(easter, 1)),
-        `${year}-05-01`, formatDateStr(addDays(easter, 39)), formatDateStr(addDays(easter, 50)),
-        `${year}-10-03`, `${year}-12-25`, `${year}-12-26`
-      ];
-    }
-    if (country === "FR") {
-      return [
-        `${year}-01-01`, formatDateStr(addDays(easter, 1)), `${year}-05-01`,
-        `${year}-05-08`, formatDateStr(addDays(easter, 39)), formatDateStr(addDays(easter, 50)),
-        `${year}-07-14`, `${year}-08-15`, `${year}-11-01`, `${year}-11-11`, `${year}-12-25`
-      ];
-    }
-    if (country === "IE") {
-      const mayBank = getNthWeekday(year, 4, 1, 1);
-      const juneBank = getNthWeekday(year, 5, 1, 1);
-      const augustBank = getNthWeekday(year, 7, 1, 1);
-      const octoberBank = getNthWeekday(year, 9, 1, -1);
-      return [
-        `${year}-01-01`, `${year}-02-01`, `${year}-03-17`, formatDateStr(addDays(easter, 1)),
-        formatDateStr(mayBank), formatDateStr(juneBank), formatDateStr(augustBank),
-        formatDateStr(octoberBank), `${year}-12-25`, `${year}-12-26`
-      ];
-    }
-    return [];
+    return getHolidaysForYear(country, year);
   };
 
   // Check if a date is a holiday
