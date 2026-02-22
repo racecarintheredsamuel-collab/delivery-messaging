@@ -482,7 +482,7 @@ export default function FreeDeliveryPage() {
                 {/* Content */}
                 <div style={{ padding: "16px", display: "grid", gap: 12 }}>
                   <s-text size="small" style={{ color: "var(--p-color-text-subdued, #6b7280)" }}>
-                    Products matching tags or handles show the exclusion message instead. First matching rule wins.
+                    Show different messages for specific product types. Use unique tags/handles per rule.
                   </s-text>
 
                   {/* Exclusion Rules List */}
@@ -621,8 +621,7 @@ export default function FreeDeliveryPage() {
 
                   {/* Add Exclusion Button */}
                   <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                    <button
-                      type="button"
+                    <s-button
                       disabled={exclusionRules.length >= 5}
                       onClick={() => {
                         const newId = `rule-${Date.now()}`;
@@ -636,26 +635,20 @@ export default function FreeDeliveryPage() {
                         }]);
                         setExpandedRules(prev => new Set([...prev, newId]));
                       }}
-                      style={{
-                        padding: "8px 16px",
-                        background: exclusionRules.length >= 5 ? "#e5e7eb" : "var(--p-color-bg-surface-secondary, #f3f4f6)",
-                        border: "1px solid var(--p-color-border, #e5e7eb)",
-                        borderRadius: "6px",
-                        cursor: exclusionRules.length >= 5 ? "not-allowed" : "pointer",
-                        color: exclusionRules.length >= 5 ? "#9ca3af" : "inherit",
-                      }}
                     >
-                      + Add Exclusion
-                    </button>
+                      Add Exclusion
+                    </s-button>
                     <s-text size="small" style={{ color: "var(--p-color-text-subdued, #6b7280)" }}>
                       {exclusionRules.length} of 5
                     </s-text>
                   </div>
 
-                  <div style={{ display: "flex", alignItems: "center", gap: 6, color: "var(--p-color-text-subdued, #6b7280)" }}>
-                    <span style={{ fontSize: 12, flexShrink: 0 }}>📝</span>
-                    <span style={{ fontSize: 12 }}>Leave messages blank to use default: "Some items in your cart aren't eligible for free delivery"</span>
-                  </div>
+                  {exclusionRules.length > 0 && (
+                    <div style={{ display: "flex", alignItems: "center", gap: 6, color: "var(--p-color-text-subdued, #6b7280)" }}>
+                      <span style={{ fontSize: 12, flexShrink: 0 }}>📝</span>
+                      <span style={{ fontSize: 12 }}>Leave messages blank to use default: "Some items in your cart aren't eligible for free delivery"</span>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
