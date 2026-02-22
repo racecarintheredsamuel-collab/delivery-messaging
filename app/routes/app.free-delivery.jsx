@@ -484,6 +484,10 @@ export default function FreeDeliveryPage() {
                   <s-text size="small" style={{ color: "var(--p-color-text-subdued, #6b7280)" }}>
                     Show different messages for specific product types. Use unique tags/handles per rule.
                   </s-text>
+                  <div style={{ display: "flex", alignItems: "center", gap: 6, color: "var(--p-color-text-subdued, #6b7280)", marginTop: -4 }}>
+                    <span style={{ fontSize: 12, flexShrink: 0 }}>📝</span>
+                    <span style={{ fontSize: 12 }}>Leave messages blank to use default: "Some items in your cart aren't eligible for free delivery"</span>
+                  </div>
 
                   {/* Exclusion Rules List */}
                   {exclusionRules.map((rule, index) => {
@@ -578,7 +582,7 @@ export default function FreeDeliveryPage() {
                                 onChange={(e) => {
                                   setExclusionRules(prev => prev.map(r => r.id === rule.id ? { ...r, cart_message: e.target.value } : r));
                                 }}
-                                placeholder="Leave blank for default"
+                                placeholder="Leave blank for default message"
                                 style={{ width: "100%" }}
                               />
                             </label>
@@ -592,7 +596,7 @@ export default function FreeDeliveryPage() {
                                   onChange={(e) => {
                                     setExclusionRules(prev => prev.map(r => r.id === rule.id ? { ...r, announcement_message: e.target.value } : r));
                                   }}
-                                  placeholder="Leave blank for default"
+                                  placeholder="Leave blank for default message"
                                   style={{ width: "100%" }}
                                 />
                               </label>
@@ -642,13 +646,6 @@ export default function FreeDeliveryPage() {
                       {exclusionRules.length} of 5
                     </s-text>
                   </div>
-
-                  {exclusionRules.length > 0 && (
-                    <div style={{ display: "flex", alignItems: "center", gap: 6, color: "var(--p-color-text-subdued, #6b7280)" }}>
-                      <span style={{ fontSize: 12, flexShrink: 0 }}>📝</span>
-                      <span style={{ fontSize: 12 }}>Leave messages blank to use default: "Some items in your cart aren't eligible for free delivery"</span>
-                    </div>
-                  )}
                 </div>
               </div>
             </div>
