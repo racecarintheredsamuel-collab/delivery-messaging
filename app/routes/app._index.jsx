@@ -91,6 +91,11 @@ function defaultGlobalSettings() {
     special_delivery_header_font_weight: "semibold",
     special_delivery_header_gap: 4,
     special_delivery_line_height: 1.4,
+    // Special Delivery Message styling
+    special_delivery_use_theme_text_styling: true,
+    special_delivery_text_color: "#374151",
+    special_delivery_font_size: 16,
+    special_delivery_font_weight: "normal",
     // Link styling
     link_color: "#2563eb",
     link_decoration: "underline",
