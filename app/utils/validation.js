@@ -98,6 +98,16 @@ const customIconSchema = z.object({
   url: z.string().optional(),
 });
 
+// Free delivery exclusion rule schema
+const fdExclusionRuleSchema = z.object({
+  id: z.string(),
+  tags: z.array(z.string()).optional(),
+  handles: z.array(z.string()).optional(),
+  cart_message: z.string().optional(),
+  announcement_message: z.string().optional(),
+  announcement_duration: z.number().min(1).max(60).optional(),
+});
+
 // Global settings schema
 export const settingsSchema = z.object({
   // Business hours
@@ -158,6 +168,8 @@ export const settingsSchema = z.object({
   fd_announcement_text_color: z.string().optional(),
   fd_announcement_text_size: z.string().optional(),
   fd_announcement_bar_height: z.string().optional(),
+  // Free delivery exclusion rules (array of up to 5 rules)
+  fd_exclusion_rules: z.array(fdExclusionRuleSchema).max(5).optional(),
 }).passthrough();
 
 /**

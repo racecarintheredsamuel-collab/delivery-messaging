@@ -73,8 +73,14 @@
       let fdType = 'progress';
 
       if (state.excluded) {
-        fdTemplate = target.dataset.excludedMessage || '';
-        fdDuration = excludedDuration;
+        // Use matched rule's announcement message if available
+        if (state.excludedRule && state.excludedRule.announcement_message) {
+          fdTemplate = state.excludedRule.announcement_message;
+          fdDuration = state.excludedRule.announcement_duration || excludedDuration;
+        } else {
+          fdTemplate = target.dataset.excludedMessage || '';
+          fdDuration = excludedDuration;
+        }
         fdType = 'excluded';
       } else if (state.isEmpty) {
         fdTemplate = target.dataset.emptyMessage || '';

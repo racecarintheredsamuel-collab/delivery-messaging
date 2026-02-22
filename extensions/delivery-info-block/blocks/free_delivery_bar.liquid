@@ -15,6 +15,7 @@
 {%- assign fd_progress_bar_color = '#22c55e' -%}
 {%- assign fd_progress_bar_bg = '#e5e7eb' -%}
 {%- assign fd_bar_bg_color = '#f9fafb' -%}
+{%- assign fd_exclusion_rules = '' -%}
 {%- assign fd_exclude_tags = '' -%}
 {%- assign fd_exclude_handles = '' -%}
 
@@ -49,6 +50,9 @@
   {%- if global_settings.fd_bar_bg_color != blank -%}
     {%- assign fd_bar_bg_color = global_settings.fd_bar_bg_color -%}
   {%- endif -%}
+  {%- if global_settings.fd_exclusion_rules != blank -%}
+    {%- assign fd_exclusion_rules = global_settings.fd_exclusion_rules | json -%}
+  {%- endif -%}
   {%- if global_settings.fd_exclude_tags != blank -%}
     {%- assign fd_exclude_tags = global_settings.fd_exclude_tags | json -%}
   {%- endif -%}
@@ -75,6 +79,7 @@
   data-message-unlocked="{{ fd_message_unlocked | escape }}"
   data-message-empty="{{ fd_message_empty | escape }}"
   data-message-excluded="{{ fd_message_excluded | escape }}"
+  data-exclusion-rules="{{ fd_exclusion_rules | escape }}"
   data-exclude-tags="{{ fd_exclude_tags | escape }}"
   data-exclude-handles="{{ fd_exclude_handles | escape }}"
   data-show-progress-bar="{{ fd_show_progress_bar }}"

@@ -134,7 +134,34 @@ export default function FreeDeliveryPage() {
 
   const [saveStatus, setSaveStatus] = useState("");
 
-  // Exclusion input text state
+  // Exclusion rules state (migrate from legacy single rule if needed)
+  const [exclusionRules, setExclusionRules] = useState(() => {
+    if (settings.fd_exclusion_rules && settings.fd_exclusion_rules.length > 0) {
+      return settings.fd_exclusion_rules;
+    }
+    // Migrate legacy single rule to array format
+    const legacyTags = settings.fd_exclude_tags || [];
+    const legacyHandles = settings.fd_exclude_handles || [];
+    if (legacyTags.length > 0 || legacyHandles.length > 0) {
+      return [{
+        id: 'rule-1',
+        tags: legacyTags,
+        handles: legacyHandles,
+        cart_message: settings.fd_message_excluded || '',
+        announcement_message: settings.fd_announcement_excluded_message || '',
+        announcement_duration: settings.fd_announcement_excluded_duration || 5,
+      }];
+    }
+    return [];
+  });
+  const [expandedRules, setExpandedRules] = useState(() => new Set());
+
+  // Sync exclusion rules to settings
+  useEffect(() => {
+    setSettings(prev => ({ ...prev, fd_exclusion_rules: exclusionRules }));
+  }, [exclusionRules]);
+
+  // Legacy exclusion input text state (kept for backward compat during transition)
   const [excludeTagsText, setExcludeTagsText] = useState(() =>
     (settings.fd_exclude_tags || []).join(", ")
   );
@@ -455,85 +482,180 @@ export default function FreeDeliveryPage() {
                 {/* Content */}
                 <div style={{ padding: "16px", display: "grid", gap: 12 }}>
                   <s-text size="small" style={{ color: "var(--p-color-text-subdued, #6b7280)" }}>
-                    Products matching these tags or handles will show the exclusion message instead
+                    Products matching tags or handles show the exclusion message instead. First matching rule wins.
                   </s-text>
 
-                <label style={{ display: "block" }}>
-                  <s-text>Product tags (comma-separated)</s-text>
-                  <input
-                    type="text"
-                    value={excludeTagsText}
-                    onChange={(e) => setExcludeTagsText(e.target.value)}
-                    onBlur={() => {
-                      const tags = excludeTagsText.split(",").map(s => s.trim()).filter(Boolean);
-                      setExcludeTagsText(tags.join(", "));
-                      setSettings({ ...settings, fd_exclude_tags: tags });
-                    }}
-                    placeholder="e.g., no-free-delivery, oversized"
-                    style={{ width: "100%" }}
-                  />
-                </label>
+                  {/* Exclusion Rules List */}
+                  {exclusionRules.map((rule, index) => {
+                    const isExpanded = expandedRules.has(rule.id);
+                    const tagCount = (rule.tags || []).length;
+                    const handleCount = (rule.handles || []).length;
+                    const summary = [
+                      tagCount > 0 ? `${tagCount} tag${tagCount > 1 ? 's' : ''}` : null,
+                      handleCount > 0 ? `${handleCount} handle${handleCount > 1 ? 's' : ''}` : null,
+                    ].filter(Boolean).join(' • ') || 'No conditions';
 
-                <label style={{ display: "block" }}>
-                  <s-text>Product handles (comma-separated)</s-text>
-                  <input
-                    type="text"
-                    value={excludeHandlesText}
-                    onChange={(e) => setExcludeHandlesText(e.target.value)}
-                    onBlur={() => {
-                      const handles = excludeHandlesText.split(",").map(s => s.trim()).filter(Boolean);
-                      setExcludeHandlesText(handles.join(", "));
-                      setSettings({ ...settings, fd_exclude_handles: handles });
-                    }}
-                    placeholder="e.g., large-pond-kit, bulky-item"
-                    style={{ width: "100%" }}
-                  />
-                </label>
+                    return (
+                      <div
+                        key={rule.id}
+                        style={{
+                          border: "1px solid var(--p-color-border, #e5e7eb)",
+                          borderRadius: "6px",
+                          overflow: "hidden",
+                        }}
+                      >
+                        {/* Rule Header (Collapsed) */}
+                        <div
+                          style={{
+                            padding: "10px 12px",
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 8,
+                            background: "var(--p-color-bg-surface-hover, #f8fafc)",
+                            cursor: "pointer",
+                          }}
+                          onClick={() => {
+                            setExpandedRules(prev => {
+                              const next = new Set(prev);
+                              if (next.has(rule.id)) next.delete(rule.id);
+                              else next.add(rule.id);
+                              return next;
+                            });
+                          }}
+                        >
+                          <span style={{ fontSize: 12, transform: isExpanded ? 'rotate(90deg)' : 'rotate(0deg)', transition: 'transform 0.15s' }}>▶</span>
+                          <s-text style={{ fontWeight: 500, flex: 1 }}>Exclusion {index + 1}</s-text>
+                          <s-text size="small" style={{ color: "var(--p-color-text-subdued, #6b7280)" }}>{summary}</s-text>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (confirm('Delete this exclusion rule?')) {
+                                setExclusionRules(prev => prev.filter(r => r.id !== rule.id));
+                              }
+                            }}
+                            style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, color: '#9ca3af' }}
+                            title="Delete"
+                          >×</button>
+                        </div>
 
-                <label>
-                  <s-text>Exclusion message (Cart & Mini Cart Messaging)</s-text>
-                  <input
-                    type="text"
-                    value={settings.fd_message_excluded || ""}
-                    onChange={(e) => setSettings({ ...settings, fd_message_excluded: e.target.value })}
-                    placeholder="Free delivery not available for some items in your cart"
-                    style={{ width: "100%" }}
-                  />
-                  <div style={{ display: "flex", alignItems: "center", gap: 6, color: "var(--p-color-text-subdued, #6b7280)", marginTop: 4 }}>
-                    <span style={{ fontSize: 12, flexShrink: 0 }}>📝</span>
-                    <span style={{ fontSize: 12 }}>Leave blank to use default: "Some items in your cart aren't eligible for free delivery"</span>
+                        {/* Rule Content (Expanded) */}
+                        {isExpanded && (
+                          <div style={{ padding: "12px", display: "grid", gap: 10, borderTop: "1px solid var(--p-color-border, #e5e7eb)" }}>
+                            <label style={{ display: "block" }}>
+                              <s-text size="small">Tags (comma-separated)</s-text>
+                              <input
+                                type="text"
+                                value={(rule.tags || []).join(", ")}
+                                onChange={(e) => {
+                                  const tags = e.target.value.split(",").map(s => s.trim()).filter(Boolean);
+                                  setExclusionRules(prev => prev.map(r => r.id === rule.id ? { ...r, tags } : r));
+                                }}
+                                placeholder="e.g., bulky, oversized"
+                                style={{ width: "100%" }}
+                              />
+                            </label>
+
+                            <label style={{ display: "block" }}>
+                              <s-text size="small">Handles (comma-separated)</s-text>
+                              <input
+                                type="text"
+                                value={(rule.handles || []).join(", ")}
+                                onChange={(e) => {
+                                  const handles = e.target.value.split(",").map(s => s.trim()).filter(Boolean);
+                                  setExclusionRules(prev => prev.map(r => r.id === rule.id ? { ...r, handles } : r));
+                                }}
+                                placeholder="e.g., large-pond-kit"
+                                style={{ width: "100%" }}
+                              />
+                            </label>
+
+                            <label style={{ display: "block" }}>
+                              <s-text size="small">Cart message</s-text>
+                              <input
+                                type="text"
+                                value={rule.cart_message || ""}
+                                onChange={(e) => {
+                                  setExclusionRules(prev => prev.map(r => r.id === rule.id ? { ...r, cart_message: e.target.value } : r));
+                                }}
+                                placeholder="Leave blank for default"
+                                style={{ width: "100%" }}
+                              />
+                            </label>
+
+                            <div style={{ display: "grid", gridTemplateColumns: "1fr 75px", gap: 12, alignItems: "start" }}>
+                              <label style={{ display: "block" }}>
+                                <s-text size="small">Announcement message</s-text>
+                                <input
+                                  type="text"
+                                  value={rule.announcement_message || ""}
+                                  onChange={(e) => {
+                                    setExclusionRules(prev => prev.map(r => r.id === rule.id ? { ...r, announcement_message: e.target.value } : r));
+                                  }}
+                                  placeholder="Leave blank for default"
+                                  style={{ width: "100%" }}
+                                />
+                              </label>
+                              <label style={{ display: "block" }}>
+                                <s-text size="small">Timer</s-text>
+                                <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                                  <input
+                                    type="number"
+                                    min="1"
+                                    max="60"
+                                    value={rule.announcement_duration ?? 5}
+                                    onChange={(e) => {
+                                      setExclusionRules(prev => prev.map(r => r.id === rule.id ? { ...r, announcement_duration: parseInt(e.target.value) || 5 } : r));
+                                    }}
+                                    style={{ width: "100%" }}
+                                  />
+                                  <span style={{ fontSize: 12, color: "var(--p-color-text-subdued)" }}>s</span>
+                                </div>
+                              </label>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+
+                  {/* Add Exclusion Button */}
+                  <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                    <button
+                      type="button"
+                      disabled={exclusionRules.length >= 5}
+                      onClick={() => {
+                        const newId = `rule-${Date.now()}`;
+                        setExclusionRules(prev => [...prev, {
+                          id: newId,
+                          tags: [],
+                          handles: [],
+                          cart_message: '',
+                          announcement_message: '',
+                          announcement_duration: 5,
+                        }]);
+                        setExpandedRules(prev => new Set([...prev, newId]));
+                      }}
+                      style={{
+                        padding: "8px 16px",
+                        background: exclusionRules.length >= 5 ? "#e5e7eb" : "var(--p-color-bg-surface-secondary, #f3f4f6)",
+                        border: "1px solid var(--p-color-border, #e5e7eb)",
+                        borderRadius: "6px",
+                        cursor: exclusionRules.length >= 5 ? "not-allowed" : "pointer",
+                        color: exclusionRules.length >= 5 ? "#9ca3af" : "inherit",
+                      }}
+                    >
+                      + Add Exclusion
+                    </button>
+                    <s-text size="small" style={{ color: "var(--p-color-text-subdued, #6b7280)" }}>
+                      {exclusionRules.length} of 5
+                    </s-text>
                   </div>
-                </label>
 
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 75px", gap: 16, alignItems: "start" }}>
-                  <label style={{ display: "block" }}>
-                    <s-text>Exclusion message (Announcement Bar)</s-text>
-                    <input
-                      type="text"
-                      value={settings.fd_announcement_excluded_message || ""}
-                      onChange={(e) => setSettings({ ...settings, fd_announcement_excluded_message: e.target.value })}
-                      placeholder="Free delivery not available for some items"
-                      style={{ width: "100%" }}
-                    />
-                  </label>
-                  <label style={{ display: "block" }}>
-                    <s-text>Timer</s-text>
-                    <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-                      <input
-                        type="number"
-                        min="0"
-                        value={settings.fd_announcement_excluded_duration ?? 5}
-                        onChange={(e) => setSettings({ ...settings, fd_announcement_excluded_duration: parseInt(e.target.value) || 0 })}
-                        style={{ width: "100%" }}
-                      />
-                      <span style={{ fontSize: 12, color: "var(--p-color-text-subdued)" }}>s</span>
-                    </div>
-                  </label>
-                </div>
-                <div style={{ display: "flex", alignItems: "center", gap: 6, color: "var(--p-color-text-subdued, #6b7280)", marginTop: -8 }}>
-                  <span style={{ fontSize: 12, flexShrink: 0 }}>📝</span>
-                  <span style={{ fontSize: 12 }}>Leave blank to use default: "Some items in your cart aren't eligible for free delivery". Timer controls cycling duration.</span>
-                </div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 6, color: "var(--p-color-text-subdued, #6b7280)" }}>
+                    <span style={{ fontSize: 12, flexShrink: 0 }}>📝</span>
+                    <span style={{ fontSize: 12 }}>Leave messages blank to use default: "Some items in your cart aren't eligible for free delivery"</span>
+                  </div>
                 </div>
               </div>
             </div>
