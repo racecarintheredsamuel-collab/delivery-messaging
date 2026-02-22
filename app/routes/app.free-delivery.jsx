@@ -832,17 +832,32 @@ export default function FreeDeliveryPage() {
                     />
                   </div>
 
-                  {/* Decoration - full width */}
-                  <div>
-                    <s-text size="small">Decoration</s-text>
-                    <select
-                      value={settings.fd_announcement_link_decoration || "underline"}
-                      onChange={(e) => setSettings({ ...settings, fd_announcement_link_decoration: e.target.value })}
-                      style={{ width: "100%" }}
-                    >
-                      <option value="underline">Underline</option>
-                      <option value="none">None</option>
-                    </select>
+                  {/* Decoration + Thickness - 50% each */}
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                    <div>
+                      <s-text size="small">Decoration</s-text>
+                      <select
+                        value={settings.fd_announcement_link_decoration || "underline"}
+                        onChange={(e) => setSettings({ ...settings, fd_announcement_link_decoration: e.target.value })}
+                        style={{ width: "100%" }}
+                      >
+                        <option value="underline">Underline</option>
+                        <option value="none">None</option>
+                      </select>
+                    </div>
+                    <div>
+                      <s-text size="small">Thickness</s-text>
+                      <select
+                        value={settings.fd_announcement_link_thickness || "1px"}
+                        onChange={(e) => setSettings({ ...settings, fd_announcement_link_thickness: e.target.value })}
+                        style={{ width: "100%" }}
+                      >
+                        <option value="1px">1px</option>
+                        <option value="2px">2px</option>
+                        <option value="3px">3px</option>
+                        <option value="from-font">From font</option>
+                      </select>
+                    </div>
                   </div>
 
                   {/* Hover Effects */}
@@ -859,7 +874,7 @@ export default function FreeDeliveryPage() {
                       />
                     </div>
 
-                    {/* Hover Decoration + Opacity - 50% each */}
+                    {/* Hover Decoration + Thickness - 50% each */}
                     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
                       <div>
                         <s-text size="small">Decoration</s-text>
@@ -873,18 +888,33 @@ export default function FreeDeliveryPage() {
                         </select>
                       </div>
                       <div>
-                        <s-text size="small">Opacity</s-text>
+                        <s-text size="small">Thickness</s-text>
                         <select
-                          value={settings.fd_announcement_link_hover_opacity ?? 1}
-                          onChange={(e) => setSettings({ ...settings, fd_announcement_link_hover_opacity: parseFloat(e.target.value) })}
+                          value={settings.fd_announcement_link_hover_thickness || "2px"}
+                          onChange={(e) => setSettings({ ...settings, fd_announcement_link_hover_thickness: e.target.value })}
                           style={{ width: "100%" }}
                         >
-                          <option value="1">100% (no fade)</option>
-                          <option value="0.8">80%</option>
-                          <option value="0.7">70%</option>
-                          <option value="0.6">60%</option>
+                          <option value="1px">1px</option>
+                          <option value="2px">2px</option>
+                          <option value="3px">3px</option>
+                          <option value="from-font">From font</option>
                         </select>
                       </div>
+                    </div>
+
+                    {/* Opacity - full width */}
+                    <div>
+                      <s-text size="small">Opacity</s-text>
+                      <select
+                        value={settings.fd_announcement_link_hover_opacity ?? 1}
+                        onChange={(e) => setSettings({ ...settings, fd_announcement_link_hover_opacity: parseFloat(e.target.value) })}
+                        style={{ width: "100%" }}
+                      >
+                        <option value="1">100% (no fade)</option>
+                        <option value="0.8">80%</option>
+                        <option value="0.7">70%</option>
+                        <option value="0.6">60%</option>
+                      </select>
                     </div>
                   </div>
                 </div>

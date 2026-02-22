@@ -90,12 +90,16 @@ function defaultGlobalSettings() {
     link_hover_color: "#1d4ed8",
     link_hover_decoration: "underline",
     link_hover_opacity: 1,
+    link_thickness: "1px",
+    link_hover_thickness: "2px",
     // Announcement bar link styling
     fd_announcement_link_color: "#ffffff",
     fd_announcement_link_decoration: "underline",
     fd_announcement_link_hover_color: "#e5e7eb",
     fd_announcement_link_hover_decoration: "underline",
     fd_announcement_link_hover_opacity: 1,
+    fd_announcement_link_thickness: "1px",
+    fd_announcement_link_hover_thickness: "2px",
   };
 }
 
@@ -2186,17 +2190,32 @@ export default function Index() {
                     />
                   </div>
 
-                  {/* Decoration - full width */}
-                  <div>
-                    <s-text size="small">Decoration</s-text>
-                    <select
-                      value={globalSettings?.link_decoration || "underline"}
-                      onChange={(e) => setGlobalSettings({ ...globalSettings, link_decoration: e.target.value })}
-                      style={{ width: "100%" }}
-                    >
-                      <option value="underline">Underline</option>
-                      <option value="none">None</option>
-                    </select>
+                  {/* Decoration + Thickness - 50% each */}
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                    <div>
+                      <s-text size="small">Decoration</s-text>
+                      <select
+                        value={globalSettings?.link_decoration || "underline"}
+                        onChange={(e) => setGlobalSettings({ ...globalSettings, link_decoration: e.target.value })}
+                        style={{ width: "100%" }}
+                      >
+                        <option value="underline">Underline</option>
+                        <option value="none">None</option>
+                      </select>
+                    </div>
+                    <div>
+                      <s-text size="small">Thickness</s-text>
+                      <select
+                        value={globalSettings?.link_thickness || "1px"}
+                        onChange={(e) => setGlobalSettings({ ...globalSettings, link_thickness: e.target.value })}
+                        style={{ width: "100%" }}
+                      >
+                        <option value="1px">1px</option>
+                        <option value="2px">2px</option>
+                        <option value="3px">3px</option>
+                        <option value="from-font">From font</option>
+                      </select>
+                    </div>
                   </div>
 
                   {/* Hover Effects */}
@@ -2214,7 +2233,7 @@ export default function Index() {
                       />
                     </div>
 
-                    {/* Hover Decoration + Opacity - 50% each */}
+                    {/* Hover Decoration + Thickness - 50% each */}
                     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
                       <div>
                         <s-text size="small">Decoration</s-text>
@@ -2228,18 +2247,33 @@ export default function Index() {
                         </select>
                       </div>
                       <div>
-                        <s-text size="small">Opacity</s-text>
+                        <s-text size="small">Thickness</s-text>
                         <select
-                          value={globalSettings?.link_hover_opacity ?? 1}
-                          onChange={(e) => setGlobalSettings({ ...globalSettings, link_hover_opacity: parseFloat(e.target.value) })}
+                          value={globalSettings?.link_hover_thickness || "2px"}
+                          onChange={(e) => setGlobalSettings({ ...globalSettings, link_hover_thickness: e.target.value })}
                           style={{ width: "100%" }}
                         >
-                          <option value="1">100% (no fade)</option>
-                          <option value="0.8">80%</option>
-                          <option value="0.7">70%</option>
-                          <option value="0.6">60%</option>
+                          <option value="1px">1px</option>
+                          <option value="2px">2px</option>
+                          <option value="3px">3px</option>
+                          <option value="from-font">From font</option>
                         </select>
                       </div>
+                    </div>
+
+                    {/* Opacity - full width */}
+                    <div>
+                      <s-text size="small">Opacity</s-text>
+                      <select
+                        value={globalSettings?.link_hover_opacity ?? 1}
+                        onChange={(e) => setGlobalSettings({ ...globalSettings, link_hover_opacity: parseFloat(e.target.value) })}
+                        style={{ width: "100%" }}
+                      >
+                        <option value="1">100% (no fade)</option>
+                        <option value="0.8">80%</option>
+                        <option value="0.7">70%</option>
+                        <option value="0.6">60%</option>
+                      </select>
                     </div>
                   </div>
                 </div>

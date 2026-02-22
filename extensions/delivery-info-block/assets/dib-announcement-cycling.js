@@ -165,10 +165,12 @@
         const hc = configEl?.getAttribute('data-link-hover-color') || '#e5e7eb';
         const hd = configEl?.getAttribute('data-link-hover-decoration') || 'underline';
         const ho = configEl?.getAttribute('data-link-hover-opacity') || '1';
+        const lt = configEl?.getAttribute('data-link-thickness') || '1px';
+        const ht = configEl?.getAttribute('data-link-hover-thickness') || '2px';
 
         const s = document.createElement('style');
         s.id = 'dib-fd-link-styles';
-        s.textContent = '.dib-fd-announcement .dib-fd-link{color:' + lc + ';text-decoration:' + ld + ';transition:all .15s ease}.dib-fd-announcement .dib-fd-link:hover{color:' + hc + ';text-decoration:' + hd + ';opacity:' + ho + '}';
+        s.textContent = '.dib-fd-announcement .dib-fd-link{color:' + lc + ';text-decoration:' + ld + ';text-decoration-thickness:' + lt + ';transition:all .15s ease}.dib-fd-announcement .dib-fd-link:hover{color:' + hc + ';text-decoration:' + hd + ';text-decoration-thickness:' + ht + ';opacity:' + ho + '}';
         document.head.appendChild(s);
       }
 
