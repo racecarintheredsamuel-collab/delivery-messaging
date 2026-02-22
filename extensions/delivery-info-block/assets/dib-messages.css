@@ -154,6 +154,12 @@
 
 .dib-eta-timeline-block .dib-eta-stages {
   display: inline-flex !important;
+  max-width: 100%;
+}
+
+.dib-eta-timeline-block .dib-eta-stage {
+  flex-shrink: 1;
+  min-width: 0;
 }
 
 /* Mobile alignment overrides */
