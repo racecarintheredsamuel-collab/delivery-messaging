@@ -150,6 +150,7 @@
 .dib-eta-timeline-block .dib-eta-scale-wrapper {
   display: inline-block;
   vertical-align: top;
+  max-width: 100%;
 }
 
 .dib-eta-timeline-block .dib-eta-stages {
