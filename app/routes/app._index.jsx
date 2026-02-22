@@ -715,6 +715,7 @@ function defaultRule() {
       eta_connector_color: "#111827",
       eta_connector_use_main_color: true,
       eta_connector_alignment: "center",
+      eta_connector_size: 24,
       eta_color: "#111827",
       eta_use_main_icon_color: true,
       eta_border_width: 0,
@@ -4285,6 +4286,25 @@ export default function Index() {
                       </select>
                     </label>
                   </div>
+
+                  <label>
+                    <s-text>Connector size ({rule.settings?.eta_connector_size || 24}px)</s-text>
+                    <input
+                      type="range"
+                      min="12"
+                      max="48"
+                      value={rule.settings?.eta_connector_size || 24}
+                      onChange={(e) => {
+                        const next = [...rules];
+                        next[safeSelectedIndex] = {
+                          ...rule,
+                          settings: { ...rule.settings, eta_connector_size: Number(e.target.value) },
+                        };
+                        setRules(next);
+                      }}
+                      style={{ width: "100%" }}
+                    />
+                  </label>
 
                   <label style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer" }}>
                     <input
