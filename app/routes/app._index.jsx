@@ -62,6 +62,14 @@ function defaultGlobalSettings() {
     eta_text_color: "var(--p-color-text, #374151)",
     eta_font_size: "small",
     eta_font_weight: "semibold",
+    // ETA Timeline label styling (Ordered, Shipped, Delivered)
+    eta_label_color: "#374151",
+    eta_label_font_size: 12,
+    eta_label_font_weight: "semibold",
+    // ETA Timeline date styling (Jan 20, Jan 21-24)
+    eta_date_color: "#6b7280",
+    eta_date_font_size: 11,
+    eta_date_font_weight: "normal",
     // Block spacing
     messages_margin_top: 0,
     messages_margin_bottom: 0,
