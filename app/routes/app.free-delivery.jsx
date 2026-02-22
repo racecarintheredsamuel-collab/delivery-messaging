@@ -155,6 +155,7 @@ export default function FreeDeliveryPage() {
     return [];
   });
   const [expandedRules, setExpandedRules] = useState(() => new Set());
+  const [lastDeletedExclusion, setLastDeletedExclusion] = useState(null);
 
   // Sync exclusion rules to settings
   useEffect(() => {
@@ -173,6 +174,7 @@ export default function FreeDeliveryPage() {
   const autoSaveTimerRef = useRef(null);
   const initialSettingsRef = useRef(JSON.stringify(settings));
   const prevFetcherStateRef = useRef(fetcher.state);
+  const undoExclusionTimerRef = useRef(null);
 
   // Handle save responses
   useEffect(() => {
@@ -234,6 +236,13 @@ export default function FreeDeliveryPage() {
     };
   }, [settings, shopId, fetcher.state]);
 
+  // Cleanup undo timer on unmount
+  useEffect(() => {
+    return () => {
+      if (undoExclusionTimerRef.current) clearTimeout(undoExclusionTimerRef.current);
+    };
+  }, []);
+
   const handleSave = () => {
     if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
 
@@ -249,6 +258,30 @@ export default function FreeDeliveryPage() {
       { settings: JSON.stringify(settings), shopId },
       { method: "POST" }
     );
+  };
+
+  // Delete exclusion with undo
+  const deleteExclusionWithUndo = (ruleId, index) => {
+    if (undoExclusionTimerRef.current) clearTimeout(undoExclusionTimerRef.current);
+    const ruleToDelete = exclusionRules.find(r => r.id === ruleId);
+    if (!ruleToDelete) return;
+    setExclusionRules(prev => prev.filter(r => r.id !== ruleId));
+    setLastDeletedExclusion({ rule: ruleToDelete, index });
+    undoExclusionTimerRef.current = setTimeout(() => {
+      setLastDeletedExclusion(null);
+      undoExclusionTimerRef.current = null;
+    }, 10000);
+  };
+
+  const undoDeleteExclusion = () => {
+    if (!lastDeletedExclusion) return;
+    if (undoExclusionTimerRef.current) clearTimeout(undoExclusionTimerRef.current);
+    undoExclusionTimerRef.current = null;
+    const insertAt = Math.max(0, Math.min(lastDeletedExclusion.index ?? 0, exclusionRules.length));
+    const restored = [...exclusionRules];
+    restored.splice(insertAt, 0, lastDeletedExclusion.rule);
+    setExclusionRules(restored);
+    setLastDeletedExclusion(null);
   };
 
   // Reusable save button with floppy disk indicator
@@ -534,9 +567,7 @@ export default function FreeDeliveryPage() {
                             type="button"
                             onClick={(e) => {
                               e.stopPropagation();
-                              if (confirm('Delete this exclusion rule?')) {
-                                setExclusionRules(prev => prev.filter(r => r.id !== rule.id));
-                              }
+                              deleteExclusionWithUndo(rule.id, index);
                             }}
                             style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, color: '#9ca3af' }}
                             title="Delete"
@@ -646,6 +677,23 @@ export default function FreeDeliveryPage() {
                       {exclusionRules.length} of 5
                     </s-text>
                   </div>
+
+                  {/* Undo banner for deleted exclusion */}
+                  {lastDeletedExclusion && (
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 8,
+                        padding: "6px 12px",
+                        background: "var(--p-color-bg-caution-subdued, #fef3c7)",
+                        borderRadius: 4,
+                      }}
+                    >
+                      <s-text>Exclusion deleted.</s-text>
+                      <s-button size="small" onClick={undoDeleteExclusion}>Undo</s-button>
+                    </div>
+                  )}
 
                   {/* Multi-match fallback message - only show when 2+ rules */}
                   {exclusionRules.length >= 2 && (
