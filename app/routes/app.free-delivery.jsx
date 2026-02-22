@@ -855,7 +855,6 @@ export default function FreeDeliveryPage() {
                         <option value="1px">1px</option>
                         <option value="2px">2px</option>
                         <option value="3px">3px</option>
-                        <option value="from-font">From font</option>
                       </select>
                     </div>
                   </div>
@@ -897,7 +896,6 @@ export default function FreeDeliveryPage() {
                           <option value="1px">1px</option>
                           <option value="2px">2px</option>
                           <option value="3px">3px</option>
-                          <option value="from-font">From font</option>
                         </select>
                       </div>
                     </div>
