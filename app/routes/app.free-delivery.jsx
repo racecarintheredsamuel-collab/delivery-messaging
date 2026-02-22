@@ -501,7 +501,7 @@ export default function FreeDeliveryPage() {
                   />
                   <div style={{ display: "flex", alignItems: "center", gap: 6, color: "var(--p-color-text-subdued, #6b7280)", marginTop: 4 }}>
                     <span style={{ fontSize: 12, flexShrink: 0 }}>📝</span>
-                    <span style={{ fontSize: 12 }}>Leave blank to hide messaging when excluded products are in cart</span>
+                    <span style={{ fontSize: 12 }}>Leave blank to use default: "Some items in your cart aren't eligible for free delivery"</span>
                   </div>
                 </label>
 
@@ -532,7 +532,7 @@ export default function FreeDeliveryPage() {
                 </div>
                 <div style={{ display: "flex", alignItems: "center", gap: 6, color: "var(--p-color-text-subdued, #6b7280)", marginTop: -8 }}>
                   <span style={{ fontSize: 12, flexShrink: 0 }}>📝</span>
-                  <span style={{ fontSize: 12 }}>Leave blank to hide bar when excluded products are in cart. Timer controls cycling duration.</span>
+                  <span style={{ fontSize: 12 }}>Leave blank to use default message. Timer controls cycling duration.</span>
                 </div>
                 </div>
               </div>
