@@ -64,10 +64,27 @@ export function ETATimelinePreview({ rule, globalSettings }) {
   const gapIconLabel = globalSettings?.eta_gap_icon_label ?? 2;
   const gapLabelDate = globalSettings?.eta_gap_label_date ?? 0;
 
-  // Determine ETA font family from global settings
-  let etaFontFamily = globalSettings?.eta_preview_theme_font || "'Assistant', sans-serif";
+  // Determine ETA font families from global settings
+  // Labels (Ordered, Shipped, Delivered) use heading font
+  // Dates (Jan 20, etc.) use body font
+  const previewHeadingFont = globalSettings?.preview_heading_font || "";
+  const previewBodyFont = globalSettings?.preview_body_font || "";
+
+  // Fallback to legacy eta_preview_theme_font if new settings not set
+  const legacyFont = globalSettings?.eta_preview_theme_font || "";
+
+  // Build font family strings with fallbacks
+  let etaLabelFontFamily = previewHeadingFont
+    ? `"${previewHeadingFont}", sans-serif`
+    : legacyFont || "'Assistant', sans-serif";
+  let etaDateFontFamily = previewBodyFont
+    ? `"${previewBodyFont}", sans-serif`
+    : legacyFont || "'Assistant', sans-serif";
+
+  // Override with custom font if theme font is disabled
   if (globalSettings?.eta_use_theme_font === false && globalSettings?.eta_custom_font_family) {
-    etaFontFamily = globalSettings.eta_custom_font_family;
+    etaLabelFontFamily = globalSettings.eta_custom_font_family;
+    etaDateFontFamily = globalSettings.eta_custom_font_family;
   }
 
   // Determine ETA text styling - per-rule override takes precedence
@@ -408,8 +425,8 @@ export function ETATimelinePreview({ rule, globalSettings }) {
             </svg>
           )}
         </div>
-        <div style={{ fontSize: etaLabelFontSize, fontWeight: etaLabelFontWeight, lineHeight: 1.3, marginBottom: gapLabelDate, fontFamily: etaFontFamily, color: etaLabelColor }}>{label}</div>
-        <div style={{ fontSize: etaDateFontSize, fontWeight: etaDateFontWeight, lineHeight: 1.3, color: etaDateColor, fontFamily: etaFontFamily, whiteSpace: "nowrap" }}>{date}</div>
+        <div style={{ fontSize: etaLabelFontSize, fontWeight: etaLabelFontWeight, lineHeight: 1.3, marginBottom: gapLabelDate, fontFamily: etaLabelFontFamily, color: etaLabelColor }}>{label}</div>
+        <div style={{ fontSize: etaDateFontSize, fontWeight: etaDateFontWeight, lineHeight: 1.3, color: etaDateColor, fontFamily: etaDateFontFamily, whiteSpace: "nowrap" }}>{date}</div>
       </div>
     );
   };
@@ -419,8 +436,18 @@ export function ETATimelinePreview({ rule, globalSettings }) {
   const paddingHorizontal = globalSettings?.eta_padding_horizontal ?? 8;
   const paddingVertical = globalSettings?.eta_padding_vertical ?? 8;
 
+  // Build Google Fonts URLs for loading
+  const fontsToLoad = [];
+  if (previewHeadingFont) fontsToLoad.push(previewHeadingFont);
+  if (previewBodyFont && previewBodyFont !== previewHeadingFont) fontsToLoad.push(previewBodyFont);
+  const googleFontsUrl = fontsToLoad.length > 0
+    ? `https://fonts.googleapis.com/css2?${fontsToLoad.map(f => `family=${encodeURIComponent(f)}:wght@400;500;600;700`).join("&")}&display=swap`
+    : null;
+
   return (
     <div style={{ display: "inline-block", maxWidth: "100%", overflow: "hidden" }}>
+      {/* Load Google Fonts for preview */}
+      {googleFontsUrl && <link href={googleFontsUrl} rel="stylesheet" />}
       <div
         style={{
           display: "inline-flex",
