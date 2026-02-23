@@ -2674,7 +2674,23 @@ export default function Index() {
 
                 {/* Profiles Section */}
                 <div style={{ border: "1px solid var(--p-color-border, #e5e7eb)", borderRadius: 8, padding: 16, display: "grid", gap: 12, background: "var(--p-color-bg-surface-secondary, #f9fafb)", minHeight: 130 }}>
-                  <s-heading size="small">Profiles</s-heading>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                    <s-heading size="small">Profiles</s-heading>
+                    {lastDeletedProfile && (
+                      <div style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 6,
+                        padding: "4px 10px",
+                        background: "var(--p-color-bg-caution-subdued, #fef3c7)",
+                        borderRadius: 4,
+                        fontSize: "13px",
+                      }}>
+                        <span>"{lastDeletedProfile.profile.name}" deleted</span>
+                        <s-button size="small" onClick={undoDeleteProfile}>Undo</s-button>
+                      </div>
+                    )}
+                  </div>
                   {/* Profile selector - edit any profile without switching active */}
                   <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                     <span style={{ fontSize: "14px", color: "var(--p-color-text-subdued, #6b7280)" }}>Editing:</span>
@@ -2746,20 +2762,6 @@ export default function Index() {
                       </s-button>
                     </div>
                   </div>
-                  {/* Undo row - only shows when a profile was deleted */}
-                  {lastDeletedProfile && (
-                    <div style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 8,
-                      padding: "6px 12px",
-                      background: "var(--p-color-bg-caution-subdued, #fef3c7)",
-                      borderRadius: 4,
-                    }}>
-                      <s-text>Profile "{lastDeletedProfile.profile.name}" deleted.</s-text>
-                      <s-button size="small" onClick={undoDeleteProfile}>Undo</s-button>
-                    </div>
-                  )}
                 </div>
 
                 {/* Preview Timezone */}
