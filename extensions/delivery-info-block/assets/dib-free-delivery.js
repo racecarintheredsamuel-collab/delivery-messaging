@@ -203,9 +203,18 @@
       for (const mutation of mutations) {
         for (const removed of mutation.removedNodes) {
           if (removed === bar || (removed.nodeType === Node.ELEMENT_NODE && removed.contains && removed.contains(bar))) {
-            debug('Bar was removed, re-injecting immediately');
+            debug('Bar was removed, checking container validity');
             barObserver.disconnect();
+
+            // Check if container is still in the DOM - if not, find fresh container
+            if (!document.body.contains(container)) {
+              debug('Container detached from DOM, scanning for fresh container');
+              setTimeout(scanAndInject, 100);
+              return;
+            }
+
             // Re-inject immediately (synchronously) to prevent blink
+            debug('Container still valid, re-injecting');
             injectIntoContainer(container, position);
             return;
           }
