@@ -1165,6 +1165,12 @@ export default function Index() {
     prevActiveProfileIdRef.current = activeProfileId;
   }, [activeProfileId]);
 
+  // Editing profile state (for Global Settings panel - allows managing other profiles without switching)
+  const [editingProfileId, setEditingProfileId] = useState(null);
+  const editingProfile = editingProfileId
+    ? profiles.find(p => p.id === editingProfileId) || activeProfile
+    : activeProfile;
+
   // Handle query parameters (from wizard redirect)
   const [searchParams, setSearchParams] = useSearchParams();
   useEffect(() => {
@@ -1386,30 +1392,41 @@ export default function Index() {
   };
 
   const copyProfile = () => {
-    if (!activeProfile) return;
+    const profileToCopy = editingProfile || activeProfile;
+    if (!profileToCopy) return;
     const copiedProfile = {
-      ...activeProfile,
+      ...profileToCopy,
       id: newProfileId(),
-      name: activeProfile.name + " (copy)",
-      rules: activeProfile.rules.map((r) => ({ ...r, id: newRuleId(), match: { ...r.match }, settings: { ...r.settings } })),
+      name: profileToCopy.name + " (copy)",
+      rules: profileToCopy.rules.map((r) => ({ ...r, id: newRuleId(), match: { ...r.match }, settings: { ...r.settings } })),
     };
     setProfiles([...profiles, copiedProfile], copiedProfile.id);
   };
 
-  const deleteProfileWithUndo = () => {
+  const deleteProfileWithUndo = (profileId) => {
     if (profiles.length <= 1) return; // Don't delete last profile
 
     // Clear previous undo timer
     if (undoProfileTimerRef.current) clearTimeout(undoProfileTimerRef.current);
 
-    const removedIndex = activeProfileIndex;
-    const removed = activeProfile;
+    const removedIndex = profiles.findIndex(p => p.id === profileId);
+    const removed = profiles.find(p => p.id === profileId);
     if (!removed) return;
 
     // Remove it immediately
-    const nextProfiles = profiles.filter((p) => p.id !== activeProfileId);
-    const nextActiveId = nextProfiles[Math.min(removedIndex, nextProfiles.length - 1)]?.id;
+    const nextProfiles = profiles.filter((p) => p.id !== profileId);
+
+    // If deleting the active profile, switch to next available
+    let nextActiveId = activeProfileId;
+    if (profileId === activeProfileId) {
+      nextActiveId = nextProfiles[Math.min(removedIndex, nextProfiles.length - 1)]?.id;
+    }
     setProfiles(nextProfiles, nextActiveId);
+
+    // Reset editing profile if we deleted the one being edited
+    if (profileId === editingProfileId) {
+      setEditingProfileId(null);
+    }
 
     // Remember it for undo
     setLastDeletedProfile({ profile: removed, index: removedIndex });
@@ -1435,9 +1452,9 @@ export default function Index() {
     setLastDeletedProfile(null);
   };
 
-  const renameProfile = (newName) => {
+  const renameProfile = (profileId, newName) => {
     const updatedProfiles = profiles.map((p) =>
-      p.id === activeProfileId ? { ...p, name: newName } : p
+      p.id === profileId ? { ...p, name: newName } : p
     );
     setDraft(JSON.stringify({ version: 2, profiles: updatedProfiles, activeProfileId }));
   };
@@ -2617,24 +2634,55 @@ export default function Index() {
               <div style={{ border: "1px solid var(--p-color-border, #e5e7eb)", borderRadius: 8, padding: 16, background: "var(--p-color-bg-surface, #ffffff)", display: "grid", gap: 16 }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                   <s-heading>Global Settings</s-heading>
-                  <s-button variant="plain" onClick={() => setShowGlobalSettingsPanel(false)}>Close</s-button>
+                  <s-button variant="plain" onClick={() => { setShowGlobalSettingsPanel(false); setEditingProfileId(null); }}>Close</s-button>
                 </div>
 
                 {/* Profiles Section */}
                 <div style={{ border: "1px solid var(--p-color-border, #e5e7eb)", borderRadius: 8, padding: 16, display: "grid", gap: 12, background: "var(--p-color-bg-surface-secondary, #f9fafb)", minHeight: 130 }}>
                   <s-heading size="small">Profiles</s-heading>
-                  <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                    <input
-                      type="text"
-                      value={activeProfile?.name || ""}
-                      onChange={(e) => renameProfile(e.target.value)}
-                      placeholder="Profile name"
+                  {/* Profile selector - edit any profile without switching active */}
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <span style={{ fontSize: "14px", color: "var(--p-color-text-subdued, #6b7280)" }}>Editing:</span>
+                    <select
+                      value={editingProfile?.id || ""}
+                      onChange={(e) => setEditingProfileId(e.target.value)}
                       style={{
                         flex: 1,
                         padding: "6px 10px",
                         borderRadius: "4px",
                         border: "1px solid var(--p-color-border, #e5e7eb)",
                         fontSize: "14px",
+                      }}
+                    >
+                      {profiles.map((p) => (
+                        <option key={p.id} value={p.id}>
+                          {p.name}{p.id === activeProfileId ? " (active)" : ""}
+                        </option>
+                      ))}
+                    </select>
+                    <s-button
+                      variant="plain"
+                      onClick={() => setProfilesLocked(!profilesLocked)}
+                      title={profilesLocked ? "Unlock to enable editing" : "Lock to prevent changes"}
+                    >
+                      {profilesLocked ? "🔒" : "🔓"}
+                    </s-button>
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                    <input
+                      type="text"
+                      value={editingProfile?.name || ""}
+                      onChange={(e) => renameProfile(editingProfile?.id, e.target.value)}
+                      placeholder="Profile name"
+                      disabled={profilesLocked}
+                      style={{
+                        flex: 1,
+                        padding: "6px 10px",
+                        borderRadius: "4px",
+                        border: "1px solid var(--p-color-border, #e5e7eb)",
+                        fontSize: "14px",
+                        opacity: profilesLocked ? 0.5 : 1,
+                        cursor: profilesLocked ? "not-allowed" : "text",
                       }}
                     />
                     <div style={{ display: "flex", gap: 4 }}>
@@ -2655,37 +2703,28 @@ export default function Index() {
                       <s-button
                         variant="plain"
                         tone="critical"
-                        onClick={deleteProfileWithUndo}
+                        onClick={() => deleteProfileWithUndo(editingProfile?.id)}
                         disabled={profilesLocked || profiles.length <= 1}
-                        title={profiles.length <= 1 ? "Cannot delete last profile" : "Delete current profile"}
+                        title={profiles.length <= 1 ? "Cannot delete last profile" : "Delete selected profile"}
                       >
                         Delete
                       </s-button>
                     </div>
                   </div>
-                  {/* Lock button row - fixed height to prevent shift when undo appears */}
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", height: 36 }}>
-                    {lastDeletedProfile ? (
-                      <div style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 8,
-                        padding: "6px 12px",
-                        background: "var(--p-color-bg-caution-subdued, #fef3c7)",
-                        borderRadius: 4,
-                      }}>
-                        <s-text>Profile "{lastDeletedProfile.profile.name}" deleted.</s-text>
-                        <s-button size="small" onClick={undoDeleteProfile}>Undo</s-button>
-                      </div>
-                    ) : <div />}
-                    <s-button
-                      variant="plain"
-                      onClick={() => setProfilesLocked(!profilesLocked)}
-                      title={profilesLocked ? "Unlock to enable Add/Copy/Delete" : "Lock to prevent changes"}
-                    >
-                      {profilesLocked ? "🔒 Locked" : "🔓 Unlocked"}
-                    </s-button>
-                  </div>
+                  {/* Undo row - only shows when a profile was deleted */}
+                  {lastDeletedProfile && (
+                    <div style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 8,
+                      padding: "6px 12px",
+                      background: "var(--p-color-bg-caution-subdued, #fef3c7)",
+                      borderRadius: 4,
+                    }}>
+                      <s-text>Profile "{lastDeletedProfile.profile.name}" deleted.</s-text>
+                      <s-button size="small" onClick={undoDeleteProfile}>Undo</s-button>
+                    </div>
+                  )}
                 </div>
 
                 {/* Preview Timezone */}
