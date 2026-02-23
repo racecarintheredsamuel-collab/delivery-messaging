@@ -9,6 +9,20 @@
     if (window.__DIB_DEBUG__) console.log('[DIB FD]', ...args);
   };
 
+  // Theme-specific drawer configurations
+  // Add more themes here as they are tested
+  const THEME_DRAWER_CONFIGS = {
+    'Dawn': {
+      headingSelector: '.drawer__header',
+      insertPosition: 'afterend'
+    }
+  };
+
+  function getThemeConfig() {
+    const themeName = window.Shopify?.theme?.name;
+    return themeName ? THEME_DRAWER_CONFIGS[themeName] : null;
+  }
+
   // Cart page selectors (in priority order)
   const CART_PAGE_SELECTORS = [
     '.cart__items',
@@ -120,16 +134,35 @@
     const config = getConfig();
     if (!config) return false;
 
-    // Check if bar already exists in this container
-    // (Theme may have re-rendered and removed our bar, so always check DOM)
-    if (container.querySelector('.dib-fd-bar')) return false;
+    // For drawers, check if bar already exists anywhere in the drawer
+    const drawerRoot = container.closest('cart-drawer') || (container.matches && container.matches('cart-drawer') ? container : null);
+    const checkContainer = drawerRoot || container;
+    if (checkContainer.querySelector('.dib-fd-bar')) return false;
 
     const bar = createBarElement(config);
 
-    // For cart drawers, use absolute positioning so bar isn't affected by item removal
-    const isInDrawer = container.closest('cart-drawer') || container.matches('cart-drawer, .cart-drawer, [data-cart-drawer]');
+    // For cart drawers, try theme-specific positioning first
+    const isInDrawer = drawerRoot || container.matches('cart-drawer, .cart-drawer, [data-cart-drawer]');
     if (isInDrawer) {
-      // Make container relative if needed for absolute positioning
+      bar.style.margin = '12px';
+
+      const themeConfig = getThemeConfig();
+      const searchRoot = drawerRoot || container;
+
+      // Try theme-specific heading injection
+      if (themeConfig && themeConfig.headingSelector) {
+        const headingEl = searchRoot.querySelector(themeConfig.headingSelector);
+        if (headingEl) {
+          headingEl.insertAdjacentElement(themeConfig.insertPosition || 'afterend', bar);
+          injectedContainers.add(searchRoot);
+          debug('Injected bar after heading (theme:', window.Shopify?.theme?.name, ')');
+          setupBarObservers(bar, searchRoot, position);
+          triggerUpdate();
+          return true;
+        }
+      }
+
+      // Fallback: use absolute positioning for unknown themes
       const containerStyle = window.getComputedStyle(container);
       if (containerStyle.position === 'static') {
         container.style.position = 'relative';
@@ -138,25 +171,32 @@
       bar.style.top = '0';
       bar.style.left = '0';
       bar.style.right = '0';
-      bar.style.margin = '12px';
-      // Add padding to container so content doesn't overlap
       const currentPadding = parseInt(containerStyle.paddingTop) || 0;
       if (currentPadding < 90) {
         container.style.paddingTop = '90px';
       }
+      container.insertBefore(bar, container.firstChild);
+      injectedContainers.add(container);
+      debug('Injected bar (fallback absolute):', container.className || container.tagName);
     } else {
       // Cart page - use normal flow with margin
       bar.style.margin = '12px 0';
+      if (position === 'prepend') {
+        container.insertBefore(bar, container.firstChild);
+      } else {
+        container.appendChild(bar);
+      }
+      injectedContainers.add(container);
+      debug('Injected bar into cart page:', container.className || container.tagName);
     }
 
-    if (position === 'prepend') {
-      container.insertBefore(bar, container.firstChild);
-    } else {
-      container.appendChild(bar);
-    }
+    setupBarObservers(bar, container, position);
+    triggerUpdate();
+    return true;
+  }
 
-    injectedContainers.add(container);
-    debug('Injected bar into', container.className || container.tagName, isInDrawer ? '(absolute)' : '(flow)');
+  // Set up observers for bar removal and drawer state
+  function setupBarObservers(bar, container, position) {
 
     // Watch for the bar being removed (theme re-renders) and re-inject immediately
     const barObserver = new MutationObserver((mutations) => {
@@ -194,19 +234,17 @@
       });
       drawerObserver.observe(cartDrawer, { attributes: true, attributeFilter: ['open'] });
     }
+  }
 
-    // Trigger DeliveryMessaging to update the new target
+  // Trigger DeliveryMessaging to update the new target
+  function triggerUpdate() {
     if (window.DeliveryMessaging) {
-      // forceUpdate immediately updates all targets (including newly injected bars)
-      // refresh just schedules a cart fetch which may not update if cart unchanged
       if (window.DeliveryMessaging.forceUpdate) {
         window.DeliveryMessaging.forceUpdate();
       } else if (window.DeliveryMessaging.refresh) {
         window.DeliveryMessaging.refresh();
       }
     }
-
-    return true;
   }
 
   // Find cart page container
