@@ -1385,19 +1385,54 @@ export default function Index() {
     // Note: selectedIndex reset is handled by the effect watching activeProfileId changes
   };
 
-  // Profile management functions
+  // Profile management functions (max 5 profiles)
+  const maxProfilesReached = profiles.length >= 5;
+
   const addProfile = () => {
+    if (maxProfilesReached) return;
     const newProfile = defaultProfile(`Profile ${profiles.length + 1}`);
     setProfiles([...profiles, newProfile], newProfile.id);
   };
 
+  // Smart copy naming: "Profile (copy)", then "Profile (copy v2)", "Profile (copy v3)", etc.
+  const getSmartCopyName = (baseName, existingNames) => {
+    const escapeRegex = (str) => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const baseWithoutCopy = baseName.replace(/ \(copy( v\d+)?\)$/, '');
+    const copyPattern = new RegExp(`^${escapeRegex(baseWithoutCopy)} \\(copy( v(\\d+))?\\)$`);
+
+    let maxVersion = 0;
+    let hasCopyWithoutVersion = false;
+
+    existingNames.forEach(name => {
+      const match = name.match(copyPattern);
+      if (match) {
+        if (match[2]) {
+          maxVersion = Math.max(maxVersion, parseInt(match[2]));
+        } else {
+          hasCopyWithoutVersion = true;
+        }
+      }
+    });
+
+    if (!hasCopyWithoutVersion && maxVersion === 0) {
+      return `${baseWithoutCopy} (copy)`;
+    }
+
+    const nextVersion = Math.max(maxVersion, hasCopyWithoutVersion ? 1 : 0) + 1;
+    return `${baseWithoutCopy} (copy v${nextVersion})`;
+  };
+
   const copyProfile = () => {
     const profileToCopy = editingProfile || activeProfile;
-    if (!profileToCopy) return;
+    if (!profileToCopy || profiles.length >= 5) return;
+
+    const existingNames = profiles.map(p => p.name);
+    const smartName = getSmartCopyName(profileToCopy.name, existingNames);
+
     const copiedProfile = {
       ...profileToCopy,
       id: newProfileId(),
-      name: profileToCopy.name + " (copy)",
+      name: smartName,
       rules: profileToCopy.rules.map((r) => ({ ...r, id: newRuleId(), match: { ...r.match }, settings: { ...r.settings } })),
     };
     setProfiles([...profiles, copiedProfile], copiedProfile.id);
@@ -2688,15 +2723,15 @@ export default function Index() {
                     <div style={{ display: "flex", gap: 4 }}>
                       <s-button
                         onClick={addProfile}
-                        disabled={profilesLocked}
-                        title="Add new profile"
+                        disabled={profilesLocked || maxProfilesReached}
+                        title={maxProfilesReached ? "Maximum 5 profiles" : "Add new profile"}
                       >
                         Add
                       </s-button>
                       <s-button
                         onClick={copyProfile}
-                        disabled={profilesLocked}
-                        title="Copy current profile"
+                        disabled={profilesLocked || maxProfilesReached}
+                        title={maxProfilesReached ? "Maximum 5 profiles" : "Copy selected profile"}
                       >
                         Copy
                       </s-button>
