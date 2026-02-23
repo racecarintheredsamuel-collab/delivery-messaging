@@ -139,6 +139,17 @@
     const checkContainer = drawerRoot || container;
     if (checkContainer.querySelector('.dib-fd-bar')) return false;
 
+    // Skip injection if drawer has no cart items (Dawn)
+    if (drawerRoot) {
+      // Check for cart items - Dawn uses cart-drawer-items with cart-item elements
+      const cartItems = drawerRoot.querySelector('cart-drawer-items');
+      const hasItems = cartItems && cartItems.querySelector('.cart-item, cart-item, [data-cart-item]');
+      if (cartItems && !hasItems) {
+        debug('Cart drawer has no items, skipping injection');
+        return false;
+      }
+    }
+
     const bar = createBarElement(config);
 
     // For cart drawers, try theme-specific positioning first
@@ -198,24 +209,30 @@
   // Set up observers for bar removal and drawer state
   function setupBarObservers(bar, container, position) {
 
-    // Watch for the bar being removed (theme re-renders) and re-inject immediately
+    // Watch for the bar being removed (theme re-renders) and re-inject
     const barObserver = new MutationObserver((mutations) => {
       for (const mutation of mutations) {
         for (const removed of mutation.removedNodes) {
           if (removed === bar || (removed.nodeType === Node.ELEMENT_NODE && removed.contains && removed.contains(bar))) {
-            debug('Bar was removed, checking container validity');
             barObserver.disconnect();
 
-            // Check if container is still in the DOM - if not, find fresh container
-            if (!document.body.contains(container)) {
-              debug('Container detached from DOM, scanning for fresh container');
-              setTimeout(scanAndInject, 100);
+            // Check if drawer is still open before re-injecting
+            const drawer = document.querySelector('cart-drawer');
+            if (!drawer || !drawer.hasAttribute('open')) {
+              debug('Bar removed but drawer closed, not re-injecting');
               return;
             }
 
-            // Re-inject immediately (synchronously) to prevent blink
-            debug('Container still valid, re-injecting');
-            injectIntoContainer(container, position);
+            // Wait for DOM to stabilize after theme re-render, then scan fresh
+            debug('Bar was removed, waiting for DOM to stabilize');
+            setTimeout(() => {
+              // Double-check drawer is still open
+              const drawerCheck = document.querySelector('cart-drawer');
+              if (drawerCheck && drawerCheck.hasAttribute('open')) {
+                debug('Scanning for fresh container');
+                scanAndInject();
+              }
+            }, 200);
             return;
           }
         }
