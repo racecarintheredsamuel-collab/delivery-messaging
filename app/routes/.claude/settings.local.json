@@ -42,7 +42,9 @@
       "Bash(shopify app dev:*)",
       "Bash(git ls-tree:*)",
       "Bash(git stash:*)",
-      "Bash(npx shopify app deploy:*)"
+      "Bash(npx shopify app deploy:*)",
+      "Bash(du:*)",
+      "Bash(cat:*)"
     ]
   }
 }
