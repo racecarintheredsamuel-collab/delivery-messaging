@@ -7,68 +7,10 @@
 {{ 'dib-messages.css' | asset_url | stylesheet_tag }}
 <div style="text-align:{{ eta_alignment }}"><div class="dib-placeholder"><div><b>ETA Timeline</b><br><span>Enable "Show ETA Timeline" in rules to display here.</span></div></div></div>
 {%- elsif any_rule_matched and show_eta_timeline_final -%}
-{%- assign i_px = eta_icon_size_final | default: 36 -%}
-{%- assign ca_a = '' -%}
-{%- assign ca_b = '' -%}
-{%- assign ca_l = '' -%}
-{%- assign ca_c = '' -%}
-{%- assign c_as = c_sz | times: 67 | divided_by: 100 -%}
-{%- assign c_h = c_sz | divided_by: 2 -%}
-{%- assign a_h = c_as | divided_by: 2 -%}
-{%- if eta_connector_alignment_final == 'icon' -%}
-{%- assign mt_a = i_px | divided_by: 2 | minus: a_h -%}
-{%- assign mt_b = i_px | divided_by: 2 | minus: c_h -%}
-{%- assign mt_l = i_px | divided_by: 2 | minus: 1 -%}
-{%- assign mt_c = i_px | divided_by: 2 | minus: c_h -%}
-{%- assign ca_a = 'margin-top:' | append: mt_a | append: 'px;' -%}
-{%- assign ca_b = 'margin-top:' | append: mt_b | append: 'px;' -%}
-{%- assign ca_l = 'margin-top:' | append: mt_l | append: 'px;' -%}
-{%- assign ca_c = 'margin-top:' | append: mt_c | append: 'px;' -%}
-{%- endif -%}
-{%- assign c_lw = c_sz | plus: 16 -%}
-{%- assign c_cw = c_sz | plus: 4 -%}
-{%- assign eta_icon_color = icon_color -%}
-{%- if eta_use_main_icon_color_final == false -%}{%- assign eta_icon_color = eta_color_final -%}{%- endif -%}
-{%- assign eta_connector_color = eta_icon_color -%}
-{%- if eta_connector_use_main_color_final == false -%}{%- assign eta_connector_color = eta_connector_color_final -%}{%- endif -%}
-{%- if eta_use_theme_font_final == false -%}{%- assign font_to_load = nil -%}{%- if eta_match_messages_font_final and custom_font_family_final != blank -%}{%- assign font_to_load = custom_font_family_final -%}{%- elsif eta_custom_font_family_final != blank -%}{%- assign font_to_load = eta_custom_font_family_final -%}{%- endif -%}{%- if font_to_load != blank -%}<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family={{ font_to_load | replace: ' ', '+' }}:wght@400;500;600;700&display=swap" rel="stylesheet">{%- endif -%}{%- endif -%}
-{%- assign shipping_days_ahead = 1 -%}
-{%- capture eta_order_icon_markup -%}
-{%- if eta_order_icon_final contains 'custom-' -%}
-{%- assign custom_idx_str = eta_order_icon_final | remove: 'custom-' -%}
-{%- assign custom_idx = custom_idx_str | minus: 1 -%}
-{%- if global_settings != nil and global_settings.custom_icons != blank and global_settings.custom_icons.size > custom_idx -%}
-{%- assign custom_icon = global_settings.custom_icons[custom_idx] -%}
-{%- if custom_icon.svg != blank -%}{{ custom_icon.svg }}{%- elsif custom_icon.url != blank -%}<img src="{{ custom_icon.url }}" alt="" width="100%" height="100%" loading="lazy" style="object-fit:contain;display:block;width:100%;height:100%">{%- endif -%}
-{%- endif -%}
-{%- else -%}
-{%- render 'icon', icon: eta_order_icon_final, style: eta_order_icon_style_final -%}
-{%- endif -%}
-{%- endcapture -%}
-{%- capture eta_shipping_icon_markup -%}
-{%- if eta_shipping_icon_final contains 'custom-' -%}
-{%- assign custom_idx_str = eta_shipping_icon_final | remove: 'custom-' -%}
-{%- assign custom_idx = custom_idx_str | minus: 1 -%}
-{%- if global_settings != nil and global_settings.custom_icons != blank and global_settings.custom_icons.size > custom_idx -%}
-{%- assign custom_icon = global_settings.custom_icons[custom_idx] -%}
-{%- if custom_icon.svg != blank -%}{{ custom_icon.svg }}{%- elsif custom_icon.url != blank -%}<img src="{{ custom_icon.url }}" alt="" width="100%" height="100%" loading="lazy" style="object-fit:contain;display:block;width:100%;height:100%">{%- endif -%}
-{%- endif -%}
-{%- else -%}
-{%- render 'icon', icon: eta_shipping_icon_final, style: eta_shipping_icon_style_final -%}
-{%- endif -%}
-{%- endcapture -%}
-{%- capture eta_delivery_icon_markup -%}
-{%- if eta_delivery_icon_final contains 'custom-' -%}
-{%- assign custom_idx_str = eta_delivery_icon_final | remove: 'custom-' -%}
-{%- assign custom_idx = custom_idx_str | minus: 1 -%}
-{%- if global_settings != nil and global_settings.custom_icons != blank and global_settings.custom_icons.size > custom_idx -%}
-{%- assign custom_icon = global_settings.custom_icons[custom_idx] -%}
-{%- if custom_icon.svg != blank -%}{{ custom_icon.svg }}{%- elsif custom_icon.url != blank -%}<img src="{{ custom_icon.url }}" alt="" width="100%" height="100%" loading="lazy" style="object-fit:contain;display:block;width:100%;height:100%">{%- endif -%}
-{%- endif -%}
-{%- else -%}
-{%- render 'icon', icon: eta_delivery_icon_final, style: eta_delivery_icon_style_final -%}
-{%- endif -%}
-{%- endcapture -%}
+{%- assign i_px = eta_icon_size_final | default: 36 -%}{%- assign ca_a = '' -%}{%- assign ca_b = '' -%}{%- assign ca_l = '' -%}{%- assign ca_c = '' -%}{%- assign c_as = c_sz | times: 67 | divided_by: 100 -%}{%- assign c_h = c_sz | divided_by: 2 -%}{%- assign a_h = c_as | divided_by: 2 -%}{%- if eta_connector_alignment_final == 'icon' -%}{%- assign mt_a = i_px | divided_by: 2 | minus: a_h -%}{%- assign mt_b = i_px | divided_by: 2 | minus: c_h -%}{%- assign mt_l = i_px | divided_by: 2 | minus: 1 -%}{%- assign mt_c = i_px | divided_by: 2 | minus: c_h -%}{%- assign ca_a = 'margin-top:' | append: mt_a | append: 'px;' -%}{%- assign ca_b = 'margin-top:' | append: mt_b | append: 'px;' -%}{%- assign ca_l = 'margin-top:' | append: mt_l | append: 'px;' -%}{%- assign ca_c = 'margin-top:' | append: mt_c | append: 'px;' -%}{%- endif -%}{%- assign c_lw = c_sz | plus: 16 -%}{%- assign c_cw = c_sz | plus: 4 -%}{%- assign eta_icon_color = icon_color -%}
+{%- if eta_use_main_icon_color_final == false -%}{%- assign eta_icon_color = eta_color_final -%}{%- endif -%}{%- assign eta_connector_color = eta_icon_color -%}{%- if eta_connector_use_main_color_final == false -%}{%- assign eta_connector_color = eta_connector_color_final -%}{%- endif -%}{%- if eta_use_theme_font_final == false -%}{%- assign font_to_load = nil -%}{%- if eta_match_messages_font_final and custom_font_family_final != blank -%}{%- assign font_to_load = custom_font_family_final -%}{%- elsif eta_custom_font_family_final != blank -%}{%- assign font_to_load = eta_custom_font_family_final -%}{%- endif -%}{%- if font_to_load != blank -%}<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family={{ font_to_load | replace: ' ', '+' }}:wght@400;500;600;700&display=swap" rel="stylesheet">{%- endif -%}{%- endif -%}{%- assign shipping_days_ahead = 1 -%}{%- capture eta_order_icon_markup -%}{%- if eta_order_icon_final contains 'custom-' -%}{%- assign custom_idx_str = eta_order_icon_final | remove: 'custom-' -%}{%- assign custom_idx = custom_idx_str | minus: 1 -%}{%- if global_settings != nil and global_settings.custom_icons != blank and global_settings.custom_icons.size > custom_idx -%}{%- assign custom_icon = global_settings.custom_icons[custom_idx] -%}{%- if custom_icon.svg != blank -%}{{ custom_icon.svg }}{%- elsif custom_icon.url != blank -%}<img src="{{ custom_icon.url }}" alt="" width="100%" height="100%" loading="lazy" style="object-fit:contain;display:block;width:100%;height:100%">{%- endif -%}{%- endif -%}{%- else -%}{%- render 'icon', icon: eta_order_icon_final, style: eta_order_icon_style_final -%}{%- endif -%}{%- endcapture -%}
+{%- capture eta_shipping_icon_markup -%}{%- if eta_shipping_icon_final contains 'custom-' -%}{%- assign custom_idx_str = eta_shipping_icon_final | remove: 'custom-' -%}{%- assign custom_idx = custom_idx_str | minus: 1 -%}{%- if global_settings != nil and global_settings.custom_icons != blank and global_settings.custom_icons.size > custom_idx -%}{%- assign custom_icon = global_settings.custom_icons[custom_idx] -%}{%- if custom_icon.svg != blank -%}{{ custom_icon.svg }}{%- elsif custom_icon.url != blank -%}<img src="{{ custom_icon.url }}" alt="" width="100%" height="100%" loading="lazy" style="object-fit:contain;display:block;width:100%;height:100%">{%- endif -%}{%- endif -%}{%- else -%}{%- render 'icon', icon: eta_shipping_icon_final, style: eta_shipping_icon_style_final -%}{%- endif -%}{%- endcapture -%}
+{%- capture eta_delivery_icon_markup -%}{%- if eta_delivery_icon_final contains 'custom-' -%}{%- assign custom_idx_str = eta_delivery_icon_final | remove: 'custom-' -%}{%- assign custom_idx = custom_idx_str | minus: 1 -%}{%- if global_settings != nil and global_settings.custom_icons != blank and global_settings.custom_icons.size > custom_idx -%}{%- assign custom_icon = global_settings.custom_icons[custom_idx] -%}{%- if custom_icon.svg != blank -%}{{ custom_icon.svg }}{%- elsif custom_icon.url != blank -%}<img src="{{ custom_icon.url }}" alt="" width="100%" height="100%" loading="lazy" style="object-fit:contain;display:block;width:100%;height:100%">{%- endif -%}{%- endif -%}{%- else -%}{%- render 'icon', icon: eta_delivery_icon_final, style: eta_delivery_icon_style_final -%}{%- endif -%}{%- endcapture -%}
 {{ 'dib-messages.css' | asset_url | stylesheet_tag }}
 <style>.dib-eta-timeline-block,.dib-eta-timeline-block .dib-eta-timeline{text-align:{{ eta_alignment }}!important}.dib-eta-timeline-block .dib-eta-stages{gap:{{ eta_horizontal_gap_final }}px!important}</style>
 <div id="{{ uid }}" class="dib-eta-timeline-block" style="{% if eta_alignment_mobile != blank %}--dib-align-mobile:{{ eta_alignment_mobile }};{% endif %}{% if eta_margin_top != 0 %}margin-top:{{ eta_margin_top }}px;{% endif %}{% if eta_margin_bottom != 0 %}margin-bottom:{{ eta_margin_bottom }}px;{% endif %}">

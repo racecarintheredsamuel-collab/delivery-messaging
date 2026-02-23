@@ -100,6 +100,8 @@
 .dib-fd-message{transition:opacity .2s ease-out}
 </style>
 <link rel="preload" href="/cart.js" as="fetch" crossorigin>
+<link rel="preload" href="{{ 'dib-free-delivery.js' | asset_url }}" as="script">
+<link rel="preload" href="{{ 'delivery-messaging.js' | asset_url }}" as="script">
 <script src="{{ 'dib-free-delivery.js' | asset_url }}" defer></script>
 <script src="{{ 'delivery-messaging.js' | asset_url }}" defer></script>
 {%- endif -%}
