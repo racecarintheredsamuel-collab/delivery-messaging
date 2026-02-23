@@ -77,7 +77,7 @@
   data-dm-config
   data-threshold="{{ fd_threshold }}"
   data-currency="{{ shop.currency }}"
-  data-locale="{{ request.locale.iso_code | default: 'en-GB' }}"
+  data-locale="{{ request.locale.iso_code }}-{{ localization.country.iso_code | default: request.locale.iso_code | upcase }}"
   data-message-progress="{{ fd_message_progress | escape }}"
   data-message-unlocked="{{ fd_message_unlocked | escape }}"
   data-message-empty="{{ fd_message_empty | escape }}"
