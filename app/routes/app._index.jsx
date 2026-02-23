@@ -1882,7 +1882,7 @@ export default function Index() {
                   <s-text size="small" style={{ color: "var(--p-color-text-subdued, #6b7280)" }}>
                     Select your Shopify theme's fonts so the admin preview matches your storefront. Find these in your theme settings under Typography.
                   </s-text>
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                  <div style={{ display: "grid", gap: 12 }}>
                     <FontSelector
                       label="Heading Font"
                       value={globalSettings?.preview_heading_font || ""}
