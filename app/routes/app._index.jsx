@@ -2674,7 +2674,7 @@ export default function Index() {
 
                 {/* Profiles Section */}
                 <div style={{ border: "1px solid var(--p-color-border, #e5e7eb)", borderRadius: 8, padding: 16, display: "grid", gap: 12, background: "var(--p-color-bg-surface-secondary, #f9fafb)", minHeight: 130 }}>
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", minHeight: 32 }}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", minHeight: 36 }}>
                     <s-heading size="small">Profiles</s-heading>
                     {lastDeletedProfile && (
                       <div style={{
