@@ -8,7 +8,7 @@ Usage: {% render 'icon', icon: 'truck', style: 'solid' %}
   {%- assign icons = icons_json | parse_json -%}
   {%- assign icon_key = icon | append: '-' | append: icon_style -%}
   {%- if icons[icon_key] -%}
-    {%- assign icon_svg = icons[icon_key] | replace: 'style="display: block;"', 'style="width:100%;height:100%"' -%}
+    {%- assign icon_svg = icons[icon_key] | replace: '<svg', '<svg width="100%" height="100%" ' -%}
     {{ icon_svg }}
   {%- endif -%}
 {%- endif -%}
