@@ -4,7 +4,6 @@
   {%- assign global_settings = global_settings_json | parse_json -%}
 {%- endif -%}
 
-{%- comment -%} Cart/General Free Delivery Messaging defaults {%- endcomment -%}
 {%- assign fd_enabled = false -%}
 {%- assign fd_threshold = 5000 -%}
 {%- capture fd_message_progress -%}Spend {remaining} more for free delivery{%- endcapture -%}
@@ -63,16 +62,11 @@
     {%- assign fd_multi_match_message = global_settings.fd_exclusion_multi_match_message -%}
   {%- endif -%}
 {%- endif -%}
-
-{%- comment -%} Default excluded message {%- endcomment -%}
 {%- if fd_message_excluded == blank -%}
   {%- assign fd_message_excluded = "Some items in your cart aren't eligible for free delivery" -%}
 {%- endif -%}
 
-{%- comment -%} Output config and scripts if cart messaging is enabled {%- endcomment -%}
 {%- if fd_enabled -%}
-
-{%- comment -%} Config for cart drawer messaging {%- endcomment -%}
 <div id="dib-fd-config" style="display:none"
   data-dm-config
   data-threshold="{{ fd_threshold }}"
@@ -91,7 +85,6 @@
   data-bar-bg-color="{{ fd_bar_bg_color }}"
   data-multi-match-message="{{ fd_multi_match_message | escape }}"
 ></div>
-
 <style>
 .dib-fd-bar.dib-fd-celebrate {
   animation: dib-fd-pulse 0.4s ease-out;
@@ -100,14 +93,15 @@
   0%, 100% { transform: scale(1); opacity: 1; }
   50% { transform: scale(1.02); opacity: 0.9; }
 }
+.dib-fd-skeleton-text,.dib-fd-skeleton-bar{background:linear-gradient(90deg,#e5e7eb 25%,#f3f4f6 50%,#e5e7eb 75%);background-size:200% 100%;animation:dib-shimmer 1.5s infinite;border-radius:4px}
+.dib-fd-skeleton-text{height:14px;width:70%;margin:0 auto}
+.dib-fd-skeleton-bar{height:8px;width:100%}
+@keyframes dib-shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+.dib-fd-message{transition:opacity .2s ease-out}
 </style>
-
 <link rel="preload" href="/cart.js" as="fetch" crossorigin>
-
-{%- comment -%} Scripts for cart drawer injection {%- endcomment -%}
 <script src="{{ 'dib-free-delivery.js' | asset_url }}" defer></script>
 <script src="{{ 'delivery-messaging.js' | asset_url }}" defer></script>
-
 {%- endif -%}
 {% schema %}
 {"name":"Cart Messaging","target":"body","settings":[]}
