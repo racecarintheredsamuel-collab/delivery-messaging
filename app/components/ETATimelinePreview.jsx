@@ -64,28 +64,24 @@ export function ETATimelinePreview({ rule, globalSettings }) {
   const gapIconLabel = globalSettings?.eta_gap_icon_label ?? 2;
   const gapLabelDate = globalSettings?.eta_gap_label_date ?? 0;
 
-  // Determine ETA font families from global settings
-  // Labels (Ordered, Shipped, Delivered) use heading font
-  // Dates (Jan 20, etc.) use body font
-  const previewHeadingFont = globalSettings?.preview_heading_font || "";
-  const previewBodyFont = globalSettings?.preview_body_font || "";
-
-  // Fallback to legacy eta_preview_theme_font if new settings not set
+  // Determine ETA font family from global settings
+  // All text (labels and dates) uses the same preview font
+  const previewFont = globalSettings?.preview_body_font || "";
   const legacyFont = globalSettings?.eta_preview_theme_font || "";
 
-  // Build font family strings with fallbacks
-  let etaLabelFontFamily = previewHeadingFont
-    ? `"${previewHeadingFont}", sans-serif`
-    : legacyFont || "'Assistant', sans-serif";
-  let etaDateFontFamily = previewBodyFont
-    ? `"${previewBodyFont}", sans-serif`
+  // Build font family string with fallbacks
+  let etaFontFamily = previewFont
+    ? `"${previewFont}", sans-serif`
     : legacyFont || "'Assistant', sans-serif";
 
   // Override with custom font if theme font is disabled
   if (globalSettings?.eta_use_theme_font === false && globalSettings?.eta_custom_font_family) {
-    etaLabelFontFamily = globalSettings.eta_custom_font_family;
-    etaDateFontFamily = globalSettings.eta_custom_font_family;
+    etaFontFamily = globalSettings.eta_custom_font_family;
   }
+
+  // Use same font for both labels and dates (matches storefront behavior)
+  const etaLabelFontFamily = etaFontFamily;
+  const etaDateFontFamily = etaFontFamily;
 
   // Determine ETA text styling - per-rule override takes precedence
   // Use normalize functions to handle both string keywords and numeric px values
@@ -436,12 +432,9 @@ export function ETATimelinePreview({ rule, globalSettings }) {
   const paddingHorizontal = globalSettings?.eta_padding_horizontal ?? 8;
   const paddingVertical = globalSettings?.eta_padding_vertical ?? 8;
 
-  // Build Google Fonts URLs for loading
-  const fontsToLoad = [];
-  if (previewHeadingFont) fontsToLoad.push(previewHeadingFont);
-  if (previewBodyFont && previewBodyFont !== previewHeadingFont) fontsToLoad.push(previewBodyFont);
-  const googleFontsUrl = fontsToLoad.length > 0
-    ? `https://fonts.googleapis.com/css2?${fontsToLoad.map(f => `family=${encodeURIComponent(f)}:wght@400;500;600;700`).join("&")}&display=swap`
+  // Build Google Fonts URL for loading
+  const googleFontsUrl = previewFont
+    ? `https://fonts.googleapis.com/css2?family=${encodeURIComponent(previewFont)}:wght@400;500;600;700&display=swap`
     : null;
 
   return (

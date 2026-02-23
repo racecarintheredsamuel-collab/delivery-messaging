@@ -52,13 +52,12 @@ function defaultGlobalSettings() {
     text_color: "var(--p-color-text, #374151)",
     font_size: "medium",
     font_weight: "normal",
-    // Typography - Preview fonts (for admin UI preview to match theme)
-    preview_heading_font: "",
+    // Typography - Preview font (for admin UI preview to match theme)
     preview_body_font: "",
     // Typography - ETA Timeline font
     eta_use_theme_font: true,
     eta_custom_font_family: "",
-    eta_preview_theme_font: "", // Deprecated: use preview_heading_font/preview_body_font instead
+    eta_preview_theme_font: "", // Deprecated: use preview_body_font instead
     eta_preview_font_size_scale: "", // Font size scale for admin preview (80-130%)
     eta_preview_font_weight: "", // Font weight for admin preview
     // Typography - ETA Timeline text styling
@@ -1878,24 +1877,15 @@ export default function Index() {
 
                 {/* Theme Fonts for Preview */}
                 <div style={{ border: "1px solid var(--p-color-border, #e5e7eb)", borderRadius: 8, padding: 16, display: "grid", gap: 12, background: "var(--p-color-bg-surface-secondary, #f9fafb)" }}>
-                  <s-heading size="small">Theme Fonts for Preview</s-heading>
+                  <s-heading size="small">Theme Font for Preview</s-heading>
                   <s-text size="small" style={{ color: "var(--p-color-text-subdued, #6b7280)" }}>
-                    Select your Shopify theme's fonts so the admin preview matches your storefront. Find these in your theme settings under Typography.
+                    Select your Shopify theme's body font so the admin preview matches your storefront.
                   </s-text>
-                  <div style={{ display: "grid", gap: 12 }}>
-                    <FontSelector
-                      label="Heading Font"
-                      value={globalSettings?.preview_heading_font || ""}
-                      onChange={(font) => setGlobalSettings({ ...globalSettings, preview_heading_font: font })}
-                      placeholder="Search fonts..."
-                    />
-                    <FontSelector
-                      label="Body Font"
-                      value={globalSettings?.preview_body_font || ""}
-                      onChange={(font) => setGlobalSettings({ ...globalSettings, preview_body_font: font })}
-                      placeholder="Search fonts..."
-                    />
-                  </div>
+                  <FontSelector
+                    value={globalSettings?.preview_body_font || ""}
+                    onChange={(font) => setGlobalSettings({ ...globalSettings, preview_body_font: font })}
+                    placeholder="Search fonts..."
+                  />
                   <div>
                     <s-text size="small">Font size scale ({globalSettings?.eta_preview_font_size_scale || 100}%)</s-text>
                     <input
@@ -5805,12 +5795,9 @@ export default function Index() {
                 `}</style>
 
                 {/* Load Google Fonts for preview */}
-                {(globalSettings?.preview_heading_font || globalSettings?.preview_body_font) && (
+                {globalSettings?.preview_body_font && (
                   <link
-                    href={`https://fonts.googleapis.com/css2?${[
-                      globalSettings?.preview_heading_font,
-                      globalSettings?.preview_body_font
-                    ].filter((f, i, arr) => f && arr.indexOf(f) === i).map(f => `family=${encodeURIComponent(f)}:wght@400;500;600;700`).join("&")}&display=swap`}
+                    href={`https://fonts.googleapis.com/css2?family=${encodeURIComponent(globalSettings.preview_body_font)}:wght@400;500;600;700&display=swap`}
                     rel="stylesheet"
                   />
                 )}
@@ -6087,9 +6074,6 @@ export default function Index() {
                                 : globalSettings?.preview_body_font
                                   ? `"${globalSettings.preview_body_font}", sans-serif`
                                   : globalSettings?.eta_preview_theme_font || "'Assistant', sans-serif";
-                              const headerFontFamily = globalSettings?.preview_heading_font
-                                ? `"${globalSettings.preview_heading_font}", sans-serif`
-                                : fontFamily;
                               const lineHeight = globalSettings?.special_delivery_line_height ?? 1.4;
                               const textAlignment = rule.settings.special_delivery_text_alignment || "left";
 
@@ -6145,7 +6129,7 @@ export default function Index() {
                                         color: headerColor,
                                         fontSize: headerFontSize,
                                         fontWeight: headerFontWeight,
-                                        fontFamily: headerFontFamily,
+                                        fontFamily: fontFamily,
                                       }}>
                                         {parsedHeader.map((seg, i) => renderSegment(seg, i, 'sph', globalSettings))}
                                       </div>
