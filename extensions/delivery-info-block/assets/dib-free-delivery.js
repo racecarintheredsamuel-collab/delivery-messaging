@@ -144,7 +144,7 @@
     // For cart drawers, try theme-specific positioning first
     const isInDrawer = drawerRoot || container.matches('cart-drawer, .cart-drawer, [data-cart-drawer]');
     if (isInDrawer) {
-      bar.style.margin = '4px 12px 12px 12px';  // Less top margin for tighter spacing after heading
+      bar.style.margin = '0 12px 12px 12px';  // No top margin - drawer heading has its own padding
 
       const themeConfig = getThemeConfig();
       const searchRoot = drawerRoot || container;
