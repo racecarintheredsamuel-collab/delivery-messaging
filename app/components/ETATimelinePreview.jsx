@@ -420,31 +420,33 @@ export function ETATimelinePreview({ rule, globalSettings }) {
   const paddingVertical = globalSettings?.eta_padding_vertical ?? 8;
 
   return (
-    <div
-      style={{
-        display: "inline-flex",
-        alignItems: connectorAlignment === "icon" ? "flex-start" : "center",
-        justifySelf: "start",
-        gap: horizontalGap,
-        maxWidth: "100%",
-        padding: `${paddingVertical}px ${paddingHorizontal}px`,
-        ...(borderWidth > 0 ? {
-          border: `${borderWidth}px solid ${borderColor}`,
-          borderRadius: borderRadius,
-        } : {}),
-        ...(backgroundColor ? { backgroundColor, borderRadius: borderRadius } : {}),
-      }}
-    >
-      <Stage label={rule.settings?.eta_label_order || "Ordered"} date={formatDate(today)} icon="order" />
-      <Connector />
-      <Stage label={rule.settings?.eta_label_shipping || "Shipped"} date={formatDate(shippingDate)} icon="shipping" />
-      <Connector />
-      <Stage
-        label={rule.settings?.eta_label_delivery || "Delivered"}
-        date={deliveryDateStr}
-        icon="delivery"
-        extraMarginRight={minDays !== maxDays && deliveryMinDate.getMonth() !== deliveryMaxDate.getMonth() ? 8 : 0}
-      />
+    <div style={{ display: "inline-block", maxWidth: "100%", overflow: "hidden" }}>
+      <div
+        style={{
+          display: "inline-flex",
+          alignItems: connectorAlignment === "icon" ? "flex-start" : "center",
+          justifySelf: "start",
+          gap: horizontalGap,
+          maxWidth: "100%",
+          padding: `${paddingVertical}px ${paddingHorizontal}px`,
+          ...(borderWidth > 0 ? {
+            border: `${borderWidth}px solid ${borderColor}`,
+            borderRadius: borderRadius,
+          } : {}),
+          ...(backgroundColor ? { backgroundColor, borderRadius: borderRadius } : {}),
+        }}
+      >
+        <Stage label={rule.settings?.eta_label_order || "Ordered"} date={formatDate(today)} icon="order" />
+        <Connector />
+        <Stage label={rule.settings?.eta_label_shipping || "Shipped"} date={formatDate(shippingDate)} icon="shipping" />
+        <Connector />
+        <Stage
+          label={rule.settings?.eta_label_delivery || "Delivered"}
+          date={deliveryDateStr}
+          icon="delivery"
+          extraMarginRight={minDays !== maxDays && deliveryMinDate.getMonth() !== deliveryMaxDate.getMonth() ? 8 : 0}
+        />
+      </div>
     </div>
   );
 }
