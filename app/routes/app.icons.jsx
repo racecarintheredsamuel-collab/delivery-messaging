@@ -369,11 +369,34 @@ export default function IconsPage() {
           <div style={{ marginBottom: 16 }}>
             <s-heading>Icon Resources</s-heading>
             <s-text size="small" style={{ color: "var(--p-color-text-subdued, #6b7280)", marginTop: 4, display: "block" }}>
-              These libraries use scalable SVGs with color inheritance. Click an icon to copy its SVG code.
+              Copy SVG code from any icon library and paste it below. We automatically convert it to work with your color and sizing settings.
             </s-text>
           </div>
 
           <div style={{ display: "flex", flexWrap: "wrap", gap: 12 }}>
+            <a
+              href="https://fonts.google.com/icons"
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 6,
+                padding: "8px 12px",
+                borderRadius: 6,
+                border: "1px solid var(--p-color-border, #e5e7eb)",
+                background: "var(--p-color-bg-surface-secondary, #f9fafb)",
+                color: "var(--p-color-text, #374151)",
+                textDecoration: "none",
+                fontSize: 13,
+              }}
+            >
+              Google Icons
+              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 20 20" fill="currentColor" style={{ opacity: 0.5 }}>
+                <path fillRule="evenodd" d="M4.25 5.5a.75.75 0 00-.75.75v8.5c0 .414.336.75.75.75h8.5a.75.75 0 00.75-.75v-4a.75.75 0 011.5 0v4A2.25 2.25 0 0112.75 17h-8.5A2.25 2.25 0 012 14.75v-8.5A2.25 2.25 0 014.25 4h5a.75.75 0 010 1.5h-5z" clipRule="evenodd" />
+                <path fillRule="evenodd" d="M6.194 12.753a.75.75 0 001.06.053L16.5 4.44v2.81a.75.75 0 001.5 0v-4.5a.75.75 0 00-.75-.75h-4.5a.75.75 0 000 1.5h2.553l-9.056 8.194a.75.75 0 00-.053 1.06z" clipRule="evenodd" />
+              </svg>
+            </a>
             <a
               href="https://heroicons.com/"
               target="_blank"
