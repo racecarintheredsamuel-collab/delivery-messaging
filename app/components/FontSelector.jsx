@@ -25,13 +25,12 @@ export function FontSelector({ value, onChange, placeholder = "Search fonts...",
   const inputRef = useRef(null);
   const listRef = useRef(null);
 
-  // Toggle category expansion
+  // Toggle category expansion (accordion - only one open at a time)
   const toggleCategory = (catKey, e) => {
     e.stopPropagation();
     setExpandedCategories(prev => {
-      const next = new Set(prev);
-      next.has(catKey) ? next.delete(catKey) : next.add(catKey);
-      return next;
+      // If already open, close it. Otherwise, open only this one.
+      return prev.has(catKey) ? new Set() : new Set([catKey]);
     });
   };
 
