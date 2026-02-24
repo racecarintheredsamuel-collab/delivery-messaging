@@ -8,7 +8,7 @@
 <style>
 #{{ uid }} .dib-line{align-items:center!important}#{{ uid }} .dib-icon{margin-top:0!important}
 {%- if use_theme_text_styling_final == false %}#{{ uid }} .dib-text{ {%- if text_color_final != blank %}color:{{ text_color_final }};{%- endif %}{%- assign font_size_num = font_size_final | plus: 0 -%}{%- if font_size_num > 0 -%}font-size:{{ font_size_final }}px;{%- else -%}{%- case font_size_final -%}{%- when 'xsmall' %}font-size:12px;{%- when 'small' %}font-size:14px;{%- when 'large' %}font-size:18px;{%- when 'xlarge' %}font-size:20px;{%- else %}font-size:16px;{%- endcase %}{%- endif -%}{%- case font_weight_final -%}{%- when 'bold' %}font-weight:700;{%- else %}font-weight:400;{%- endcase %}}{% endif -%}
-{%- if use_theme_font_final == false and custom_font_family_final != blank -%}{%- if custom_font_family_final contains ',' -%}#{{ uid }} .dib-text{font-family:{{ custom_font_family_final }}}{%- else -%}#{{ uid }} .dib-text{font-family:'{{ custom_font_family_final }}', sans-serif}{%- endif -%}{%- endif -%}
+{%- if use_theme_font_final == false and custom_font_family_final != blank %}#{{ uid }} .dib-text{font-family:{{ custom_font_family_final }}, sans-serif}{% endif -%}
 {%- if max_width_final and max_width_final > 0 and match_eta_width_final != true %}#{{ uid }}{width:min({{ max_width_final }}px,100%);min-width:fit-content}{% endif -%}
 {%- if match_eta_width_final == true and show_eta_timeline_final == true %}#{{ uid }}{display:block}{% endif -%}
 .dib-messages-block-{{ uid }}:has(#{{ uid }} .dib-container:not(:has(.dib-line:not(.dib-has-countdown), .dib-has-countdown.is-ready))){display:none}
@@ -54,7 +54,7 @@
 {%- assign message_line_1_final = message_line_1_final | replace: '{threshold}', fd_threshold_display -%}
 {%- assign message_line_2_final = message_line_2_final | replace: '{threshold}', fd_threshold_display -%}
 {%- assign message_line_3_final = message_line_3_final | replace: '{threshold}', fd_threshold_display -%}
-{%- if use_theme_font_final == false and custom_font_family_final != blank -%}{%- assign font_to_load = custom_font_family_final | remove: "'" | split: ',' | first | strip -%}{%- if font_to_load != blank -%}<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family={{ font_to_load | replace: ' ', '+' }}:wght@400;500;600;700&display=swap" rel="stylesheet">{%- endif -%}{%- endif -%}
+{%- if use_theme_font_final == false and custom_font_family_final != blank -%}<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family={{ custom_font_family_final | replace: ' ', '+' }}:wght@400;700&display=swap" rel="stylesheet">{%- endif -%}
 {% if request.design_mode %}
 <div style="text-align:{{ messages_alignment }}"><div class="dib-placeholder"><div><b>Delivery Messages</b><br><span>Configure rules in the app to display here.</span></div></div></div>
 {% elsif should_show_block %}

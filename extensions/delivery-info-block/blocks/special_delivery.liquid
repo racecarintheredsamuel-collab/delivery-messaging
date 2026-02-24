@@ -10,7 +10,7 @@
 {{ 'dib-messages.css' | asset_url | stylesheet_tag }}
 <div style="text-align:{{ special_delivery_alignment }}"><div class="dib-placeholder"><div><b>Special Delivery</b><br><span>Enable "Show Special Delivery" in rules to display here.</span></div></div></div>
 {%- elsif should_show_block -%}
-{%- if final_font_family != blank -%}{%- assign font_to_load = final_font_family | remove: "'" | split: ',' | first | strip -%}{%- if font_to_load != blank -%}<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family={{ font_to_load | replace: ' ', '+' }}:wght@400;500;600;700&display=swap" rel="stylesheet">{%- endif -%}{%- endif -%}
+{%- if final_font_family != blank -%}<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family={{ final_font_family | replace: ' ', '+' }}:wght@400;700&display=swap" rel="stylesheet">{%- endif -%}
 {{ 'dib-messages.css' | asset_url | stylesheet_tag }}
 <style>
 #{{ uid }} .dib-special-text{
@@ -31,7 +31,7 @@
 {%- else %}font-weight:400;
 {%- endcase %}
 {%- else -%}font-weight:inherit;{%- endif -%}line-height:{{ special_delivery_line_height_final }};}
-{%- if final_font_family != blank -%}{%- if final_font_family contains ',' -%}#{{ uid }} .dib-special-text{font-family:{{ final_font_family }}}{%- else -%}#{{ uid }} .dib-special-text{font-family:'{{ final_font_family }}', sans-serif}{%- endif -%}{%- endif -%}
+{%- if final_font_family != blank %}#{{ uid }} .dib-special-text{font-family:{{ final_font_family }}, sans-serif}{% endif -%}
 {%- if special_delivery_header_final != blank -%}
 #{{ uid }} .dib-special-header{
 {%- if special_delivery_header_use_theme_text_styling_final == false -%}
@@ -42,7 +42,7 @@ font-size:{{ special_delivery_header_font_size_final }}px;
 {%- else %}font-weight:400;
 {%- endcase %}
 {%- else -%}font-weight:inherit;{%- endif -%}}
-{%- if final_font_family != blank -%}{%- if final_font_family contains ',' -%}#{{ uid }} .dib-special-header{font-family:{{ final_font_family }}}{%- else -%}#{{ uid }} .dib-special-header{font-family:'{{ final_font_family }}', sans-serif}{%- endif -%}{%- endif -%}
+{%- if final_font_family != blank %}#{{ uid }} .dib-special-header{font-family:{{ final_font_family }}, sans-serif}{% endif -%}
 {%- endif -%}
 </style>
 <div id="{{ uid }}" class="dib-special-delivery-block" {% if special_delivery_match_eta_width_final %}data-match-eta-width="true"{% endif %} style="text-align:{{ special_delivery_alignment }};{% if special_delivery_alignment_mobile != blank %}--dib-align-mobile:{{ special_delivery_alignment_mobile }};{% endif %}{% if special_delivery_margin_top != 0 %}margin-top:{{ special_delivery_margin_top }}px;{% endif %}{% if special_delivery_margin_bottom != 0 %}margin-bottom:{{ special_delivery_margin_bottom }}px;{% endif %}">
