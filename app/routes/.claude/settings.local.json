@@ -45,7 +45,10 @@
       "Bash(npx shopify app deploy:*)",
       "Bash(du:*)",
       "Bash(cat:*)",
-      "WebFetch(domain:shopify.dev)"
+      "WebFetch(domain:shopify.dev)",
+      "WebFetch(domain:fonts.google.com)",
+      "Bash(node scripts/curate-fonts.js:*)",
+      "Bash(node scripts/curate-fonts.cjs:*)"
     ]
   }
 }

@@ -29,14 +29,16 @@ export function FontSelector({ value, onChange, placeholder = "Search fonts...",
   const toggleCategory = (catKey, e) => {
     e.stopPropagation();
     const isCurrentlyOpen = expandedCategories.has(catKey);
+    const headerEl = e.currentTarget;
     setExpandedCategories(prev => {
       // If already open, close it. Otherwise, open only this one.
       return prev.has(catKey) ? new Set() : new Set([catKey]);
     });
     // If opening (not closing), scroll header to top of dropdown
-    if (!isCurrentlyOpen) {
+    if (!isCurrentlyOpen && listRef.current && headerEl) {
       setTimeout(() => {
-        e.currentTarget.scrollIntoView({ block: "start", behavior: "instant" });
+        // Scroll within the dropdown container, not the page
+        listRef.current.scrollTop = headerEl.offsetTop;
       }, 0);
     }
   };
