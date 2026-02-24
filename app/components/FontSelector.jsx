@@ -1,10 +1,20 @@
 // ============================================================================
 // FONT SELECTOR COMPONENT
-// A searchable dropdown for selecting Google Fonts with manual entry fallback
+// A searchable dropdown for selecting Google Fonts with category sections
 // ============================================================================
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import googleFonts from "../data/googleFonts.json";
+
+// Category display order and labels
+const CATEGORY_ORDER = [
+  { key: "popular", label: "Popular" },
+  { key: "sans-serif", label: "Sans Serif" },
+  { key: "serif", label: "Serif" },
+  { key: "display", label: "Display" },
+  { key: "handwriting", label: "Handwriting" },
+  { key: "monospace", label: "Monospace" },
+];
 
 export function FontSelector({ value, onChange, placeholder = "Search fonts...", label }) {
   const [isOpen, setIsOpen] = useState(false);
@@ -16,12 +26,38 @@ export function FontSelector({ value, onChange, placeholder = "Search fonts...",
   const inputRef = useRef(null);
   const listRef = useRef(null);
 
-  // Filter fonts based on search query
-  const filteredFonts = searchQuery
-    ? googleFonts.filter((font) =>
-        font.family.toLowerCase().includes(searchQuery.toLowerCase())
-      ).slice(0, 50) // Limit to 50 matches for performance
-    : googleFonts.slice(0, 50); // Show first 50 when no search
+  // Organize fonts by category
+  const fontsByCategory = useMemo(() => {
+    const result = {
+      popular: googleFonts.filter(f => f.popular),
+      "sans-serif": googleFonts.filter(f => !f.popular && f.category === "sans-serif"),
+      serif: googleFonts.filter(f => !f.popular && f.category === "serif"),
+      display: googleFonts.filter(f => !f.popular && f.category === "display"),
+      handwriting: googleFonts.filter(f => !f.popular && f.category === "handwriting"),
+      monospace: googleFonts.filter(f => !f.popular && f.category === "monospace"),
+    };
+    return result;
+  }, []);
+
+  // Filter fonts based on search query - flat list when searching
+  const filteredFonts = useMemo(() => {
+    if (!searchQuery) return null; // null = show categories
+    return googleFonts
+      .filter(font => font.family.toLowerCase().includes(searchQuery.toLowerCase()))
+      .slice(0, 50);
+  }, [searchQuery]);
+
+  // Build flat list for keyboard navigation
+  const flatList = useMemo(() => {
+    if (filteredFonts) return filteredFonts;
+    // When showing categories, build flat list in display order
+    const list = [];
+    CATEGORY_ORDER.forEach(cat => {
+      const fonts = fontsByCategory[cat.key] || [];
+      list.push(...fonts);
+    });
+    return list;
+  }, [filteredFonts, fontsByCategory]);
 
   // Close when clicking outside
   useEffect(() => {
@@ -92,7 +128,7 @@ export function FontSelector({ value, onChange, placeholder = "Search fonts...",
       return;
     }
 
-    const totalItems = filteredFonts.length + 1; // +1 for "Use custom font" option
+    const totalItems = flatList.length + 1; // +1 for "Use custom font" option
 
     switch (e.key) {
       case "Escape":
@@ -110,8 +146,8 @@ export function FontSelector({ value, onChange, placeholder = "Search fonts...",
         break;
       case "Enter":
         e.preventDefault();
-        if (focusedIndex < filteredFonts.length) {
-          handleSelect(filteredFonts[focusedIndex].family);
+        if (focusedIndex < flatList.length) {
+          handleSelect(flatList[focusedIndex].family);
         } else {
           setIsCustomMode(true);
         }
@@ -125,6 +161,61 @@ export function FontSelector({ value, onChange, placeholder = "Search fonts...",
     e.stopPropagation();
     onChange("");
     setSearchQuery("");
+  };
+
+  // Render a single font item
+  const renderFontItem = (font, globalIndex) => (
+    <div
+      key={font.family}
+      data-index={globalIndex}
+      role="option"
+      aria-selected={font.family === value}
+      onClick={() => handleSelect(font.family)}
+      style={{
+        padding: "8px 12px",
+        cursor: "pointer",
+        background: focusedIndex === globalIndex ? "var(--p-color-bg-surface-hover, #f3f4f6)" : "transparent",
+        borderLeft: font.family === value ? "3px solid var(--p-color-bg-fill-brand, #2563eb)" : "3px solid transparent",
+        display: "flex",
+        justifyContent: "space-between",
+        alignItems: "center",
+      }}
+      onMouseEnter={() => setFocusedIndex(globalIndex)}
+    >
+      <span style={{ fontSize: "13px" }}>{font.family}</span>
+      {filteredFonts && (
+        <span style={{ fontSize: "10px", color: "var(--p-color-text-subdued, #9ca3af)" }}>
+          {font.category}
+        </span>
+      )}
+    </div>
+  );
+
+  // Render category section with header
+  const renderCategorySection = (catKey, catLabel, fonts, startIndex) => {
+    if (fonts.length === 0) return null;
+    return (
+      <div key={catKey}>
+        <div
+          style={{
+            padding: "8px 12px 4px",
+            fontSize: "11px",
+            fontWeight: 600,
+            color: "var(--p-color-text-subdued, #6b7280)",
+            textTransform: "uppercase",
+            letterSpacing: "0.5px",
+            background: "var(--p-color-bg-surface-secondary, #f9fafb)",
+            borderBottom: "1px solid var(--p-color-border, #e5e7eb)",
+            position: "sticky",
+            top: 0,
+            zIndex: 1,
+          }}
+        >
+          {catLabel}
+        </div>
+        {fonts.map((font, idx) => renderFontItem(font, startIndex + idx))}
+      </div>
+    );
   };
 
   return (
@@ -210,6 +301,7 @@ export function FontSelector({ value, onChange, placeholder = "Search fonts...",
             zIndex: 100,
             maxHeight: "300px",
             overflowY: "auto",
+            overflowX: "hidden",
           }}
         >
           {isCustomMode ? (
@@ -232,6 +324,7 @@ export function FontSelector({ value, onChange, placeholder = "Search fonts...",
                   borderRadius: "6px",
                   fontSize: "14px",
                   marginBottom: 8,
+                  boxSizing: "border-box",
                 }}
               />
               <div style={{ display: "flex", gap: 8 }}>
@@ -272,48 +365,39 @@ export function FontSelector({ value, onChange, placeholder = "Search fonts...",
             </div>
           ) : (
             <>
-              {/* Font list */}
-              {filteredFonts.length === 0 ? (
-                <div style={{ padding: "12px", color: "var(--p-color-text-subdued, #6b7280)", fontSize: "13px" }}>
-                  No fonts found matching "{searchQuery}"
-                </div>
-              ) : (
-                filteredFonts.map((font, index) => (
-                  <div
-                    key={font.family}
-                    data-index={index}
-                    role="option"
-                    aria-selected={font.family === value}
-                    onClick={() => handleSelect(font.family)}
-                    style={{
-                      padding: "10px 12px",
-                      cursor: "pointer",
-                      background: focusedIndex === index ? "var(--p-color-bg-surface-hover, #f3f4f6)" : "transparent",
-                      borderLeft: font.family === value ? "3px solid var(--p-color-bg-fill-brand, #2563eb)" : "3px solid transparent",
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "center",
-                    }}
-                    onMouseEnter={() => setFocusedIndex(index)}
-                  >
-                    <span style={{ fontSize: "14px" }}>{font.family}</span>
-                    <span style={{ fontSize: "11px", color: "var(--p-color-text-subdued, #9ca3af)" }}>
-                      {font.category}
-                    </span>
+              {/* Font list - either flat (when searching) or categorized */}
+              {filteredFonts ? (
+                // Flat search results
+                filteredFonts.length === 0 ? (
+                  <div style={{ padding: "12px", color: "var(--p-color-text-subdued, #6b7280)", fontSize: "13px" }}>
+                    No fonts found matching "{searchQuery}"
                   </div>
-                ))
+                ) : (
+                  filteredFonts.map((font, index) => renderFontItem(font, index))
+                )
+              ) : (
+                // Categorized view
+                (() => {
+                  let globalIndex = 0;
+                  return CATEGORY_ORDER.map(cat => {
+                    const fonts = fontsByCategory[cat.key] || [];
+                    const startIndex = globalIndex;
+                    globalIndex += fonts.length;
+                    return renderCategorySection(cat.key, cat.label, fonts, startIndex);
+                  });
+                })()
               )}
 
               {/* Custom font option */}
               <div
-                data-index={filteredFonts.length}
+                data-index={flatList.length}
                 role="option"
                 onClick={() => setIsCustomMode(true)}
-                onMouseEnter={() => setFocusedIndex(filteredFonts.length)}
+                onMouseEnter={() => setFocusedIndex(flatList.length)}
                 style={{
                   padding: "10px 12px",
                   cursor: "pointer",
-                  background: focusedIndex === filteredFonts.length ? "var(--p-color-bg-surface-hover, #f3f4f6)" : "transparent",
+                  background: focusedIndex === flatList.length ? "var(--p-color-bg-surface-hover, #f3f4f6)" : "transparent",
                   borderTop: "1px solid var(--p-color-border, #e5e7eb)",
                   color: "var(--p-color-text-subdued, #6b7280)",
                   fontSize: "13px",
@@ -325,6 +409,25 @@ export function FontSelector({ value, onChange, placeholder = "Search fonts...",
                 <span style={{ fontSize: "16px" }}>+</span>
                 <span>Use custom font...</span>
               </div>
+
+              {/* Google Fonts link */}
+              <a
+                href="https://fonts.google.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  display: "block",
+                  padding: "10px 12px",
+                  borderTop: "1px solid var(--p-color-border, #e5e7eb)",
+                  color: "var(--p-color-text-link, #2563eb)",
+                  fontSize: "12px",
+                  textDecoration: "none",
+                  textAlign: "center",
+                }}
+                onClick={(e) => e.stopPropagation()}
+              >
+                Browse all fonts on Google Fonts →
+              </a>
             </>
           )}
         </div>

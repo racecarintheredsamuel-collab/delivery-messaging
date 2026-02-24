@@ -1912,26 +1912,13 @@ export default function Index() {
                     <s-text>Match theme font</s-text>
                   </label>
                   {!globalSettings?.use_theme_font && (
-                    <div style={{ display: "grid", gap: 8, marginLeft: 24 }}>
-                      <s-text size="small">Custom font</s-text>
-                      <select
+                    <div style={{ marginLeft: 24 }}>
+                      <FontSelector
+                        label="Custom font"
                         value={globalSettings?.custom_font_family || ""}
-                        onChange={(e) => setGlobalSettings({ ...globalSettings, custom_font_family: e.target.value })}
-                        style={{ width: "100%" }}
-                      >
-                        <option value="">Select font...</option>
-                        <option value="'Assistant', sans-serif">Assistant</option>
-                        <option value="'Roboto', sans-serif">Roboto</option>
-                        <option value="'Open Sans', sans-serif">Open Sans</option>
-                        <option value="'Montserrat', sans-serif">Montserrat</option>
-                        <option value="'Poppins', sans-serif">Poppins</option>
-                        <option value="'Lato', sans-serif">Lato</option>
-                        <option value="'Nunito Sans', sans-serif">Nunito Sans</option>
-                        <option value="'Source Sans Pro', sans-serif">Source Sans Pro</option>
-                        <option value="'Oswald', sans-serif">Oswald</option>
-                        <option value="'Raleway', sans-serif">Raleway</option>
-                        <option value="'Inter', sans-serif">Inter</option>
-                      </select>
+                        onChange={(val) => setGlobalSettings({ ...globalSettings, custom_font_family: val })}
+                        placeholder="Select font..."
+                      />
                     </div>
                   )}
 
@@ -1996,26 +1983,13 @@ export default function Index() {
                     <s-text>Match theme font</s-text>
                   </label>
                   {globalSettings?.eta_use_theme_font === false && (
-                    <div style={{ display: "grid", gap: 8, marginLeft: 24 }}>
-                      <s-text size="small">Custom font</s-text>
-                      <select
+                    <div style={{ marginLeft: 24 }}>
+                      <FontSelector
+                        label="Custom font"
                         value={globalSettings?.eta_custom_font_family || ""}
-                        onChange={(e) => setGlobalSettings({ ...globalSettings, eta_custom_font_family: e.target.value })}
-                        style={{ width: "100%" }}
-                      >
-                        <option value="">Select font...</option>
-                        <option value="'Assistant', sans-serif">Assistant</option>
-                        <option value="'Roboto', sans-serif">Roboto</option>
-                        <option value="'Open Sans', sans-serif">Open Sans</option>
-                        <option value="'Montserrat', sans-serif">Montserrat</option>
-                        <option value="'Poppins', sans-serif">Poppins</option>
-                        <option value="'Lato', sans-serif">Lato</option>
-                        <option value="'Nunito Sans', sans-serif">Nunito Sans</option>
-                        <option value="'Source Sans Pro', sans-serif">Source Sans Pro</option>
-                        <option value="'Oswald', sans-serif">Oswald</option>
-                        <option value="'Raleway', sans-serif">Raleway</option>
-                        <option value="'Inter', sans-serif">Inter</option>
-                      </select>
+                        onChange={(val) => setGlobalSettings({ ...globalSettings, eta_custom_font_family: val })}
+                        placeholder="Select font..."
+                      />
                     </div>
                   )}
 
@@ -2118,26 +2092,13 @@ export default function Index() {
                     <s-text>Match theme font</s-text>
                   </label>
                   {globalSettings?.special_delivery_use_theme_font === false && (
-                    <div style={{ display: "grid", gap: 8, marginLeft: 24 }}>
-                      <s-text size="small">Custom font</s-text>
-                      <select
+                    <div style={{ marginLeft: 24 }}>
+                      <FontSelector
+                        label="Custom font"
                         value={globalSettings?.special_delivery_custom_font_family || ""}
-                        onChange={(e) => setGlobalSettings({ ...globalSettings, special_delivery_custom_font_family: e.target.value })}
-                        style={{ width: "100%" }}
-                      >
-                        <option value="">Select font...</option>
-                        <option value="'Assistant', sans-serif">Assistant</option>
-                        <option value="'Roboto', sans-serif">Roboto</option>
-                        <option value="'Open Sans', sans-serif">Open Sans</option>
-                        <option value="'Montserrat', sans-serif">Montserrat</option>
-                        <option value="'Poppins', sans-serif">Poppins</option>
-                        <option value="'Lato', sans-serif">Lato</option>
-                        <option value="'Nunito Sans', sans-serif">Nunito Sans</option>
-                        <option value="'Source Sans Pro', sans-serif">Source Sans Pro</option>
-                        <option value="'Oswald', sans-serif">Oswald</option>
-                        <option value="'Raleway', sans-serif">Raleway</option>
-                        <option value="'Inter', sans-serif">Inter</option>
-                      </select>
+                        onChange={(val) => setGlobalSettings({ ...globalSettings, special_delivery_custom_font_family: val })}
+                        placeholder="Select font..."
+                      />
                     </div>
                   )}
 
@@ -5727,30 +5688,24 @@ export default function Index() {
             {/* RIGHT column: preview, rules list */}
             <div className="dib-right-column" style={{ display: "flex", flexDirection: "column", gap: 12, minWidth: 0 }}>
               {/* Preview */}
-              {/* Load Google Font for preview if custom font is selected for messages */}
-              {globalSettings?.use_theme_font === false &&
-               globalSettings?.custom_font_family &&
-               ["Assistant", "Roboto", "Open Sans", "Montserrat", "Poppins", "Lato", "Nunito Sans", "Source Sans Pro", "Oswald", "Raleway", "Inter"].some(gf => globalSettings.custom_font_family.includes(gf)) && (
+              {/* Load Google Font for Messages preview */}
+              {globalSettings?.use_theme_font === false && globalSettings?.custom_font_family && (
                 <link
-                  href={`https://fonts.googleapis.com/css2?family=${(globalSettings.custom_font_family.match(/'([^']+)'/)?.[1] || globalSettings.custom_font_family).replace(/ /g, '+')}:wght@400;500;600;700&display=swap`}
+                  href={`https://fonts.googleapis.com/css2?family=${encodeURIComponent(globalSettings.custom_font_family)}:wght@400;500;600;700&display=swap`}
                   rel="stylesheet"
                 />
               )}
-              {/* Load Google Font for ETA Timeline if custom font is selected */}
-              {globalSettings?.eta_use_theme_font === false &&
-               globalSettings?.eta_custom_font_family &&
-               ["Assistant", "Roboto", "Open Sans", "Montserrat", "Poppins", "Lato", "Nunito Sans", "Source Sans Pro", "Oswald", "Raleway", "Inter"].some(gf => globalSettings.eta_custom_font_family.includes(gf)) && (
+              {/* Load Google Font for ETA Timeline preview */}
+              {globalSettings?.eta_use_theme_font === false && globalSettings?.eta_custom_font_family && (
                 <link
-                  href={`https://fonts.googleapis.com/css2?family=${(globalSettings.eta_custom_font_family.match(/'([^']+)'/)?.[1] || globalSettings.eta_custom_font_family).replace(/ /g, '+')}:wght@400;500;600;700&display=swap`}
+                  href={`https://fonts.googleapis.com/css2?family=${encodeURIComponent(globalSettings.eta_custom_font_family)}:wght@400;500;600;700&display=swap`}
                   rel="stylesheet"
                 />
               )}
-              {/* Load Google Font for Special Delivery if custom font is selected */}
-              {globalSettings?.special_delivery_use_theme_font === false &&
-               globalSettings?.special_delivery_custom_font_family &&
-               ["Assistant", "Roboto", "Open Sans", "Montserrat", "Poppins", "Lato", "Nunito Sans", "Source Sans Pro", "Oswald", "Raleway", "Inter"].some(gf => globalSettings.special_delivery_custom_font_family.includes(gf)) && (
+              {/* Load Google Font for Special Delivery preview */}
+              {globalSettings?.special_delivery_use_theme_font === false && globalSettings?.special_delivery_custom_font_family && (
                 <link
-                  href={`https://fonts.googleapis.com/css2?family=${(globalSettings.special_delivery_custom_font_family.match(/'([^']+)'/)?.[1] || globalSettings.special_delivery_custom_font_family).replace(/ /g, '+')}:wght@400;500;600;700&display=swap`}
+                  href={`https://fonts.googleapis.com/css2?family=${encodeURIComponent(globalSettings.special_delivery_custom_font_family)}:wght@400;500;600;700&display=swap`}
                   rel="stylesheet"
                 />
               )}
