@@ -208,9 +208,39 @@ export default function IconsPage() {
     );
   };
 
+  // Process SVG code: add fill="currentColor" to shapes, remove width/height from svg
+  const processSvgCode = (svg) => {
+    if (!svg || !svg.trim()) return svg;
+
+    let processed = svg;
+
+    // Remove width and height from <svg> tag
+    processed = processed.replace(/<svg([^>]*)>/i, (match, attrs) => {
+      const cleanAttrs = attrs
+        .replace(/\s*width\s*=\s*["'][^"']*["']/gi, '')
+        .replace(/\s*height\s*=\s*["'][^"']*["']/gi, '');
+      return `<svg${cleanAttrs}>`;
+    });
+
+    // Add fill="currentColor" to shape elements that don't have a fill
+    const shapes = ['path', 'circle', 'rect', 'polygon', 'polyline', 'line', 'ellipse'];
+    shapes.forEach(shape => {
+      const regex = new RegExp(`<${shape}([^>]*?)(/?)>`, 'gi');
+      processed = processed.replace(regex, (match, attrs, selfClose) => {
+        // Skip if already has fill attribute
+        if (/\sfill\s*=/i.test(attrs)) return match;
+        return `<${shape}${attrs} fill="currentColor"${selfClose}>`;
+      });
+    });
+
+    return processed;
+  };
+
   const updateCustomIcon = (index, field, value) => {
     const newIcons = [...settings.custom_icons];
-    newIcons[index] = { ...newIcons[index], [field]: value };
+    // Process SVG code when it's the svg field
+    const processedValue = field === "svg" ? processSvgCode(value) : value;
+    newIcons[index] = { ...newIcons[index], [field]: processedValue };
     setSettings({ ...settings, custom_icons: newIcons });
   };
 
