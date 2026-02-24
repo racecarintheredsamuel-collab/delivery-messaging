@@ -214,11 +214,12 @@ export default function IconsPage() {
 
     let processed = svg;
 
-    // Remove width and height from <svg> tag
+    // Remove width, height, and fill from <svg> tag
     processed = processed.replace(/<svg([^>]*)>/i, (match, attrs) => {
       const cleanAttrs = attrs
         .replace(/\s*width\s*=\s*["'][^"']*["']/gi, '')
-        .replace(/\s*height\s*=\s*["'][^"']*["']/gi, '');
+        .replace(/\s*height\s*=\s*["'][^"']*["']/gi, '')
+        .replace(/\s*fill\s*=\s*["'][^"']*["']/gi, '');
       return `<svg${cleanAttrs}>`;
     });
 
