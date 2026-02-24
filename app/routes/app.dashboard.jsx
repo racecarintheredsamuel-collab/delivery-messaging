@@ -746,7 +746,7 @@ export default function DashboardPage() {
         override_eta_text_styling: false,
         eta_label_color: "var(--p-color-text, #374151)",
         eta_label_font_size: "small",
-        eta_label_font_weight: "semibold",
+        eta_label_font_weight: "normal",
         eta_date_color: "var(--p-color-text-subdued, #6b7280)",
         eta_date_font_size: "xsmall",
         eta_date_font_weight: "normal",

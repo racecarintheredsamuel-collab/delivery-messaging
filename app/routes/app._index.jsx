@@ -64,11 +64,11 @@ function defaultGlobalSettings() {
     eta_use_theme_text_styling: true,
     eta_text_color: "var(--p-color-text, #374151)",
     eta_font_size: "small",
-    eta_font_weight: "semibold",
+    eta_font_weight: "normal",
     // ETA Timeline label styling (Ordered, Shipped, Delivered)
     eta_label_color: "#374151",
     eta_label_font_size: 12,
-    eta_label_font_weight: "semibold",
+    eta_label_font_weight: "normal",
     // ETA Timeline date styling (Jan 20, Jan 21-24)
     eta_date_color: "#6b7280",
     eta_date_font_size: 11,
@@ -91,7 +91,7 @@ function defaultGlobalSettings() {
     special_delivery_header_use_theme_text_styling: true,
     special_delivery_header_text_color: "#111827",
     special_delivery_header_font_size: 16,
-    special_delivery_header_font_weight: "semibold",
+    special_delivery_header_font_weight: "normal",
     special_delivery_header_gap: 4,
     special_delivery_line_height: 1.4,
     // Special Delivery Message styling
@@ -749,7 +749,7 @@ function defaultRule() {
       override_eta_text_styling: false,
       eta_label_color: "var(--p-color-text, #374151)",
       eta_label_font_size: "small",
-      eta_label_font_weight: "semibold",
+      eta_label_font_weight: "normal",
 
       // ETA text styling - Dates (Jan 20, Jan 21-24)
       eta_date_color: "var(--p-color-text-subdued, #6b7280)",
@@ -781,7 +781,7 @@ function defaultRule() {
       special_delivery_override_global_header_styling: false,
       special_delivery_header_color: "#111827",
       special_delivery_header_font_size: 16,
-      special_delivery_header_font_weight: "semibold",
+      special_delivery_header_font_weight: "normal",
       // Special Delivery - Icon selection from Icons page
       special_delivery_icon: "",
     },
@@ -2058,7 +2058,7 @@ export default function Index() {
                       <div>
                         <s-text size="small">Font weight</s-text>
                         <select
-                          value={globalSettings?.eta_label_font_weight || "semibold"}
+                          value={globalSettings?.eta_label_font_weight || "normal"}
                           onChange={(e) => setGlobalSettings({ ...globalSettings, eta_label_font_weight: e.target.value })}
                           style={{ width: "100%" }}
                         >
@@ -2180,7 +2180,7 @@ export default function Index() {
                       <div>
                         <s-text size="small">Font weight</s-text>
                         <select
-                          value={globalSettings?.special_delivery_header_font_weight || "semibold"}
+                          value={globalSettings?.special_delivery_header_font_weight || "normal"}
                           onChange={(e) => setGlobalSettings({ ...globalSettings, special_delivery_header_font_weight: e.target.value })}
                           style={{ width: "100%" }}
                         >
@@ -4919,7 +4919,7 @@ export default function Index() {
                         <label>
                           <s-text>Label font weight</s-text>
                           <select
-                            value={rule.settings?.eta_label_font_weight || "semibold"}
+                            value={rule.settings?.eta_label_font_weight || "normal"}
                             onChange={(e) => {
                               const next = [...rules];
                               next[safeSelectedIndex] = {
@@ -5598,7 +5598,7 @@ export default function Index() {
                             <div>
                               <s-text size="small">Font weight</s-text>
                               <select
-                                value={rule.settings?.special_delivery_header_font_weight || "semibold"}
+                                value={rule.settings?.special_delivery_header_font_weight || "normal"}
                                 onChange={(e) => {
                                   const next = [...rules];
                                   next[safeSelectedIndex] = {

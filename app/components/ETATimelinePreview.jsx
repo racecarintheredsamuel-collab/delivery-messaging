@@ -88,9 +88,8 @@ export function ETATimelinePreview({ rule, globalSettings }) {
   const getEtaFontWeight = (weight) => {
     switch (weight) {
       case "normal": return 400;
-      case "medium": return 500;
       case "bold": return 700;
-      default: return 600; // semibold
+      default: return 400; // Default to normal
     }
   };
 
