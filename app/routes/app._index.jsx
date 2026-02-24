@@ -1653,6 +1653,16 @@ export default function Index() {
               {/* Global buttons - LEFT */}
               <div style={{ display: "flex", gap: 8 }}>
                 <s-button
+                  variant={!showTypographyPanel && !showAlignmentPanel && !showGlobalSettingsPanel ? "primary" : undefined}
+                  onClick={() => {
+                    setShowTypographyPanel(false);
+                    setShowAlignmentPanel(false);
+                    setShowGlobalSettingsPanel(false);
+                  }}
+                >
+                  Editor
+                </s-button>
+                <s-button
                   variant={showGlobalSettingsPanel ? "primary" : undefined}
                   onClick={() => {
                     setShowGlobalSettingsPanel(!showGlobalSettingsPanel);
@@ -1747,18 +1757,8 @@ export default function Index() {
               justifyContent: "space-between",
               alignItems: "center"
             }}>
-              {/* Editor + Collapse/Expand buttons - LEFT */}
+              {/* Collapse/Expand buttons - LEFT */}
               <div style={{ display: "flex", gap: 8 }}>
-                <s-button
-                  variant={!showTypographyPanel && !showAlignmentPanel && !showGlobalSettingsPanel ? "primary" : undefined}
-                  onClick={() => {
-                    setShowTypographyPanel(false);
-                    setShowAlignmentPanel(false);
-                    setShowGlobalSettingsPanel(false);
-                  }}
-                >
-                  Editor
-                </s-button>
                 {rule && (
                   <>
                     <s-button
