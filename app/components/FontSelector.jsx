@@ -20,11 +20,20 @@ export function FontSelector({ value, onChange, placeholder = "Search fonts...",
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [focusedIndex, setFocusedIndex] = useState(0);
-  const [isCustomMode, setIsCustomMode] = useState(false);
-  const [customValue, setCustomValue] = useState("");
+  const [expandedCategories, setExpandedCategories] = useState(new Set());
   const containerRef = useRef(null);
   const inputRef = useRef(null);
   const listRef = useRef(null);
+
+  // Toggle category expansion
+  const toggleCategory = (catKey, e) => {
+    e.stopPropagation();
+    setExpandedCategories(prev => {
+      const next = new Set(prev);
+      next.has(catKey) ? next.delete(catKey) : next.add(catKey);
+      return next;
+    });
+  };
 
   // Organize fonts by category
   const fontsByCategory = useMemo(() => {
@@ -47,17 +56,19 @@ export function FontSelector({ value, onChange, placeholder = "Search fonts...",
       .slice(0, 50);
   }, [searchQuery]);
 
-  // Build flat list for keyboard navigation
+  // Build flat list for keyboard navigation (only expanded categories when not searching)
   const flatList = useMemo(() => {
     if (filteredFonts) return filteredFonts;
-    // When showing categories, build flat list in display order
+    // When showing categories, only include fonts from expanded categories
     const list = [];
     CATEGORY_ORDER.forEach(cat => {
-      const fonts = fontsByCategory[cat.key] || [];
-      list.push(...fonts);
+      if (expandedCategories.has(cat.key)) {
+        const fonts = fontsByCategory[cat.key] || [];
+        list.push(...fonts);
+      }
     });
     return list;
-  }, [filteredFonts, fontsByCategory]);
+  }, [filteredFonts, fontsByCategory, expandedCategories]);
 
   // Close when clicking outside
   useEffect(() => {
@@ -67,7 +78,6 @@ export function FontSelector({ value, onChange, placeholder = "Search fonts...",
       if (containerRef.current && !containerRef.current.contains(e.target)) {
         setIsOpen(false);
         setSearchQuery("");
-        setIsCustomMode(false);
       }
     };
 
@@ -82,29 +92,18 @@ export function FontSelector({ value, onChange, placeholder = "Search fonts...",
 
   // Scroll focused item into view
   useEffect(() => {
-    if (isOpen && listRef.current && !isCustomMode) {
+    if (isOpen && listRef.current) {
       const focusedEl = listRef.current.querySelector(`[data-index="${focusedIndex}"]`);
       if (focusedEl) {
         focusedEl.scrollIntoView({ block: "nearest" });
       }
     }
-  }, [focusedIndex, isOpen, isCustomMode]);
+  }, [focusedIndex, isOpen]);
 
   const handleSelect = (fontFamily) => {
     onChange(fontFamily);
     setIsOpen(false);
     setSearchQuery("");
-    setIsCustomMode(false);
-  };
-
-  const handleCustomSubmit = () => {
-    if (customValue.trim()) {
-      onChange(customValue.trim());
-      setIsOpen(false);
-      setSearchQuery("");
-      setIsCustomMode(false);
-      setCustomValue("");
-    }
   };
 
   const handleKeyDown = (e) => {
@@ -116,19 +115,7 @@ export function FontSelector({ value, onChange, placeholder = "Search fonts...",
       return;
     }
 
-    if (isCustomMode) {
-      if (e.key === "Escape") {
-        e.preventDefault();
-        setIsCustomMode(false);
-        inputRef.current?.focus();
-      } else if (e.key === "Enter") {
-        e.preventDefault();
-        handleCustomSubmit();
-      }
-      return;
-    }
-
-    const totalItems = flatList.length + 1; // +1 for "Use custom font" option
+    const totalItems = flatList.length;
 
     switch (e.key) {
       case "Escape":
@@ -138,18 +125,23 @@ export function FontSelector({ value, onChange, placeholder = "Search fonts...",
         break;
       case "ArrowDown":
         e.preventDefault();
-        setFocusedIndex((i) => (i + 1) % totalItems);
+        if (totalItems > 0) {
+          setFocusedIndex((i) => (i + 1) % totalItems);
+        }
         break;
       case "ArrowUp":
         e.preventDefault();
-        setFocusedIndex((i) => (i - 1 + totalItems) % totalItems);
+        if (totalItems > 0) {
+          setFocusedIndex((i) => (i - 1 + totalItems) % totalItems);
+        }
         break;
       case "Enter":
         e.preventDefault();
-        if (focusedIndex < flatList.length) {
+        if (focusedIndex < flatList.length && flatList.length > 0) {
           handleSelect(flatList[focusedIndex].family);
-        } else {
-          setIsCustomMode(true);
+        } else if (searchQuery.trim()) {
+          // Allow using typed value as custom font
+          handleSelect(searchQuery.trim());
         }
         break;
       default:
@@ -191,29 +183,34 @@ export function FontSelector({ value, onChange, placeholder = "Search fonts...",
     </div>
   );
 
-  // Render category section with header
+  // Render category section with collapsible header
   const renderCategorySection = (catKey, catLabel, fonts, startIndex) => {
     if (fonts.length === 0) return null;
+    const isExpanded = expandedCategories.has(catKey);
     return (
       <div key={catKey}>
         <div
+          onClick={(e) => toggleCategory(catKey, e)}
           style={{
-            padding: "8px 12px 4px",
-            fontSize: "11px",
+            padding: "10px 12px",
+            fontSize: "12px",
             fontWeight: 600,
             color: "var(--p-color-text-subdued, #6b7280)",
-            textTransform: "uppercase",
-            letterSpacing: "0.5px",
             background: "var(--p-color-bg-surface-secondary, #f9fafb)",
             borderBottom: "1px solid var(--p-color-border, #e5e7eb)",
-            position: "sticky",
-            top: 0,
-            zIndex: 1,
+            cursor: "pointer",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            userSelect: "none",
           }}
         >
-          {catLabel}
+          <span>{catLabel} ({fonts.length})</span>
+          <span style={{ fontSize: "10px", color: "var(--p-color-text-subdued, #9ca3af)" }}>
+            {isExpanded ? "▼" : "▶"}
+          </span>
         </div>
-        {fonts.map((font, idx) => renderFontItem(font, startIndex + idx))}
+        {isExpanded && fonts.map((font, idx) => renderFontItem(font, startIndex + idx))}
       </div>
     );
   };
@@ -304,132 +301,64 @@ export function FontSelector({ value, onChange, placeholder = "Search fonts...",
             overflowX: "hidden",
           }}
         >
-          {isCustomMode ? (
-            // Custom font input mode
-            <div style={{ padding: "12px" }}>
-              <div style={{ marginBottom: 8, fontSize: "13px", fontWeight: 500 }}>
-                Enter custom font name:
-              </div>
-              <input
-                type="text"
-                value={customValue}
-                onChange={(e) => setCustomValue(e.target.value)}
-                onKeyDown={handleKeyDown}
-                autoFocus
-                placeholder="e.g., Trirong"
-                style={{
-                  width: "100%",
-                  padding: "8px 12px",
-                  border: "1px solid var(--p-color-border, #d1d5db)",
-                  borderRadius: "6px",
-                  fontSize: "14px",
-                  marginBottom: 8,
-                  boxSizing: "border-box",
-                }}
-              />
-              <div style={{ display: "flex", gap: 8 }}>
-                <button
-                  type="button"
-                  onClick={() => setIsCustomMode(false)}
-                  style={{
-                    flex: 1,
-                    padding: "8px",
-                    border: "1px solid var(--p-color-border, #d1d5db)",
-                    borderRadius: "6px",
-                    background: "transparent",
-                    cursor: "pointer",
-                    fontSize: "13px",
-                  }}
-                >
-                  Cancel
-                </button>
-                <button
-                  type="button"
-                  onClick={handleCustomSubmit}
-                  disabled={!customValue.trim()}
-                  style={{
-                    flex: 1,
-                    padding: "8px",
-                    border: "none",
-                    borderRadius: "6px",
-                    background: customValue.trim() ? "var(--p-color-bg-fill-brand, #2563eb)" : "#e5e7eb",
-                    color: customValue.trim() ? "#ffffff" : "#9ca3af",
-                    cursor: customValue.trim() ? "pointer" : "not-allowed",
-                    fontSize: "13px",
-                    fontWeight: 500,
-                  }}
-                >
-                  Use font
-                </button>
-              </div>
-            </div>
-          ) : (
+          {/* Font list - either flat (when searching) or categorized */}
+          {filteredFonts ? (
+            // Flat search results
             <>
-              {/* Font list - either flat (when searching) or categorized */}
-              {filteredFonts ? (
-                // Flat search results
-                filteredFonts.length === 0 ? (
-                  <div style={{ padding: "12px", color: "var(--p-color-text-subdued, #6b7280)", fontSize: "13px" }}>
-                    No fonts found matching "{searchQuery}"
-                  </div>
-                ) : (
-                  filteredFonts.map((font, index) => renderFontItem(font, index))
-                )
+              {filteredFonts.length === 0 ? (
+                <div style={{ padding: "12px", color: "var(--p-color-text-subdued, #6b7280)", fontSize: "13px" }}>
+                  No fonts found matching "{searchQuery}"
+                </div>
               ) : (
-                // Categorized view
-                (() => {
-                  let globalIndex = 0;
-                  return CATEGORY_ORDER.map(cat => {
-                    const fonts = fontsByCategory[cat.key] || [];
-                    const startIndex = globalIndex;
-                    globalIndex += fonts.length;
-                    return renderCategorySection(cat.key, cat.label, fonts, startIndex);
-                  });
-                })()
+                filteredFonts.map((font, index) => renderFontItem(font, index))
               )}
-
-              {/* Custom font option */}
-              <div
-                data-index={flatList.length}
-                role="option"
-                onClick={() => setIsCustomMode(true)}
-                onMouseEnter={() => setFocusedIndex(flatList.length)}
-                style={{
-                  padding: "10px 12px",
-                  cursor: "pointer",
-                  background: focusedIndex === flatList.length ? "var(--p-color-bg-surface-hover, #f3f4f6)" : "transparent",
+              {/* Hint for custom font */}
+              {searchQuery.trim() && (
+                <div style={{
+                  padding: "8px 12px",
+                  fontSize: "11px",
+                  color: "var(--p-color-text-subdued, #9ca3af)",
                   borderTop: "1px solid var(--p-color-border, #e5e7eb)",
-                  color: "var(--p-color-text-subdued, #6b7280)",
-                  fontSize: "13px",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 6,
-                }}
-              >
-                <span style={{ fontSize: "16px" }}>+</span>
-                <span>Use custom font...</span>
-              </div>
-
-              {/* Google Fonts link */}
-              <a
-                href="https://fonts.google.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                style={{
-                  display: "block",
-                  padding: "10px 12px",
-                  borderTop: "1px solid var(--p-color-border, #e5e7eb)",
-                  color: "var(--p-color-text-link, #2563eb)",
-                  fontSize: "12px",
-                  textDecoration: "none",
-                  textAlign: "center",
-                }}
-                onClick={(e) => e.stopPropagation()}
-              >
-                Browse all fonts on Google Fonts →
-              </a>
+                  background: "var(--p-color-bg-surface-secondary, #f9fafb)",
+                }}>
+                  Press Enter to use any Google Font
+                </div>
+              )}
             </>
+          ) : (
+            // Categorized view (collapsed by default)
+            (() => {
+              let globalIndex = 0;
+              return CATEGORY_ORDER.map(cat => {
+                const fonts = fontsByCategory[cat.key] || [];
+                const startIndex = globalIndex;
+                // Only increment index for expanded categories
+                if (expandedCategories.has(cat.key)) {
+                  globalIndex += fonts.length;
+                }
+                return renderCategorySection(cat.key, cat.label, fonts, startIndex);
+              });
+            })()
           )}
+
+          {/* Google Fonts link */}
+          <a
+            href="https://fonts.google.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{
+              display: "block",
+              padding: "10px 12px",
+              borderTop: "1px solid var(--p-color-border, #e5e7eb)",
+              color: "var(--p-color-text-link, #2563eb)",
+              fontSize: "12px",
+              textDecoration: "none",
+              textAlign: "center",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            Browse all fonts on Google Fonts →
+          </a>
         </div>
       )}
     </div>
