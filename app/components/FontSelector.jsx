@@ -139,9 +139,10 @@ export function FontSelector({ value, onChange, placeholder = "Search fonts...",
         e.preventDefault();
         if (focusedIndex < flatList.length && flatList.length > 0) {
           handleSelect(flatList[focusedIndex].family);
-        } else if (searchQuery.trim()) {
-          // Allow using typed value as custom font
-          handleSelect(searchQuery.trim());
+        } else {
+          // No match selected - just close without changing
+          setIsOpen(false);
+          setSearchQuery("");
         }
         break;
       default:
@@ -304,27 +305,13 @@ export function FontSelector({ value, onChange, placeholder = "Search fonts...",
           {/* Font list - either flat (when searching) or categorized */}
           {filteredFonts ? (
             // Flat search results
-            <>
-              {filteredFonts.length === 0 ? (
-                <div style={{ padding: "12px", color: "var(--p-color-text-subdued, #6b7280)", fontSize: "13px" }}>
-                  No fonts found matching "{searchQuery}"
-                </div>
-              ) : (
-                filteredFonts.map((font, index) => renderFontItem(font, index))
-              )}
-              {/* Hint for custom font */}
-              {searchQuery.trim() && (
-                <div style={{
-                  padding: "8px 12px",
-                  fontSize: "11px",
-                  color: "var(--p-color-text-subdued, #9ca3af)",
-                  borderTop: "1px solid var(--p-color-border, #e5e7eb)",
-                  background: "var(--p-color-bg-surface-secondary, #f9fafb)",
-                }}>
-                  Press Enter to use any Google Font
-                </div>
-              )}
-            </>
+            filteredFonts.length === 0 ? (
+              <div style={{ padding: "12px", color: "var(--p-color-text-subdued, #6b7280)", fontSize: "13px" }}>
+                No fonts found matching "{searchQuery}"
+              </div>
+            ) : (
+              filteredFonts.map((font, index) => renderFontItem(font, index))
+            )
           ) : (
             // Categorized view (collapsed by default)
             (() => {
