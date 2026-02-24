@@ -28,10 +28,17 @@ export function FontSelector({ value, onChange, placeholder = "Search fonts...",
   // Toggle category expansion (accordion - only one open at a time)
   const toggleCategory = (catKey, e) => {
     e.stopPropagation();
+    const isCurrentlyOpen = expandedCategories.has(catKey);
     setExpandedCategories(prev => {
       // If already open, close it. Otherwise, open only this one.
       return prev.has(catKey) ? new Set() : new Set([catKey]);
     });
+    // If opening (not closing), scroll header to top of dropdown
+    if (!isCurrentlyOpen) {
+      setTimeout(() => {
+        e.currentTarget.scrollIntoView({ block: "start", behavior: "instant" });
+      }, 0);
+    }
   };
 
   // Organize fonts by category
