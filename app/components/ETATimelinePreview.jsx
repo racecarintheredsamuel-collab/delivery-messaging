@@ -317,15 +317,15 @@ export function ETATimelinePreview({ rule, globalSettings }) {
     if (connectorStyle === "line") {
       const lineWidth = connectorSize + 16;
       return (
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", flex: `0 1 ${lineWidth}px`, minWidth: 0, marginTop: mtLine }}>
-          <span style={{ display: "block", width: "100%", borderTop: `1.5px solid ${connectorColor}` }} />
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", flex: `0 0 ${lineWidth}px`, minWidth: 0, marginTop: mtLine }}>
+          <span style={{ display: "block", width: lineWidth, borderTop: `1.5px solid ${connectorColor}` }} />
         </div>
       );
     }
     if (connectorStyle === "big-arrow") {
       return (
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", flex: `0 1 ${connectorSize + 4}px`, minWidth: 0, color: connectorColor, marginTop: mtBigArrow }}>
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" style={{ width: "100%", height: "100%", maxWidth: connectorSize, maxHeight: connectorSize }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", flex: `0 0 ${connectorSize + 4}px`, minWidth: 0, color: connectorColor, marginTop: mtBigArrow }}>
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" style={{ width: connectorSize, height: connectorSize }}>
             <path fillRule="evenodd" d="M16.72 7.72a.75.75 0 0 1 1.06 0l3.75 3.75a.75.75 0 0 1 0 1.06l-3.75 3.75a.75.75 0 1 1-1.06-1.06l2.47-2.47H3a.75.75 0 0 1 0-1.5h16.19l-2.47-2.47a.75.75 0 0 1 0-1.06Z" clipRule="evenodd" />
           </svg>
         </div>
@@ -334,18 +334,18 @@ export function ETATimelinePreview({ rule, globalSettings }) {
     if (connectorStyle === "custom" && globalSettings?.custom_connector_svg) {
       const mtCustom = connectorAlignment === "icon" ? iconPx / 2 - connectorSize / 2 : 0;
       return (
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", flex: `0 1 ${connectorSize}px`, minWidth: 0, color: connectorColor, marginTop: mtCustom }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", flex: `0 0 ${connectorSize}px`, minWidth: 0, color: connectorColor, marginTop: mtCustom }}>
           <span
-            style={{ width: "100%", height: "100%", maxWidth: connectorSize, maxHeight: connectorSize, display: "block" }}
+            style={{ width: connectorSize, height: connectorSize, display: "block" }}
             dangerouslySetInnerHTML={{ __html: globalSettings.custom_connector_svg }}
           />
         </div>
       );
     }
     return (
-      <div style={{ display: "flex", gap: 0, margin: "0 -4px", marginTop: mtArrows, flex: `0 1 ${arrowSize * 3}px`, minWidth: 0 }}>
+      <div style={{ display: "flex", gap: 0, margin: "0 -4px", marginTop: mtArrows, flex: `0 0 ${arrowSize * 3}px`, minWidth: 0 }}>
         {[1, 2, 3].map((i) => (
-          <svg key={i} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill={connectorColor} style={{ width: "100%", height: "100%", maxWidth: arrowSize, maxHeight: arrowSize }}>
+          <svg key={i} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill={connectorColor} style={{ width: arrowSize, height: arrowSize }}>
             <path fillRule="evenodd" d="M16.28 11.47a.75.75 0 0 1 0 1.06l-7.5 7.5a.75.75 0 0 1-1.06-1.06L14.69 12 7.72 5.03a.75.75 0 0 1 1.06-1.06l7.5 7.5Z" clipRule="evenodd" />
           </svg>
         ))}
