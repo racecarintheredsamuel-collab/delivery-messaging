@@ -756,7 +756,7 @@ export default function IconsPage() {
                 </div>
                 <textarea
                   value={settings.custom_connector_svg || ""}
-                  onChange={(e) => setSettings({ ...settings, custom_connector_svg: e.target.value })}
+                  onChange={(e) => setSettings({ ...settings, custom_connector_svg: processSvgCode(e.target.value) })}
                   placeholder='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">...</svg>'
                   style={{
                     width: "100%",
