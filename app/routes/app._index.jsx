@@ -1403,7 +1403,9 @@ export default function Index() {
     const updatedProfiles = profiles.map((p) =>
       p.id === activeProfileId ? { ...p, rules: nextRules } : p
     );
-    setDraft(JSON.stringify({ version: 2, profiles: updatedProfiles, activeProfileId, liveProfileId }));
+    // Use saved liveProfileId if exists, otherwise lock it to current activeProfileId
+    const savedLiveId = parsed?.liveProfileId || activeProfileId;
+    setDraft(JSON.stringify({ version: 2, profiles: updatedProfiles, activeProfileId, liveProfileId: savedLiveId }));
   };
 
   // Update all profiles (activeProfileId = editing, liveProfileId = on site)
@@ -1411,7 +1413,9 @@ export default function Index() {
     if (newActiveId !== activeProfileId) {
       flushPendingEdits(); // Save any pending edits before switching profiles
     }
-    setDraft(JSON.stringify({ version: 2, profiles: nextProfiles, activeProfileId: newActiveId, liveProfileId }));
+    // Use saved liveProfileId if exists, otherwise lock it to current activeProfileId
+    const savedLiveId = parsed?.liveProfileId || activeProfileId;
+    setDraft(JSON.stringify({ version: 2, profiles: nextProfiles, activeProfileId: newActiveId, liveProfileId: savedLiveId }));
     // Note: selectedIndex reset is handled by the effect watching activeProfileId changes
   };
 
@@ -1492,9 +1496,11 @@ export default function Index() {
       nextActiveId = nextProfiles[Math.min(removedIndex, nextProfiles.length - 1)]?.id;
     }
 
+    // Use saved liveProfileId if exists, otherwise lock it to current activeProfileId
+    const savedLiveId = parsed?.liveProfileId || activeProfileId;
     // If deleting the live profile, switch to next available
-    let nextLiveId = liveProfileId;
-    if (profileId === liveProfileId) {
+    let nextLiveId = savedLiveId;
+    if (profileId === savedLiveId) {
       nextLiveId = nextProfiles[Math.min(removedIndex, nextProfiles.length - 1)]?.id;
     }
 
@@ -1533,7 +1539,9 @@ export default function Index() {
     const updatedProfiles = profiles.map((p) =>
       p.id === profileId ? { ...p, name: newName } : p
     );
-    setDraft(JSON.stringify({ version: 2, profiles: updatedProfiles, activeProfileId, liveProfileId }));
+    // Use saved liveProfileId if exists, otherwise lock it to current activeProfileId
+    const savedLiveId = parsed?.liveProfileId || activeProfileId;
+    setDraft(JSON.stringify({ version: 2, profiles: updatedProfiles, activeProfileId, liveProfileId: savedLiveId }));
   };
 
   const addRule = () => {
