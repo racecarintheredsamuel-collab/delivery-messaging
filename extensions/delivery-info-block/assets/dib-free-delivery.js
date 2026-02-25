@@ -190,7 +190,7 @@
               insertTarget = parent;
               // When inserting after flex parent, use calc width and auto margins for centering
               bar.style.width = 'calc(100% - 24px)';
-              bar.style.margin = '12px auto';
+              bar.style.margin = '0 auto 12px auto';
               debug('Heading in flex row, inserting after parent instead');
             }
           }
