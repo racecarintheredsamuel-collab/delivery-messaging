@@ -380,10 +380,16 @@ function defaultProfile(name = "Default") {
 
 // Migrate v1 config to v2 format (profiles)
 function migrateToV2(config) {
-  if (config?.version === 2) return config;
+  if (config?.version === 2) {
+    // Ensure liveProfileId exists (backward compat for existing v2 configs)
+    if (!config.liveProfileId && config.activeProfileId) {
+      return { ...config, liveProfileId: config.activeProfileId };
+    }
+    return config;
+  }
 
   // v1 format: { version: 1, rules: [] }
-  // v2 format: { version: 2, profiles: [{ id, name, rules }], activeProfileId }
+  // v2 format: { version: 2, profiles: [...], activeProfileId, liveProfileId }
   const profile = defaultProfile("Default");
   profile.rules = config?.rules ?? [];
 
@@ -391,6 +397,7 @@ function migrateToV2(config) {
     version: 2,
     profiles: [profile],
     activeProfileId: profile.id,
+    liveProfileId: profile.id,
   };
 }
 
@@ -1150,10 +1157,14 @@ export default function Index() {
   }, [draft]);
 
   const profiles = parsed?.profiles ?? [];
-  // Derive activeProfileId from parsed JSON (single source of truth)
+  // Derive liveProfileId (what's on the site) and activeProfileId (what's being edited)
+  const liveProfileId = parsed?.liveProfileId ?? parsed?.activeProfileId ?? profiles[0]?.id ?? null;
   const activeProfileId = parsed?.activeProfileId ?? profiles[0]?.id ?? null;
   const activeProfile = profiles.length > 0
     ? (profiles.find((p) => p.id === activeProfileId) || profiles[0])
+    : null;
+  const liveProfile = profiles.length > 0
+    ? (profiles.find((p) => p.id === liveProfileId) || profiles[0])
     : null;
   const activeProfileIndex = profiles.findIndex((p) => p.id === activeProfileId);
   // Memoize rules to maintain referential stability (prevents useEffect re-runs)
@@ -1376,16 +1387,21 @@ export default function Index() {
     const updatedProfiles = profiles.map((p) =>
       p.id === activeProfileId ? { ...p, rules: nextRules } : p
     );
-    setDraft(JSON.stringify({ version: 2, profiles: updatedProfiles, activeProfileId }));
+    setDraft(JSON.stringify({ version: 2, profiles: updatedProfiles, activeProfileId, liveProfileId }));
   };
 
-  // Update all profiles (activeProfileId in JSON is the single source of truth)
+  // Update all profiles (activeProfileId = editing, liveProfileId = on site)
   const setProfiles = (nextProfiles, newActiveId = activeProfileId) => {
     if (newActiveId !== activeProfileId) {
       flushPendingEdits(); // Save any pending edits before switching profiles
     }
-    setDraft(JSON.stringify({ version: 2, profiles: nextProfiles, activeProfileId: newActiveId }));
+    setDraft(JSON.stringify({ version: 2, profiles: nextProfiles, activeProfileId: newActiveId, liveProfileId }));
     // Note: selectedIndex reset is handled by the effect watching activeProfileId changes
+  };
+
+  // Set which profile is live on the site (separate from editing)
+  const setLiveProfile = (newLiveId) => {
+    setDraft(JSON.stringify({ ...parsed, liveProfileId: newLiveId }));
   };
 
   // Profile management functions (max 5 profiles)
@@ -1454,12 +1470,19 @@ export default function Index() {
     // Remove it immediately
     const nextProfiles = profiles.filter((p) => p.id !== profileId);
 
-    // If deleting the active profile, switch to next available
+    // If deleting the active profile (editing), switch to next available
     let nextActiveId = activeProfileId;
     if (profileId === activeProfileId) {
       nextActiveId = nextProfiles[Math.min(removedIndex, nextProfiles.length - 1)]?.id;
     }
-    setProfiles(nextProfiles, nextActiveId);
+
+    // If deleting the live profile, switch to next available
+    let nextLiveId = liveProfileId;
+    if (profileId === liveProfileId) {
+      nextLiveId = nextProfiles[Math.min(removedIndex, nextProfiles.length - 1)]?.id;
+    }
+
+    setDraft(JSON.stringify({ version: 2, profiles: nextProfiles, activeProfileId: nextActiveId, liveProfileId: nextLiveId }));
 
     // Reset editing profile if we deleted the one being edited
     if (profileId === editingProfileId) {
@@ -1494,7 +1517,7 @@ export default function Index() {
     const updatedProfiles = profiles.map((p) =>
       p.id === profileId ? { ...p, name: newName } : p
     );
-    setDraft(JSON.stringify({ version: 2, profiles: updatedProfiles, activeProfileId }));
+    setDraft(JSON.stringify({ version: 2, profiles: updatedProfiles, activeProfileId, liveProfileId }));
   };
 
   const addRule = () => {
@@ -1694,14 +1717,36 @@ export default function Index() {
                 </s-button>
               </div>
 
-              {/* Profile selector + Save - RIGHT */}
+              {/* Profile selectors + Save - RIGHT */}
               <div style={{ display: "flex", alignItems: "center", gap: 8, marginLeft: "auto" }}>
+                {/* Live profile selector */}
                 <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                  <span style={{ color: "var(--p-color-text-subdued, #6b7280)", fontSize: "14px" }}>Profile:</span>
+                  <span style={{ color: "var(--p-color-text-subdued, #6b7280)", fontSize: "14px" }}>Live:</span>
+                  <select
+                    value={liveProfileId}
+                    onChange={(e) => setLiveProfile(e.target.value)}
+                    aria-label="Select live profile"
+                    style={{
+                      fontSize: "14px",
+                      padding: "4px 8px",
+                      borderRadius: "4px",
+                      border: "1px solid #22c55e",
+                      background: "#f0fdf4",
+                      cursor: "pointer",
+                    }}
+                  >
+                    {profiles.map((p) => (
+                      <option key={p.id} value={p.id}>{p.name}</option>
+                    ))}
+                  </select>
+                </div>
+                {/* Editing profile selector */}
+                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  <span style={{ color: "var(--p-color-text-subdued, #6b7280)", fontSize: "14px" }}>Editing:</span>
                   <select
                     value={activeProfileId}
                     onChange={(e) => setProfiles(profiles, e.target.value)}
-                    aria-label="Select profile"
+                    aria-label="Select editing profile"
                     style={{
                       fontSize: "14px",
                       padding: "4px 8px",
@@ -2658,7 +2703,7 @@ export default function Index() {
                     >
                       {profiles.map((p) => (
                         <option key={p.id} value={p.id}>
-                          {p.name}{p.id === activeProfileId ? " (active)" : ""}
+                          {p.name}{p.id === liveProfileId ? " (live)" : ""}{p.id === activeProfileId ? " (editing)" : ""}
                         </option>
                       ))}
                     </select>
