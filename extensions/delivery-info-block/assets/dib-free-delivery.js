@@ -97,6 +97,8 @@
       line-height: 1.4;
       z-index: 10;
       transition: opacity 0.15s ease-out;
+      width: 100%;
+      box-sizing: border-box;
     `.replace(/\s+/g, ' ');
 
     const message = document.createElement('div');
