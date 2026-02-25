@@ -181,7 +181,17 @@
       for (const el of headingTags) {
         const text = el.textContent?.trim().toLowerCase();
         if (text && cartHeadingTexts.some(t => text === t || text.startsWith(t))) {
-          el.insertAdjacentElement('afterend', bar);
+          // Check if heading is in a flex row - if so, insert after the parent container
+          let insertTarget = el;
+          const parent = el.parentElement;
+          if (parent) {
+            const parentStyle = window.getComputedStyle(parent);
+            if (parentStyle.display === 'flex' && parentStyle.flexDirection === 'row') {
+              insertTarget = parent;
+              debug('Heading in flex row, inserting after parent instead');
+            }
+          }
+          insertTarget.insertAdjacentElement('afterend', bar);
           injectedContainers.add(searchRoot);
           debug('Injected bar after cart heading (universal):', text);
           setupBarObservers(bar, searchRoot, position);
