@@ -80,6 +80,7 @@ const configV2Schema = z.object({
   version: z.literal(2),
   profiles: z.array(profileSchema).min(1),
   activeProfileId: z.string(),
+  liveProfileId: z.string().optional(),
 });
 
 // Combined config schema
