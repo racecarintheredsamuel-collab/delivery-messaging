@@ -1403,9 +1403,7 @@ export default function Index() {
     const updatedProfiles = profiles.map((p) =>
       p.id === activeProfileId ? { ...p, rules: nextRules } : p
     );
-    // Use saved liveProfileId if exists, otherwise lock it to current activeProfileId
-    const savedLiveId = parsed?.liveProfileId || activeProfileId;
-    setDraft(JSON.stringify({ version: 2, profiles: updatedProfiles, activeProfileId, liveProfileId: savedLiveId }));
+    setDraft(JSON.stringify({ version: 2, profiles: updatedProfiles, activeProfileId, liveProfileId }));
   };
 
   // Update all profiles (activeProfileId = editing, liveProfileId = on site)
@@ -1413,9 +1411,7 @@ export default function Index() {
     if (newActiveId !== activeProfileId) {
       flushPendingEdits(); // Save any pending edits before switching profiles
     }
-    // Use saved liveProfileId if exists, otherwise lock it to current activeProfileId
-    const savedLiveId = parsed?.liveProfileId || activeProfileId;
-    setDraft(JSON.stringify({ version: 2, profiles: nextProfiles, activeProfileId: newActiveId, liveProfileId: savedLiveId }));
+    setDraft(JSON.stringify({ version: 2, profiles: nextProfiles, activeProfileId: newActiveId, liveProfileId }));
     // Note: selectedIndex reset is handled by the effect watching activeProfileId changes
   };
 
@@ -1539,9 +1535,7 @@ export default function Index() {
     const updatedProfiles = profiles.map((p) =>
       p.id === profileId ? { ...p, name: newName } : p
     );
-    // Use saved liveProfileId if exists, otherwise lock it to current activeProfileId
-    const savedLiveId = parsed?.liveProfileId || activeProfileId;
-    setDraft(JSON.stringify({ version: 2, profiles: updatedProfiles, activeProfileId, liveProfileId: savedLiveId }));
+    setDraft(JSON.stringify({ version: 2, profiles: updatedProfiles, activeProfileId, liveProfileId }));
   };
 
   const addRule = () => {
