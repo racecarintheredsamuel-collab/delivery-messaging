@@ -223,22 +223,16 @@
               return;
             }
 
-            // If container is still in DOM, re-inject immediately to prevent blink
+            // Try to re-inject into old container if still valid
             if (document.body.contains(container)) {
               debug('Container still valid, re-injecting immediately');
               injectIntoContainer(container, position);
               return;
             }
 
-            // Container was detached - wait for DOM to stabilize, then scan fresh
-            debug('Container detached, waiting for DOM to stabilize');
-            setTimeout(() => {
-              const drawerCheck = document.querySelector('cart-drawer');
-              if (drawerCheck && drawerCheck.hasAttribute('open')) {
-                debug('Scanning for fresh container');
-                scanAndInject();
-              }
-            }, 200);
+            // Old container detached - scan for fresh container immediately
+            debug('Container detached, scanning for fresh container');
+            scanAndInject();
             return;
           }
         }
