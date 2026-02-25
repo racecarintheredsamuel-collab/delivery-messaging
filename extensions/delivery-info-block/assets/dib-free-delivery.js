@@ -173,6 +173,21 @@
         }
       }
 
+      // Universal fallback: find heading by common cart text
+      const cartHeadingTexts = ['your cart', 'cart', 'shopping cart', 'your bag', 'bag'];
+      const headingTags = searchRoot.querySelectorAll('h1, h2, h3, h4, h5, h6, [class*="heading"], [class*="title"], .drawer__heading, .cart-drawer__heading');
+      for (const el of headingTags) {
+        const text = el.textContent?.trim().toLowerCase();
+        if (text && cartHeadingTexts.some(t => text === t || text.startsWith(t))) {
+          el.insertAdjacentElement('afterend', bar);
+          injectedContainers.add(searchRoot);
+          debug('Injected bar after cart heading (universal):', text);
+          setupBarObservers(bar, searchRoot, position);
+          triggerUpdate();
+          return true;
+        }
+      }
+
       // Fallback: use absolute positioning for unknown themes
       const containerStyle = window.getComputedStyle(container);
       if (containerStyle.position === 'static') {
