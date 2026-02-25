@@ -216,23 +216,16 @@
           if (removed === bar || (removed.nodeType === Node.ELEMENT_NODE && removed.contains && removed.contains(bar))) {
             barObserver.disconnect();
 
-            // Check if drawer is still open before re-injecting
-            const drawer = document.querySelector('cart-drawer');
-            if (!drawer || !drawer.hasAttribute('open')) {
-              debug('Bar removed but drawer closed, not re-injecting');
+            // Check if container is still in the DOM - if not, find fresh container
+            if (!document.body.contains(container)) {
+              debug('Container detached from DOM, scanning for fresh container');
+              setTimeout(scanAndInject, 100);
               return;
             }
 
-            // Try to re-inject into old container if still valid
-            if (document.body.contains(container)) {
-              debug('Container still valid, re-injecting immediately');
-              injectIntoContainer(container, position);
-              return;
-            }
-
-            // Old container detached - scan for fresh container immediately
-            debug('Container detached, scanning for fresh container');
-            scanAndInject();
+            // Re-inject immediately (synchronously) to prevent blink
+            debug('Container still valid, re-injecting');
+            injectIntoContainer(container, position);
             return;
           }
         }
