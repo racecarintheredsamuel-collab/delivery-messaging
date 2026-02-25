@@ -1146,9 +1146,7 @@ export default function Index() {
   const parsed = useMemo(() => {
     try {
       const obj = JSON.parse(draft);
-      if (obj?.version === 2 && Array.isArray(obj?.profiles)) {
-        return obj;
-      }
+      // Always run migration to ensure liveProfileId exists for v2 configs
       return migrateToV2(obj);
     } catch (error) {
       safeLogError("Failed to parse draft config, using empty default", error);
