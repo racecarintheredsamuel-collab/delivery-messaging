@@ -1156,7 +1156,7 @@ export default function Index() {
 
   const profiles = parsed?.profiles ?? [];
   // Derive liveProfileId (what's on the site) and activeProfileId (what's being edited)
-  const liveProfileId = parsed?.liveProfileId ?? parsed?.activeProfileId ?? profiles[0]?.id ?? null;
+  const liveProfileId = parsed?.liveProfileId ?? profiles[0]?.id ?? null;
   const activeProfileId = parsed?.activeProfileId ?? profiles[0]?.id ?? null;
   const activeProfile = profiles.length > 0
     ? (profiles.find((p) => p.id === activeProfileId) || profiles[0])
