@@ -1179,6 +1179,16 @@ export default function Index() {
     prevActiveProfileIdRef.current = activeProfileId;
   }, [activeProfileId]);
 
+  // Ensure liveProfileId gets saved to metafield (migration adds it client-side, but need to persist)
+  const hasPersistedLiveProfileId = useRef(false);
+  useEffect(() => {
+    if (parsed && parsed.version === 2 && parsed.activeProfileId && !parsed.liveProfileId && !hasPersistedLiveProfileId.current) {
+      hasPersistedLiveProfileId.current = true;
+      // Force save to persist liveProfileId to the metafield
+      setDraft(JSON.stringify({ ...parsed, liveProfileId: parsed.activeProfileId }));
+    }
+  }, [parsed]);
+
   // Editing profile state (for Global Settings panel - allows managing other profiles without switching)
   const [editingProfileId, setEditingProfileId] = useState(null);
   const editingProfile = editingProfileId
