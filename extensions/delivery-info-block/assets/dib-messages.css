@@ -120,13 +120,16 @@
   border-style: solid;
 }
 
-/* Countdown visibility - use visibility to reserve space */
+/* Countdown fade-in - use opacity for smooth transition, visibility to reserve space */
 .dib-messages .dib-has-countdown {
   visibility: hidden;
+  opacity: 0;
+  transition: opacity 150ms ease-in;
 }
 
 .dib-messages .dib-has-countdown.is-ready {
   visibility: visible;
+  opacity: 1;
 }
 
 /* Hide container when no visible lines */
@@ -137,6 +140,18 @@
 /* Stable line height to prevent layout shift on load */
 .dib-messages .dib-line {
   min-height: 1.4em;
+}
+
+/* Fade-in for dynamic placeholder spans */
+.dib-arrival-placeholder,
+.dib-express-placeholder {
+  opacity: 1;
+  transition: opacity 150ms ease-in;
+}
+
+.dib-arrival-placeholder:empty,
+.dib-express-placeholder:empty {
+  opacity: 0;
 }
 
 /* ===========================================
