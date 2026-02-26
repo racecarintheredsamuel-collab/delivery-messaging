@@ -14,6 +14,7 @@
 {%- assign fd_progress_bar_color = '#22c55e' -%}
 {%- assign fd_progress_bar_bg = '#e5e7eb' -%}
 {%- assign fd_bar_bg_color = '#f9fafb' -%}
+{%- assign fd_bar_text_color = '#374151' -%}
 {%- assign fd_exclusion_rules = '' -%}
 {%- assign fd_exclude_tags = '' -%}
 {%- assign fd_exclude_handles = '' -%}
@@ -49,6 +50,9 @@
   {%- if global_settings.fd_bar_bg_color != blank -%}
     {%- assign fd_bar_bg_color = global_settings.fd_bar_bg_color -%}
   {%- endif -%}
+  {%- if global_settings.fd_bar_text_color != blank -%}
+    {%- assign fd_bar_text_color = global_settings.fd_bar_text_color -%}
+  {%- endif -%}
   {%- if global_settings.fd_exclusion_rules != blank -%}
     {%- assign fd_exclusion_rules = global_settings.fd_exclusion_rules | json -%}
   {%- endif -%}
@@ -83,6 +87,7 @@
   data-progress-bar-color="{{ fd_progress_bar_color }}"
   data-progress-bar-bg="{{ fd_progress_bar_bg }}"
   data-bar-bg-color="{{ fd_bar_bg_color }}"
+  data-bar-text-color="{{ fd_bar_text_color }}"
   data-multi-match-message="{{ fd_multi_match_message | escape }}"
 ></div>
 <style>

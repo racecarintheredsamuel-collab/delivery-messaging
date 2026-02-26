@@ -159,6 +159,7 @@ export const settingsSchema = z.object({
   fd_show_progress_bar: z.boolean().optional(),
   fd_progress_bar_color: z.string().optional(),
   fd_progress_bar_bg: z.string().optional(),
+  fd_bar_text_color: z.string().optional(),
   fd_message_excluded: z.string().optional(),
   fd_show_announcement_bar: z.boolean().optional(),
   fd_announcement_progress_message: z.string().optional(),

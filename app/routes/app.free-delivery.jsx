@@ -485,11 +485,18 @@ export default function FreeDeliveryPage() {
                   </div>
                 )}
 
-                <s-color-field
-                  label="Block background color"
-                  value={settings.fd_bar_bg_color || "#f9fafb"}
-                  onInput={(e) => setSettings({ ...settings, fd_bar_bg_color: e.target.value })}
-                />
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                  <s-color-field
+                    label="Block background color"
+                    value={settings.fd_bar_bg_color || "#f9fafb"}
+                    onInput={(e) => setSettings({ ...settings, fd_bar_bg_color: e.target.value })}
+                  />
+                  <s-color-field
+                    label="Text color"
+                    value={settings.fd_bar_text_color || "#374151"}
+                    onInput={(e) => setSettings({ ...settings, fd_bar_text_color: e.target.value })}
+                  />
+                </div>
               </div>
             </div>
 

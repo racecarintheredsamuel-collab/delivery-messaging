@@ -74,7 +74,8 @@
       showProgressBar: configEl.dataset.showProgressBar !== 'false',
       progressBarColor: configEl.dataset.progressBarColor || '#22c55e',
       progressBarBg: configEl.dataset.progressBarBg || '#e5e7eb',
-      barBgColor: configEl.dataset.barBgColor || '#f9fafb'
+      barBgColor: configEl.dataset.barBgColor || '#f9fafb',
+      barTextColor: configEl.dataset.barTextColor || '#374151'
     };
   }
 
@@ -104,7 +105,7 @@
     const message = document.createElement('div');
     message.className = 'dib-fd-message';
     message.setAttribute('data-dm-message', '');
-    message.style.cssText = 'text-align: center; font-weight: 500; color: #374151; min-height: 20px; transition: opacity 0.15s ease-out;';
+    message.style.cssText = `text-align: center; font-weight: 500; color: ${config.barTextColor}; min-height: 20px; transition: opacity 0.15s ease-out;`;
     message.innerHTML = '<div class="dib-fd-skeleton-text"></div>';
     bar.appendChild(message);
 
