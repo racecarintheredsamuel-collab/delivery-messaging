@@ -120,13 +120,13 @@
   border-style: solid;
 }
 
-/* Countdown visibility */
+/* Countdown visibility - use visibility to reserve space */
 .dib-messages .dib-has-countdown {
-  display: none;
+  visibility: hidden;
 }
 
 .dib-messages .dib-has-countdown.is-ready {
-  display: flex;
+  visibility: visible;
 }
 
 /* Hide container when no visible lines */
