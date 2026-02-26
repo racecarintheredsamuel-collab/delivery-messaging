@@ -124,7 +124,7 @@
 .dib-messages .dib-has-countdown {
   visibility: hidden;
   opacity: 0;
-  transition: opacity 150ms ease-in;
+  transition: opacity 250ms ease-in;
 }
 
 .dib-messages .dib-has-countdown.is-ready {
@@ -146,7 +146,7 @@
 .dib-arrival-placeholder,
 .dib-express-placeholder {
   opacity: 1;
-  transition: opacity 150ms ease-in;
+  transition: opacity 250ms ease-in;
 }
 
 .dib-arrival-placeholder:empty,
