@@ -286,14 +286,11 @@
     }
   }
 
-  // Trigger DeliveryMessaging to update the new target
+  // Trigger DeliveryMessaging to fetch fresh cart data
+  // Don't use forceUpdate() - it triggers with stale state before cart fetch completes
   function triggerUpdate() {
-    if (window.DeliveryMessaging) {
-      if (window.DeliveryMessaging.forceUpdate) {
-        window.DeliveryMessaging.forceUpdate();
-      } else if (window.DeliveryMessaging.refresh) {
-        window.DeliveryMessaging.refresh();
-      }
+    if (window.DeliveryMessaging && window.DeliveryMessaging.refresh) {
+      window.DeliveryMessaging.refresh();
     }
   }
 
