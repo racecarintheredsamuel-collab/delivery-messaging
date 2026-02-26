@@ -104,7 +104,7 @@
     const message = document.createElement('div');
     message.className = 'dib-fd-message';
     message.setAttribute('data-dm-message', '');
-    message.style.cssText = 'text-align: center; font-weight: 500; color: #374151; min-height: 20px;';
+    message.style.cssText = 'text-align: center; font-weight: 500; color: #374151; min-height: 20px; transition: opacity 0.15s ease-out;';
     message.innerHTML = '<div class="dib-fd-skeleton-text"></div>';
     bar.appendChild(message);
 
