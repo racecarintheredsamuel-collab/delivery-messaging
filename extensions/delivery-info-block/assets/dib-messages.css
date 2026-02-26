@@ -145,13 +145,13 @@
 /* Fade-in for dynamic placeholder spans */
 .dib-arrival-placeholder,
 .dib-express-placeholder {
-  opacity: 1;
+  opacity: 0;
   transition: opacity 400ms ease-in;
 }
 
-.dib-arrival-placeholder:empty,
-.dib-express-placeholder:empty {
-  opacity: 0;
+.dib-arrival-placeholder.is-loaded,
+.dib-express-placeholder.is-loaded {
+  opacity: 1;
 }
 
 /* ===========================================
