@@ -143,14 +143,14 @@
 }
 
 /* Fade-in for dynamic placeholder spans */
-.dib-arrival-placeholder,
-.dib-express-placeholder {
+.dib-messages .dib-arrival-placeholder,
+.dib-messages .dib-express-placeholder {
   opacity: 0;
   transition: opacity 400ms ease-in;
 }
 
-.dib-arrival-placeholder.is-loaded,
-.dib-express-placeholder.is-loaded {
+.dib-messages .dib-arrival-placeholder.is-loaded,
+.dib-messages .dib-express-placeholder.is-loaded {
   opacity: 1;
 }
 
