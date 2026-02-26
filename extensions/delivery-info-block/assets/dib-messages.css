@@ -134,6 +134,11 @@
   display: none;
 }
 
+/* Stable line height to prevent layout shift on load */
+.dib-messages .dib-line {
+  min-height: 1.4em;
+}
+
 /* ===========================================
    ETA Timeline Block - Static CSS
    =========================================== */
