@@ -274,7 +274,14 @@
               return;
             }
 
-            // Re-inject immediately (synchronously) to prevent blink
+            // Don't re-inject if cart is empty - just let it stay removed
+            const drawerRoot = container.closest('cart-drawer') || container;
+            if (!checkCartHasItems(drawerRoot)) {
+              debug('Cart empty, not re-injecting bar');
+              return;
+            }
+
+            // Re-inject only if cart has items
             debug('Container still valid, re-injecting');
             injectIntoContainer(container, position);
             return;
