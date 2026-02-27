@@ -143,12 +143,19 @@
     const checkContainer = drawerRoot || container;
     if (checkContainer.querySelector('.dib-fd-bar')) return false;
 
-    // Always inject bar shell (even when cart empty) to prevent layout shift
+    // Create bar element
     const bar = createBarElement(config);
 
     // For cart drawers, try theme-specific positioning first
     const isInDrawer = drawerRoot || container.matches('cart-drawer, .cart-drawer, [data-cart-drawer]');
     if (isInDrawer) {
+      // Check if cart has items - hide bar if empty to prevent layout conflicts
+      const hasItems = checkCartHasItems(checkContainer);
+      if (!hasItems) {
+        bar.style.display = 'none';
+        debug('Cart empty, hiding bar');
+      }
+
       // Center the bar with auto margins
       bar.style.width = 'calc(100% - 24px)';
       bar.style.margin = '0 auto 12px auto';
@@ -366,6 +373,38 @@
     return el.offsetParent !== null;
   }
 
+  // Check if cart has items (for drawer visibility logic)
+  function checkCartHasItems(container) {
+    // Dawn: check cart-drawer-items for .cart-item elements
+    const cartItems = container.querySelector('cart-drawer-items');
+    if (cartItems) {
+      return !!cartItems.querySelector('.cart-item, cart-item, [data-cart-item]');
+    }
+    // Fallback: check for any cart item indicators
+    return !!container.querySelector('.cart-item, [data-cart-item], .cart__item');
+  }
+
+  // Update bar visibility based on cart state (called on cart changes)
+  function updateBarVisibility() {
+    document.querySelectorAll('.dib-fd-bar').forEach(function(bar) {
+      const drawer = bar.closest('cart-drawer');
+      if (!drawer) return; // Only for drawer bars
+
+      const hasItems = checkCartHasItems(drawer);
+      const msg = bar.querySelector('.dib-fd-message');
+
+      if (hasItems) {
+        // Show bar
+        bar.style.display = 'flex';
+        if (msg) msg.style.opacity = '1';
+      } else {
+        // Hide bar IMMEDIATELY (before theme re-renders)
+        bar.style.display = 'none';
+        if (msg) msg.style.opacity = '0';
+      }
+    });
+  }
+
   // Scan and inject
   function scanAndInject() {
     const config = getConfig();
@@ -527,6 +566,10 @@
       if (typeof url === 'string' && (url.includes('/cart/add') || url.includes('/cart/change'))) {
         debug('Fetch to cart detected:', url);
         result.then(() => {
+          // Update bar visibility FIRST (hide if cart empties, show if items added)
+          setTimeout(updateBarVisibility, 50);
+          setTimeout(updateBarVisibility, 150);
+          // Then scan/inject for any new bars needed
           setTimeout(scanAndInject, 300);
           setTimeout(scanAndInject, 600);
           setTimeout(scanAndInject, 1000);
