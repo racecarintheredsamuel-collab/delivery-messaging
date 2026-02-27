@@ -97,7 +97,8 @@
       font-size: 14px;
       line-height: 1.4;
       z-index: 10;
-      transition: opacity 0.15s ease-out;
+      opacity: 0;
+      transition: opacity 400ms ease-in;
       width: 100%;
       box-sizing: border-box;
     `.replace(/\s+/g, ' ');
@@ -298,6 +299,12 @@
         window.DeliveryMessaging.refresh();
       }
     }
+    // Mark all bars as ready for fade-in
+    setTimeout(function() {
+      document.querySelectorAll('.dib-fd-bar:not(.is-ready)').forEach(function(bar) {
+        bar.classList.add('is-ready');
+      });
+    }, 50);
   }
 
   // Find cart page container
