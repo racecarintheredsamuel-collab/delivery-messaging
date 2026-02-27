@@ -451,7 +451,7 @@ export function ETATimelinePreview({ rule, globalSettings }) {
     : null;
 
   return (
-    <div style={{ display: "inline-block", maxWidth: "100%", minWidth: 0, overflow: "hidden" }}>
+    <div style={{ display: "block", width: "100%", overflow: "hidden" }}>
       {/* Load Google Fonts for preview */}
       {googleFontsUrl && <link href={googleFontsUrl} rel="stylesheet" />}
       <div
