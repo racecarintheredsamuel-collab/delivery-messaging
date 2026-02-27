@@ -72,9 +72,6 @@
   // Guard against re-entrant calls from MutationObserver
   let isUpdatingBar = false;
 
-  // Flag to prevent re-injection during pre-emptive hide
-  let isHidingBar = false;
-
   // Get config from the embed
   function getConfig() {
     const configEl = document.getElementById('dib-fd-config');
@@ -269,12 +266,6 @@
         for (const removed of mutation.removedNodes) {
           if (removed === bar || (removed.nodeType === Node.ELEMENT_NODE && removed.contains && removed.contains(bar))) {
             barObserver.disconnect();
-
-            // Don't re-inject if we're in the middle of a pre-emptive hide
-            if (isHidingBar) {
-              debug('Pre-emptive hide in progress, not re-injecting');
-              return;
-            }
 
             // Check if container is still in the DOM - if not, find fresh container
             if (!document.body.contains(container)) {
@@ -479,9 +470,9 @@
       injectIntoContainer(cartPage, 'prepend');
     }
 
-    // Cart drawer - don't inject if we're in a pre-emptive hide
+    // Cart drawer
     const cartDrawer = findCartDrawerContainer();
-    if (cartDrawer && !isHidingBar) {
+    if (cartDrawer) {
       injectIntoContainer(cartDrawer, 'prepend');
     }
   }
@@ -609,41 +600,6 @@
         setTimeout(scanAndInject, 1000);
       }
     });
-
-    // Listen for remove button clicks to pre-emptively hide bar
-    document.addEventListener('click', (e) => {
-      const target = e.target;
-      if (!target) return;
-
-      // Common remove/trash button selectors
-      const removeBtn = target.closest(
-        'cart-remove-button, .cart-remove-button, [data-cart-remove], ' +
-        '.remove-button, .cart__remove, [name="minus"], ' +
-        'button[aria-label*="Remove"], a[href*="/cart/change"][href*="quantity=0"]'
-      );
-
-      if (removeBtn) {
-        const cartDrawer = document.querySelector('cart-drawer');
-        if (cartDrawer) {
-          const cartItems = cartDrawer.querySelectorAll('.cart-item, [data-cart-item]');
-          // If only 1 item left and clicking remove, hide bar NOW
-          if (cartItems.length <= 1) {
-            debug('Remove button clicked with 1 item - hiding bar');
-            isHidingBar = true;  // Block re-injection for 1 second
-            setTimeout(function() { isHidingBar = false; }, 1000);
-            document.querySelectorAll('.dib-fd-bar').forEach(function(bar) {
-              bar.style.visibility = 'hidden';
-              bar.style.height = '0';
-              bar.style.overflow = 'hidden';
-              bar.style.padding = '0';
-              bar.style.margin = '0';
-              const msg = bar.querySelector('.dib-fd-message');
-              if (msg) msg.style.opacity = '0';
-            });
-          }
-        }
-      }
-    }, true); // Use capture phase to fire before other handlers
 
     // Listen for form submissions (add to cart)
     document.addEventListener('submit', (e) => {
