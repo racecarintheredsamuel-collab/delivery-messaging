@@ -84,6 +84,8 @@ function defaultGlobalSettings() {
     // ETA Timeline vertical spacing
     eta_gap_icon_label: 2,
     eta_gap_label_date: 0,
+    // ETA Timeline horizontal spacing
+    eta_horizontal_gap: 12,
     // ETA Timeline padding
     eta_padding_horizontal: 8,
     eta_padding_vertical: 8,
@@ -2514,6 +2516,17 @@ export default function Index() {
                         style={{ width: "100%" }}
                       />
                     </div>
+                    <div>
+                      <s-text size="small">Gap: between stages</s-text>
+                      <input
+                        type="number"
+                        min="0"
+                        max="40"
+                        value={globalSettings?.eta_horizontal_gap ?? 12}
+                        onChange={(e) => setGlobalSettings({ ...globalSettings, eta_horizontal_gap: safeParseNumber(e.target.value, 12, 0, 40) })}
+                        style={{ width: "100%" }}
+                      />
+                    </div>
                   </div>
                   <div style={{ borderTop: "1px solid var(--p-color-border, #e5e7eb)", paddingTop: 12, marginTop: 4 }}>
                     <s-text size="small" style={{ color: "#6b7280" }}><em>📌 Settings below only apply to the live storefront</em></s-text>
@@ -4382,7 +4395,7 @@ export default function Index() {
                     <input
                       type="range"
                       min="12"
-                      max="48"
+                      max="72"
                       value={rule.settings?.eta_connector_size || 24}
                       onChange={(e) => {
                         const next = [...rules];
