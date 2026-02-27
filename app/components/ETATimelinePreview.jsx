@@ -462,6 +462,7 @@ export function ETATimelinePreview({ rule, globalSettings }) {
           gap: horizontalGap,
           padding: `${paddingVertical}px ${paddingHorizontal}px`,
           maxWidth: "100%",
+          overflow: "hidden",
           ...(borderWidth > 0 ? {
             border: `${borderWidth}px solid ${borderColor}`,
             borderRadius: borderRadius,
