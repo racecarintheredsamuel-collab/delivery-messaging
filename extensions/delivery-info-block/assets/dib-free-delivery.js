@@ -72,6 +72,20 @@
   // Guard against re-entrant calls from MutationObserver
   let isUpdatingBar = false;
 
+  // Inject CSS to hide bar when cart-drawer has is-empty class (Dawn adds this when cart empties)
+  function injectEmptyCartCSS() {
+    if (document.getElementById('dib-fd-empty-css')) return;
+    const style = document.createElement('style');
+    style.id = 'dib-fd-empty-css';
+    style.textContent = `
+      cart-drawer.is-empty .dib-fd-bar {
+        display: none !important;
+      }
+    `;
+    document.head.appendChild(style);
+    debug('Injected empty cart CSS');
+  }
+
   // Get config from the embed
   function getConfig() {
     const configEl = document.getElementById('dib-fd-config');
@@ -680,6 +694,9 @@
   // Initialize
   function init() {
     debug('Initializing');
+
+    // Inject CSS to hide bar when cart is empty (prevents flash on last item removal)
+    injectEmptyCartCSS();
 
     // Pre-inject into closed drawers for instant appearance when opened
     preInjectIntoClosedDrawers();
