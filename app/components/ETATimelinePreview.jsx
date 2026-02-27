@@ -456,7 +456,7 @@ export function ETATimelinePreview({ rule, globalSettings }) {
       {googleFontsUrl && <link href={googleFontsUrl} rel="stylesheet" />}
       <div
         style={{
-          display: "inline-flex",
+          display: "flex",
           alignItems: connectorAlignment === "icon" ? "flex-start" : "center",
           justifySelf: "start",
           gap: horizontalGap,
