@@ -156,6 +156,12 @@
 
 .dib-eta-timeline-block .dib-eta-timeline {
   display: block !important;
+  opacity: 0;
+  transition: opacity 400ms ease-in;
+}
+
+.dib-eta-timeline-block .dib-eta-timeline.is-ready {
+  opacity: 1;
 }
 
 .dib-eta-timeline-block .dib-eta-scale-wrapper {
