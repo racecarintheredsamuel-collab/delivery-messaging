@@ -149,9 +149,10 @@
     // For cart drawers, try theme-specific positioning first
     const isInDrawer = drawerRoot || container.matches('cart-drawer, .cart-drawer, [data-cart-drawer]');
     if (isInDrawer) {
-      // Center the bar with auto margins
+      // Center the bar with auto margins, force own row in flex containers
       bar.style.width = 'calc(100% - 24px)';
       bar.style.margin = '0 auto 12px auto';
+      bar.style.flex = '0 0 100%';  // Force bar to take full row in flex containers
 
       const themeConfig = getThemeConfig();
       const searchRoot = drawerRoot || container;
