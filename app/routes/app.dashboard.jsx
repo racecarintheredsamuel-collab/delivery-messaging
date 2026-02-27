@@ -45,9 +45,9 @@ export const loader = async ({ request }) => {
   const iconsMf = json?.data?.shop?.icons;
   console.log("[ICONS DEBUG - DASHBOARD] iconsMf exists:", !!iconsMf?.value);
 
-  // Create icons metafield if it doesn't exist (stores preset icons for Liquid templates)
-  if (!iconsMf?.value) {
-    console.log("[ICONS DEBUG - DASHBOARD] Creating icons metafield...");
+  // Always update icons metafield (ensures new icons are pushed after deploys)
+  {
+    console.log("[ICONS DEBUG - DASHBOARD] Updating icons metafield...");
     const iconsData = generateIconsMetafield();
     const iconsDataStr = JSON.stringify(iconsData);
     console.log("[ICONS DEBUG - DASHBOARD] Icons data size:", iconsDataStr.length, "bytes, keys:", Object.keys(iconsData).length);
@@ -76,7 +76,7 @@ export const loader = async ({ request }) => {
       console.error("[ICONS DEBUG - DASHBOARD] User errors:", iconsErrors);
     }
     if (!setIconsJson.errors && !iconsErrors.length) {
-      console.log("[ICONS DEBUG - DASHBOARD] Icons metafield created successfully!");
+      console.log("[ICONS DEBUG - DASHBOARD] Icons metafield updated successfully!");
     }
   }
 

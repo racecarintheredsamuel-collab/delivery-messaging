@@ -190,9 +190,9 @@ export const loader = async ({ request }) => {
     if (errors.length) safeLogError("Failed to set default config", errors);
   }
 
-  // Create icons metafield if it doesn't exist (stores preset icons for Liquid templates)
-  if (!iconsMf?.value) {
-    console.log("[ICONS DEBUG] Creating icons metafield...");
+  // Always update icons metafield (ensures new icons are pushed after deploys)
+  {
+    console.log("[ICONS DEBUG] Updating icons metafield...");
     const iconsData = generateIconsMetafield();
     const iconsDataStr = JSON.stringify(iconsData);
     console.log("[ICONS DEBUG] Icons data size:", iconsDataStr.length, "bytes, keys:", Object.keys(iconsData).length);
@@ -222,7 +222,7 @@ export const loader = async ({ request }) => {
       safeLogError("Failed to set icons metafield", iconsErrors);
     }
     if (!setIconsJson.errors && !iconsErrors.length) {
-      console.log("[ICONS DEBUG] Icons metafield created successfully!");
+      console.log("[ICONS DEBUG] Icons metafield updated successfully!");
     }
   }
 
