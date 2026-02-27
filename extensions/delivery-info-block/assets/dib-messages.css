@@ -190,3 +190,16 @@
     text-align: var(--dib-align-mobile) !important;
   }
 }
+
+/* ===========================================
+   Special Delivery Block - Fade-in
+   =========================================== */
+
+.dib-special-delivery-block .dib-container {
+  opacity: 0;
+  transition: opacity 400ms ease-in;
+}
+
+.dib-special-delivery-block .dib-container.is-ready {
+  opacity: 1;
+}
