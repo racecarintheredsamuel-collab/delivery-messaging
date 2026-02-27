@@ -114,22 +114,25 @@
   border: none;
   border-radius: 0;
   padding: var(--dib-padding-v, 10px) var(--dib-padding-r, 12px) var(--dib-padding-v, 10px) var(--dib-padding-l, 8px);
+  opacity: 0;
+  transition: opacity 400ms ease-in;
+}
+
+.dib-messages .dib-container.is-ready {
+  opacity: 1;
 }
 
 .dib-messages .dib-container.has-border {
   border-style: solid;
 }
 
-/* Countdown fade-in - use opacity for smooth transition, visibility to reserve space */
+/* Countdown visibility - reserve space while hidden */
 .dib-messages .dib-has-countdown {
   visibility: hidden;
-  opacity: 0;
-  transition: opacity 400ms ease-in;
 }
 
 .dib-messages .dib-has-countdown.is-ready {
   visibility: visible;
-  opacity: 1;
 }
 
 /* Hide container when no visible lines */
@@ -140,18 +143,6 @@
 /* Stable line height to prevent layout shift on load */
 .dib-messages .dib-line {
   min-height: 1.4em;
-}
-
-/* Fade-in for dynamic placeholder spans */
-.dib-messages .dib-arrival-placeholder,
-.dib-messages .dib-express-placeholder {
-  opacity: 0;
-  transition: opacity 400ms ease-in;
-}
-
-.dib-messages .dib-arrival-placeholder.is-loaded,
-.dib-messages .dib-express-placeholder.is-loaded {
-  opacity: 1;
 }
 
 /* ===========================================
