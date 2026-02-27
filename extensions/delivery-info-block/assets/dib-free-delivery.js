@@ -143,17 +143,7 @@
     const checkContainer = drawerRoot || container;
     if (checkContainer.querySelector('.dib-fd-bar')) return false;
 
-    // Skip injection if drawer has no cart items (Dawn)
-    if (drawerRoot) {
-      // Check for cart items - Dawn uses cart-drawer-items with cart-item elements
-      const cartItems = drawerRoot.querySelector('cart-drawer-items');
-      const hasItems = cartItems && cartItems.querySelector('.cart-item, cart-item, [data-cart-item]');
-      if (cartItems && !hasItems) {
-        debug('Cart drawer has no items, skipping injection');
-        return false;
-      }
-    }
-
+    // Always inject bar shell (even when cart empty) to prevent layout shift
     const bar = createBarElement(config);
 
     // For cart drawers, try theme-specific positioning first
