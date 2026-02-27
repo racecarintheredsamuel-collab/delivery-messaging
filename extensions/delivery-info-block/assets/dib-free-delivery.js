@@ -304,9 +304,21 @@
               return;
             }
 
+            // Preserve state from old bar for animation continuity
+            const oldState = bar.dataset.dmState;
+            const oldCelebrated = bar.dataset.dmCelebrated;
+
             // Re-inject only if cart has items
             debug('Container still valid, re-injecting');
             injectIntoContainer(container, position);
+
+            // Restore state to new bar so animations can trigger correctly
+            const newBar = drawerRoot.querySelector('.dib-fd-bar');
+            if (newBar && oldState) {
+              newBar.dataset.dmState = oldState;
+              newBar.dataset.dmCelebrated = oldCelebrated;
+              debug('Restored bar state:', oldState, 'celebrated:', oldCelebrated);
+            }
             return;
           }
         }
@@ -453,6 +465,9 @@
           // This ensures positioning logic runs with current DOM state (with items)
           if (wasHidden) {
             debug('Cart now has items, re-injecting bar for correct position');
+            // Preserve state from old bar for animation continuity
+            const oldState = bar.dataset.dmState;
+            const oldCelebrated = bar.dataset.dmCelebrated;
             // Reset visibility styles before removing
             bar.style.visibility = '';
             bar.style.height = '';
@@ -461,6 +476,13 @@
             bar.style.margin = '';
             bar.remove();
             injectIntoContainer(drawer, 'prepend');
+            // Restore state to new bar so animations can trigger correctly
+            const newBar = drawer.querySelector('.dib-fd-bar');
+            if (newBar && oldState) {
+              newBar.dataset.dmState = oldState;
+              newBar.dataset.dmCelebrated = oldCelebrated;
+              debug('Restored bar state:', oldState, 'celebrated:', oldCelebrated);
+            }
             return;
           }
           // Otherwise just show
