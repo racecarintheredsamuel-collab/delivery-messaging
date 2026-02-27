@@ -131,6 +131,14 @@ export function getIconSvg(name, style = "solid") {
   if (name === "connector-double-chevron") {
     return `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" style="display: block;"><path stroke-linecap="round" stroke-linejoin="round" d="m5.25 4.5 7.5 7.5-7.5 7.5m6-15 7.5 7.5-7.5 7.5" /></svg>`;
   }
+  // Connector: Dash (thick horizontal line)
+  if (name === "connector-dash") {
+    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" fill="currentColor" style="display: block;"><path d="M160-440v-80h640v80H160Z"/></svg>`;
+  }
+  // Connector: Solid Double Chevron (Material Symbols)
+  if (name === "connector-double-chevron-solid") {
+    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" fill="currentColor" style="display: block;"><path d="m321-80-71-71 329-329-329-329 71-71 400 400L321-80Zm-200 0-71-71 329-329-329-329 71-71 400 400L121-80Z"/></svg>`;
+  }
   return null;
 }
 
@@ -378,6 +386,8 @@ export const CONNECTOR_ICONS = [
   { value: "connector-big-arrow" },
   { value: "connector-chevron" },
   { value: "connector-double-chevron" },
+  { value: "connector-dash" },
+  { value: "connector-double-chevron-solid" },
 ];
 
 /**

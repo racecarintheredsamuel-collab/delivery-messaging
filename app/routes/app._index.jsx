@@ -4362,7 +4362,9 @@ export default function Index() {
                         style={{ width: "100%" }}
                       >
                         <option value="arrows">Arrows (3 chevrons)</option>
-                        <option value="double-chevron">Double chevron</option>
+                        <option value="double-chevron">Double chevron (outline)</option>
+                        <option value="double-chevron-solid">Double chevron (solid)</option>
+                        <option value="dash">Dash</option>
                         <option value="big-arrow">Single arrow</option>
                         <option value="line">Line</option>
                         {globalSettings?.custom_connector_svg && (
