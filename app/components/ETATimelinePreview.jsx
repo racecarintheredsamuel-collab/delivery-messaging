@@ -3,6 +3,7 @@
 // Renders an ETA timeline with stages (Ordered, Shipped, Delivered) and dates
 // ============================================================================
 
+import { useState, useRef, useEffect } from "react";
 import { getEtaIconPaths } from "../utils/icons";
 import { normalizeEtaLabelFontSize, normalizeEtaDateFontSize } from "../utils/styling";
 import { getHolidaysForYear } from "../utils/holidays";
@@ -440,10 +441,38 @@ export function ETATimelinePreview({ rule, globalSettings }) {
     );
   };
 
-  // Horizontal gap between stages (from global settings)
-  const horizontalGap = globalSettings?.eta_horizontal_gap ?? 12;
+  // Horizontal gap between stages (from global settings, max 20)
+  const horizontalGap = Math.min(globalSettings?.eta_horizontal_gap ?? 12, 20);
   const paddingHorizontal = globalSettings?.eta_padding_horizontal ?? 8;
   const paddingVertical = globalSettings?.eta_padding_vertical ?? 8;
+
+  // Scaling to fit container
+  const containerRef = useRef(null);
+  const contentRef = useRef(null);
+  const [scale, setScale] = useState(1);
+
+  useEffect(() => {
+    const container = containerRef.current;
+    const content = contentRef.current;
+    if (!container || !content) return;
+
+    const updateScale = () => {
+      const containerWidth = container.offsetWidth;
+      const contentWidth = content.scrollWidth;
+      if (contentWidth > 0 && containerWidth > 0) {
+        const newScale = Math.min(1, containerWidth / contentWidth);
+        setScale(newScale);
+      }
+    };
+
+    updateScale();
+
+    const resizeObserver = new ResizeObserver(updateScale);
+    resizeObserver.observe(container);
+    resizeObserver.observe(content);
+
+    return () => resizeObserver.disconnect();
+  }, [iconPx, connectorSize, horizontalGap, paddingHorizontal, minDays, maxDays]);
 
   // Build Google Fonts URL for loading
   const googleFontsUrl = previewFont
@@ -451,34 +480,42 @@ export function ETATimelinePreview({ rule, globalSettings }) {
     : null;
 
   return (
-    <div style={{ display: "inline-block", maxWidth: "100%", overflow: "hidden" }}>
+    <div ref={containerRef} style={{ width: "100%", overflow: "hidden" }}>
       {/* Load Google Fonts for preview */}
       {googleFontsUrl && <link href={googleFontsUrl} rel="stylesheet" />}
       <div
         style={{
-          display: "inline-flex",
-          alignItems: connectorAlignment === "icon" ? "flex-start" : "center",
-          justifySelf: "start",
-          gap: horizontalGap,
-          maxWidth: "100%",
-          padding: `${paddingVertical}px ${paddingHorizontal}px`,
-          ...(borderWidth > 0 ? {
-            border: `${borderWidth}px solid ${borderColor}`,
-            borderRadius: borderRadius,
-          } : {}),
-          ...(backgroundColor ? { backgroundColor, borderRadius: borderRadius } : {}),
+          display: "inline-block",
+          transformOrigin: "left top",
+          transform: scale < 1 ? `scale(${scale})` : "none",
         }}
       >
-        <Stage label={rule.settings?.eta_label_order || "Ordered"} date={formatDate(today)} icon="order" />
-        <Connector />
-        <Stage label={rule.settings?.eta_label_shipping || "Shipped"} date={formatDate(shippingDate)} icon="shipping" />
-        <Connector />
-        <Stage
-          label={rule.settings?.eta_label_delivery || "Delivered"}
-          date={deliveryDateStr}
-          icon="delivery"
-          extraMarginRight={minDays !== maxDays && deliveryMinDate.getMonth() !== deliveryMaxDate.getMonth() ? 8 : 0}
-        />
+        <div
+          ref={contentRef}
+          style={{
+            display: "inline-flex",
+            alignItems: connectorAlignment === "icon" ? "flex-start" : "center",
+            justifySelf: "start",
+            gap: horizontalGap,
+            padding: `${paddingVertical}px ${paddingHorizontal}px`,
+            ...(borderWidth > 0 ? {
+              border: `${borderWidth}px solid ${borderColor}`,
+              borderRadius: borderRadius,
+            } : {}),
+            ...(backgroundColor ? { backgroundColor, borderRadius: borderRadius } : {}),
+          }}
+        >
+          <Stage label={rule.settings?.eta_label_order || "Ordered"} date={formatDate(today)} icon="order" />
+          <Connector />
+          <Stage label={rule.settings?.eta_label_shipping || "Shipped"} date={formatDate(shippingDate)} icon="shipping" />
+          <Connector />
+          <Stage
+            label={rule.settings?.eta_label_delivery || "Delivered"}
+            date={deliveryDateStr}
+            icon="delivery"
+            extraMarginRight={minDays !== maxDays && deliveryMinDate.getMonth() !== deliveryMaxDate.getMonth() ? 8 : 0}
+          />
+        </div>
       </div>
     </div>
   );
