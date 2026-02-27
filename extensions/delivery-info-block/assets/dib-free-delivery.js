@@ -72,13 +72,22 @@
   // Guard against re-entrant calls from MutationObserver
   let isUpdatingBar = false;
 
-  // Inject CSS to hide bar when cart-drawer has is-empty class (Dawn adds this when cart empties)
+  // Inject CSS to hide bar when cart is empty (multiple theme patterns)
   function injectEmptyCartCSS() {
     if (document.getElementById('dib-fd-empty-css')) return;
     const style = document.createElement('style');
     style.id = 'dib-fd-empty-css';
     style.textContent = `
-      cart-drawer.is-empty .dib-fd-bar {
+      /* Dawn theme */
+      cart-drawer.is-empty .dib-fd-bar,
+      /* Common empty state classes */
+      .cart-drawer.is-empty .dib-fd-bar,
+      .cart-drawer--empty .dib-fd-bar,
+      [data-cart-empty="true"] .dib-fd-bar,
+      .drawer.is-empty .dib-fd-bar,
+      /* Hide when empty content is shown */
+      .drawer__inner-empty ~ .dib-fd-bar,
+      .cart-drawer__empty-content ~ .dib-fd-bar {
         display: none !important;
       }
     `;
