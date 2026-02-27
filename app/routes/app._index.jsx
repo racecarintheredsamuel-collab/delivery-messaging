@@ -6017,7 +6017,7 @@ export default function Index() {
 
                         {/* ETA Timeline Preview - shown below messages when enabled */}
                         {rule.settings?.show_eta_timeline && (
-                          <div ref={etaTimelineRef} style={{ display: "inline-block" }}>
+                          <div ref={etaTimelineRef} style={{ display: "block", width: "100%", maxWidth: "100%" }}>
                             <ETATimelinePreview rule={rule} globalSettings={globalSettings} />
                           </div>
                         )}
