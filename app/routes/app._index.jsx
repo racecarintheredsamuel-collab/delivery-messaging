@@ -5852,6 +5852,7 @@ export default function Index() {
                           gap: 12,
                           width: "100%",
                           maxWidth: "100%",
+                          alignSelf: "stretch",
                           justifyItems: "start",
                           alignItems: "start",
                         }}
@@ -6017,7 +6018,7 @@ export default function Index() {
 
                         {/* ETA Timeline Preview - shown below messages when enabled */}
                         {rule.settings?.show_eta_timeline && (
-                          <div ref={etaTimelineRef} style={{ display: "block", width: "100%", maxWidth: "100%" }}>
+                          <div ref={etaTimelineRef} style={{ display: "block", width: "100%", maxWidth: "100%", justifySelf: "stretch" }}>
                             <ETATimelinePreview rule={rule} globalSettings={globalSettings} />
                           </div>
                         )}
