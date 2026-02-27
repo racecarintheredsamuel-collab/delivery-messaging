@@ -65,6 +65,9 @@
   // Track injected containers to avoid duplicates
   const injectedContainers = new WeakSet();
 
+  // Guard against re-entrant calls from MutationObserver
+  let isUpdatingBar = false;
+
   // Get config from the embed
   function getConfig() {
     const configEl = document.getElementById('dib-fd-config');
@@ -386,32 +389,39 @@
 
   // Update bar visibility based on cart state (called on cart changes)
   function updateBarVisibility() {
-    document.querySelectorAll('.dib-fd-bar').forEach(function(bar) {
-      const drawer = bar.closest('cart-drawer');
-      if (!drawer) return; // Only for drawer bars
+    if (isUpdatingBar) return;  // Prevent infinite loop from MutationObserver
+    isUpdatingBar = true;
 
-      const hasItems = checkCartHasItems(drawer);
-      const msg = bar.querySelector('.dib-fd-message');
-      const wasHidden = bar.style.display === 'none';
+    try {
+      document.querySelectorAll('.dib-fd-bar').forEach(function(bar) {
+        const drawer = bar.closest('cart-drawer');
+        if (!drawer) return; // Only for drawer bars
 
-      if (hasItems) {
-        // If bar was hidden (empty cart) and now showing, re-inject for correct position
-        // This ensures positioning logic runs with current DOM state (with items)
-        if (wasHidden) {
-          debug('Cart now has items, re-injecting bar for correct position');
-          bar.remove();
-          injectIntoContainer(drawer, 'prepend');
-          return;
+        const hasItems = checkCartHasItems(drawer);
+        const msg = bar.querySelector('.dib-fd-message');
+        const wasHidden = bar.style.display === 'none';
+
+        if (hasItems) {
+          // If bar was hidden (empty cart) and now showing, re-inject for correct position
+          // This ensures positioning logic runs with current DOM state (with items)
+          if (wasHidden) {
+            debug('Cart now has items, re-injecting bar for correct position');
+            bar.remove();
+            injectIntoContainer(drawer, 'prepend');
+            return;
+          }
+          // Otherwise just show
+          bar.style.display = 'flex';
+          if (msg) msg.style.opacity = '1';
+        } else {
+          // Hide bar IMMEDIATELY (before theme re-renders)
+          bar.style.display = 'none';
+          if (msg) msg.style.opacity = '0';
         }
-        // Otherwise just show
-        bar.style.display = 'flex';
-        if (msg) msg.style.opacity = '1';
-      } else {
-        // Hide bar IMMEDIATELY (before theme re-renders)
-        bar.style.display = 'none';
-        if (msg) msg.style.opacity = '0';
-      }
-    });
+      });
+    } finally {
+      isUpdatingBar = false;
+    }
   }
 
   // Scan and inject
@@ -593,8 +603,31 @@
     const observer = new MutationObserver(function(mutations) {
       for (const mutation of mutations) {
         if (mutation.type === 'childList') {
-          debug('Cart items changed, updating bar visibility');
-          updateBarVisibility();
+          // Skip if mutation involves our bar element (prevents infinite loop)
+          let involvesBar = false;
+          for (const node of mutation.addedNodes) {
+            if (node.nodeType === Node.ELEMENT_NODE &&
+                (node.classList && node.classList.contains('dib-fd-bar') ||
+                 node.querySelector && node.querySelector('.dib-fd-bar'))) {
+              involvesBar = true;
+              break;
+            }
+          }
+          if (!involvesBar) {
+            for (const node of mutation.removedNodes) {
+              if (node.nodeType === Node.ELEMENT_NODE &&
+                  (node.classList && node.classList.contains('dib-fd-bar') ||
+                   node.querySelector && node.querySelector('.dib-fd-bar'))) {
+                involvesBar = true;
+                break;
+              }
+            }
+          }
+
+          if (!involvesBar) {
+            debug('Cart items changed, updating bar visibility');
+            updateBarVisibility();
+          }
           break;
         }
       }
