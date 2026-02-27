@@ -317,7 +317,7 @@
     return null;
   }
 
-  // Find cart drawer container
+  // Find cart drawer container (only when visible/open)
   function findCartDrawerContainer() {
     for (const selector of CART_DRAWER_SELECTORS) {
       const container = document.querySelector(selector);
@@ -327,6 +327,19 @@
       }
     }
     return null;
+  }
+
+  // Pre-inject into closed drawers to prevent layout shift when opening
+  function preInjectIntoClosedDrawers() {
+    const config = getConfig();
+    if (!config) return;
+
+    // Find cart-drawer even when closed
+    const cartDrawer = document.querySelector('cart-drawer');
+    if (cartDrawer && !cartDrawer.querySelector('.dib-fd-bar')) {
+      debug('Pre-injecting into closed cart-drawer');
+      injectIntoContainer(cartDrawer, 'prepend');
+    }
   }
 
   // Check if element is visible
@@ -528,7 +541,10 @@
   function init() {
     debug('Initializing');
 
-    // Initial scan
+    // Pre-inject into closed drawers for instant appearance when opened
+    preInjectIntoClosedDrawers();
+
+    // Initial scan (handles cart page and open drawers)
     scanAndInject();
 
     // Watch for drawer opens
