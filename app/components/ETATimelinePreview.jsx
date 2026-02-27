@@ -43,7 +43,7 @@ export function ETATimelinePreview({ rule, globalSettings }) {
   const iconColor = rule.settings?.eta_use_main_icon_color === false
     ? (rule.settings?.eta_color || "#111827")
     : mainIconColor;
-  const connectorStyle = rule.settings?.eta_connector_style || "arrows";
+  const connectorStyle = rule.settings?.eta_connector_style || "double-chevron";
   const connectorAlignment = rule.settings?.eta_connector_alignment || "center";
   const connectorSize = rule.settings?.eta_connector_size || 24;
   // Use custom connector color only if the "use main" flag is explicitly false
@@ -311,9 +311,6 @@ export function ETATimelinePreview({ rule, globalSettings }) {
     // When alignment is "icon", apply margin-top to center connector with icons
     const mtLine = connectorAlignment === "icon" ? iconPx / 2 - 1 : 0;
     const mtBigArrow = connectorAlignment === "icon" ? iconPx / 2 - connectorSize / 2 : 0;
-    const arrowSize = Math.round(connectorSize * 0.67);
-    const mtArrows = connectorAlignment === "icon" ? iconPx / 2 - arrowSize / 2 : 0;
-
     if (connectorStyle === "line") {
       const lineWidth = connectorSize + 16;
       return (
@@ -331,6 +328,33 @@ export function ETATimelinePreview({ rule, globalSettings }) {
         </div>
       );
     }
+    if (connectorStyle === "double-chevron") {
+      return (
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", flex: `0 1 ${connectorSize + 4}px`, minWidth: 0, color: connectorColor, marginTop: mtBigArrow }}>
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" style={{ width: connectorSize, height: connectorSize, maxWidth: "100%", maxHeight: "100%" }}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="m5.25 4.5 7.5 7.5-7.5 7.5m6-15 7.5 7.5-7.5 7.5" />
+          </svg>
+        </div>
+      );
+    }
+    if (connectorStyle === "double-chevron-solid") {
+      return (
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", flex: `0 1 ${connectorSize + 4}px`, minWidth: 0, color: connectorColor, marginTop: mtBigArrow }}>
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" fill="currentColor" style={{ width: connectorSize, height: connectorSize, maxWidth: "100%", maxHeight: "100%" }}>
+            <path d="m321-80-71-71 329-329-329-329 71-71 400 400L321-80Zm-200 0-71-71 329-329-329-329 71-71 400 400L121-80Z" />
+          </svg>
+        </div>
+      );
+    }
+    if (connectorStyle === "dash") {
+      return (
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", flex: `0 1 ${connectorSize + 4}px`, minWidth: 0, color: connectorColor, marginTop: mtBigArrow }}>
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" fill="currentColor" style={{ width: connectorSize, height: connectorSize, maxWidth: "100%", maxHeight: "100%" }}>
+            <path d="M160-440v-80h640v80H160Z" />
+          </svg>
+        </div>
+      );
+    }
     if (connectorStyle === "custom" && globalSettings?.custom_connector_svg) {
       const mtCustom = connectorAlignment === "icon" ? iconPx / 2 - connectorSize / 2 : 0;
       return (
@@ -342,13 +366,12 @@ export function ETATimelinePreview({ rule, globalSettings }) {
         </div>
       );
     }
+    // Default: double-chevron
     return (
-      <div style={{ display: "flex", gap: 0, margin: "0 -4px", marginTop: mtArrows, flex: `0 1 ${arrowSize * 3}px`, minWidth: 0 }}>
-        {[1, 2, 3].map((i) => (
-          <svg key={i} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill={connectorColor} style={{ width: arrowSize, height: arrowSize, maxWidth: "100%", maxHeight: "100%" }}>
-            <path fillRule="evenodd" d="M16.28 11.47a.75.75 0 0 1 0 1.06l-7.5 7.5a.75.75 0 0 1-1.06-1.06L14.69 12 7.72 5.03a.75.75 0 0 1 1.06-1.06l7.5 7.5Z" clipRule="evenodd" />
-          </svg>
-        ))}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", flex: `0 1 ${connectorSize + 4}px`, minWidth: 0, color: connectorColor, marginTop: mtBigArrow }}>
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" style={{ width: connectorSize, height: connectorSize, maxWidth: "100%", maxHeight: "100%" }}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="m5.25 4.5 7.5 7.5-7.5 7.5m6-15 7.5 7.5-7.5 7.5" />
+        </svg>
       </div>
     );
   };
