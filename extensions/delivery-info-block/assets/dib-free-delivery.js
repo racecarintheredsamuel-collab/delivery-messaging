@@ -575,19 +575,38 @@
       if (typeof url === 'string' && (url.includes('/cart/add') || url.includes('/cart/change'))) {
         debug('Fetch to cart detected:', url);
         result.then(() => {
-          // Update bar visibility IMMEDIATELY (synchronous for fastest hide)
-          updateBarVisibility();
-          // Also check again after DOM settles
-          setTimeout(updateBarVisibility, 50);
-          // Then scan/inject for any new bars needed
+          // MutationObserver handles visibility, just ensure bar exists
           setTimeout(scanAndInject, 300);
           setTimeout(scanAndInject, 600);
-          setTimeout(scanAndInject, 1000);
         }).catch(() => {});
       }
       return result;
     };
     debug('Fetch interceptor installed');
+  }
+
+  // Watch for cart item changes using MutationObserver for instant reaction
+  function watchCartItems() {
+    const cartDrawer = document.querySelector('cart-drawer');
+    if (!cartDrawer) return;
+
+    const observer = new MutationObserver(function(mutations) {
+      for (const mutation of mutations) {
+        if (mutation.type === 'childList') {
+          debug('Cart items changed, updating bar visibility');
+          updateBarVisibility();
+          break;
+        }
+      }
+    });
+
+    // Observe the drawer for changes to its children (items added/removed)
+    observer.observe(cartDrawer, {
+      childList: true,
+      subtree: true
+    });
+
+    debug('Cart items observer installed');
   }
 
   // Initialize
@@ -602,6 +621,9 @@
 
     // Watch for drawer opens
     watchForDrawers();
+
+    // Watch for cart item changes (instant reaction to DOM changes)
+    watchCartItems();
 
     // Re-scan on navigation (SPA support)
     window.addEventListener('popstate', () => {
