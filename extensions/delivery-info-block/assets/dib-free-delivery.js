@@ -15,6 +15,10 @@
     'Dawn': {
       headingSelector: '.drawer__header',
       insertPosition: 'afterend'
+    },
+    'Craft': {
+      headingSelector: '.drawer__header, [class*="cart-drawer"] > header, .cart-drawer header',
+      insertPosition: 'afterend'
     }
   };
 
@@ -185,17 +189,30 @@
       for (const el of headingTags) {
         const text = el.textContent?.trim().toLowerCase();
         if (text && cartHeadingTexts.some(t => text === t || text.startsWith(t))) {
-          // Check if heading is in a flex row - if so, insert after the parent container
+          // Check if heading is in a flex row - need to insert BELOW header container
           let insertTarget = el;
           const parent = el.parentElement;
           if (parent) {
             const parentStyle = window.getComputedStyle(parent);
             if (parentStyle.display === 'flex' && parentStyle.flexDirection === 'row') {
-              insertTarget = parent;
-              // When inserting after flex parent, use calc width and auto margins for centering
+              // Parent contains heading + other elements (like close button)
+              // Go UP one more level to find the actual header container
+              const grandparent = parent.parentElement;
+              if (grandparent && (
+                grandparent.matches('.drawer__header, [class*="header"], header') ||
+                grandparent.tagName === 'HEADER'
+              )) {
+                // Insert after the entire header section
+                insertTarget = grandparent;
+                debug('Found header container, inserting after it');
+              } else {
+                // Fallback: insert after the flex parent
+                insertTarget = parent;
+                debug('Heading in flex row, inserting after parent');
+              }
+              // When inserting after flex parent/grandparent, use calc width and auto margins
               bar.style.width = 'calc(100% - 24px)';
               bar.style.margin = '0 auto 12px auto';
-              debug('Heading in flex row, inserting after parent instead');
             }
           }
           insertTarget.insertAdjacentElement('afterend', bar);
@@ -399,13 +416,19 @@
 
         const hasItems = checkCartHasItems(drawer);
         const msg = bar.querySelector('.dib-fd-message');
-        const wasHidden = bar.style.display === 'none';
+        const wasHidden = bar.style.visibility === 'hidden';
 
         if (hasItems) {
           // If bar was hidden (empty cart) and now showing, re-inject for correct position
           // This ensures positioning logic runs with current DOM state (with items)
           if (wasHidden) {
             debug('Cart now has items, re-injecting bar for correct position');
+            // Reset visibility styles before removing
+            bar.style.visibility = '';
+            bar.style.height = '';
+            bar.style.overflow = '';
+            bar.style.padding = '';
+            bar.style.margin = '';
             bar.remove();
             injectIntoContainer(drawer, 'prepend');
             return;
@@ -414,8 +437,13 @@
           bar.style.display = 'flex';
           if (msg) msg.style.opacity = '1';
         } else {
-          // Hide bar IMMEDIATELY (before theme re-renders)
-          bar.style.display = 'none';
+          // Hide INSTANTLY with visibility (no render frame delay)
+          // Using visibility + height collapse prevents any visual flash
+          bar.style.visibility = 'hidden';
+          bar.style.height = '0';
+          bar.style.overflow = 'hidden';
+          bar.style.padding = '0';
+          bar.style.margin = '0';
           if (msg) msg.style.opacity = '0';
         }
       });
