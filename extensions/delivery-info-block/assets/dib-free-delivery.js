@@ -404,19 +404,6 @@
     return !!container.querySelector('.cart-item, [data-cart-item], .cart__item');
   }
 
-  // Instantly hide all bars (for pre-emptive hiding before cart empties)
-  function hideAllBars() {
-    document.querySelectorAll('.dib-fd-bar').forEach(function(bar) {
-      bar.style.visibility = 'hidden';
-      bar.style.height = '0';
-      bar.style.overflow = 'hidden';
-      bar.style.padding = '0';
-      bar.style.margin = '0';
-      const msg = bar.querySelector('.dib-fd-message');
-      if (msg) msg.style.opacity = '0';
-    });
-  }
-
   // Update bar visibility based on cart state (called on cart changes)
   function updateBarVisibility() {
     if (isUpdatingBar) return;  // Prevent infinite loop from MutationObserver
@@ -621,23 +608,8 @@
     // Intercept fetch for AJAX add to cart (Dawn uses fetch)
     const originalFetch = window.fetch;
     window.fetch = function(...args) {
-      const url = args[0];
-
-      // PRE-EMPTIVE: Hide bar immediately when removing items (before fetch completes)
-      if (typeof url === 'string' && url.includes('/cart/change')) {
-        const cartDrawer = document.querySelector('cart-drawer');
-        if (cartDrawer) {
-          const cartItems = cartDrawer.querySelectorAll('.cart-item, [data-cart-item]');
-          // If only 1 item left and we're changing cart, likely removing it
-          if (cartItems.length <= 1) {
-            debug('Pre-emptive hide: cart likely emptying');
-            hideAllBars();
-          }
-        }
-      }
-
       const result = originalFetch.apply(this, args);
-
+      const url = args[0];
       if (typeof url === 'string' && (url.includes('/cart/add') || url.includes('/cart/change'))) {
         debug('Fetch to cart detected:', url);
         result.then(() => {
