@@ -451,7 +451,7 @@ export function ETATimelinePreview({ rule, globalSettings }) {
     : null;
 
   return (
-    <div style={{ display: "inline-block", maxWidth: "100%", overflow: "hidden" }}>
+    <div style={{ display: "inline-block", maxWidth: "100%", minWidth: 0, overflow: "hidden" }}>
       {/* Load Google Fonts for preview */}
       {googleFontsUrl && <link href={googleFontsUrl} rel="stylesheet" />}
       <div
@@ -461,6 +461,7 @@ export function ETATimelinePreview({ rule, globalSettings }) {
           justifySelf: "start",
           gap: horizontalGap,
           maxWidth: "100%",
+          minWidth: 0,
           padding: `${paddingVertical}px ${paddingHorizontal}px`,
           ...(borderWidth > 0 ? {
             border: `${borderWidth}px solid ${borderColor}`,
