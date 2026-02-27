@@ -303,6 +303,7 @@
     setTimeout(function() {
       document.querySelectorAll('.dib-fd-bar:not(.is-ready)').forEach(function(bar) {
         bar.classList.add('is-ready');
+        bar.style.opacity = '1';
       });
     }, 50);
   }
