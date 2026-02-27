@@ -5848,7 +5848,7 @@ export default function Index() {
                     {rule ? (
                       <div
                         style={{
-                          display: "inline-grid",
+                          display: "grid",
                           gap: 12,
                           width: "100%",
                           maxWidth: "100%",
