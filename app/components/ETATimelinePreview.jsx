@@ -346,15 +346,6 @@ export function ETATimelinePreview({ rule, globalSettings }) {
         </div>
       );
     }
-    if (connectorStyle === "circle-arrow") {
-      return (
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", flex: `0 1 ${connectorSize + 4}px`, minWidth: 0, color: connectorColor, marginTop: mtBigArrow }}>
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" style={{ width: connectorSize, height: connectorSize, maxWidth: "100%", maxHeight: "100%" }}>
-            <path d="M12 2C17.52 2 22 6.48 22 12C22 17.52 17.52 22 12 22C6.48 22 2 17.52 2 12C2 6.48 6.48 2 12 2ZM12 11H8V13H12V16L16 12L12 8V11Z" />
-          </svg>
-        </div>
-      );
-    }
     if (connectorStyle === "custom" && globalSettings?.custom_connector_svg) {
       const mtCustom = connectorAlignment === "icon" ? iconPx / 2 - connectorSize / 2 : 0;
       return (

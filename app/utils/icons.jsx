@@ -131,10 +131,6 @@ export function getIconSvg(name, style = "solid") {
   if (name === "connector-arrow-dot") {
     return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" fill="currentColor" style="display: block;"><path d="M780-380q-31 0-56-17t-36-43H80v-80h608q11-26 36-43t56-17q42 0 71 29t29 71q0 42-29 71t-71 29Z"/></svg>`;
   }
-  // Connector: Circle with arrow inside
-  if (name === "connector-circle-arrow") {
-    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" style="display: block;"><path d="M12 2C17.52 2 22 6.48 22 12C22 17.52 17.52 22 12 22C6.48 22 2 17.52 2 12C2 6.48 6.48 2 12 2ZM12 11H8V13H12V16L16 12L12 8V11Z"/></svg>`;
-  }
   return null;
 }
 
@@ -379,10 +375,9 @@ export const PRESET_ICONS = [
  * Connector icons used internally by ETA Timeline (not user-selectable)
  */
 export const CONNECTOR_ICONS = [
-  { value: "connector-big-arrow" },
   { value: "connector-double-chevron" },
+  { value: "connector-big-arrow" },
   { value: "connector-arrow-dot" },
-  { value: "connector-circle-arrow" },
 ];
 
 /**
