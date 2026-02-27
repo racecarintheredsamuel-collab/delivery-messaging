@@ -72,6 +72,9 @@
   // Guard against re-entrant calls from MutationObserver
   let isUpdatingBar = false;
 
+  // Flag to prevent re-injection during pre-emptive hide
+  let isHidingBar = false;
+
   // Get config from the embed
   function getConfig() {
     const configEl = document.getElementById('dib-fd-config');
@@ -266,6 +269,12 @@
         for (const removed of mutation.removedNodes) {
           if (removed === bar || (removed.nodeType === Node.ELEMENT_NODE && removed.contains && removed.contains(bar))) {
             barObserver.disconnect();
+
+            // Don't re-inject if we're in the middle of a pre-emptive hide
+            if (isHidingBar) {
+              debug('Pre-emptive hide in progress, not re-injecting');
+              return;
+            }
 
             // Check if container is still in the DOM - if not, find fresh container
             if (!document.body.contains(container)) {
@@ -470,9 +479,9 @@
       injectIntoContainer(cartPage, 'prepend');
     }
 
-    // Cart drawer
+    // Cart drawer - don't inject if we're in a pre-emptive hide
     const cartDrawer = findCartDrawerContainer();
-    if (cartDrawer) {
+    if (cartDrawer && !isHidingBar) {
       injectIntoContainer(cartDrawer, 'prepend');
     }
   }
@@ -620,6 +629,8 @@
           // If only 1 item left and clicking remove, hide bar NOW
           if (cartItems.length <= 1) {
             debug('Remove button clicked with 1 item - hiding bar');
+            isHidingBar = true;  // Block re-injection for 1 second
+            setTimeout(function() { isHidingBar = false; }, 1000);
             document.querySelectorAll('.dib-fd-bar').forEach(function(bar) {
               bar.style.visibility = 'hidden';
               bar.style.height = '0';
