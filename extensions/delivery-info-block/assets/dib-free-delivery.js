@@ -392,9 +392,18 @@
 
       const hasItems = checkCartHasItems(drawer);
       const msg = bar.querySelector('.dib-fd-message');
+      const wasHidden = bar.style.display === 'none';
 
       if (hasItems) {
-        // Show bar
+        // If bar was hidden (empty cart) and now showing, re-inject for correct position
+        // This ensures positioning logic runs with current DOM state (with items)
+        if (wasHidden) {
+          debug('Cart now has items, re-injecting bar for correct position');
+          bar.remove();
+          injectIntoContainer(drawer, 'prepend');
+          return;
+        }
+        // Otherwise just show
         bar.style.display = 'flex';
         if (msg) msg.style.opacity = '1';
       } else {
@@ -566,9 +575,10 @@
       if (typeof url === 'string' && (url.includes('/cart/add') || url.includes('/cart/change'))) {
         debug('Fetch to cart detected:', url);
         result.then(() => {
-          // Update bar visibility FIRST (hide if cart empties, show if items added)
+          // Update bar visibility IMMEDIATELY (synchronous for fastest hide)
+          updateBarVisibility();
+          // Also check again after DOM settles
           setTimeout(updateBarVisibility, 50);
-          setTimeout(updateBarVisibility, 150);
           // Then scan/inject for any new bars needed
           setTimeout(scanAndInject, 300);
           setTimeout(scanAndInject, 600);
