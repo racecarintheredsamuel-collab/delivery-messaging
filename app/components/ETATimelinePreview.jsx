@@ -3,7 +3,7 @@
 // Renders an ETA timeline with stages (Ordered, Shipped, Delivered) and dates
 // ============================================================================
 
-// No React hooks needed - pure CSS solution
+import { useState, useRef, useEffect } from "react";
 import { getEtaIconPaths } from "../utils/icons";
 import { normalizeEtaLabelFontSize, normalizeEtaDateFontSize } from "../utils/styling";
 import { getHolidaysForYear } from "../utils/holidays";
@@ -446,23 +446,64 @@ export function ETATimelinePreview({ rule, globalSettings }) {
   const paddingHorizontal = globalSettings?.eta_padding_horizontal ?? 8;
   const paddingVertical = globalSettings?.eta_padding_vertical ?? 8;
 
+  // Scaling to fit parent container
+  const wrapperRef = useRef(null);
+  const contentRef = useRef(null);
+  const [scale, setScale] = useState(1);
+
+  useEffect(() => {
+    const updateScale = () => {
+      const wrapper = wrapperRef.current;
+      const content = contentRef.current;
+      if (!wrapper || !content) return;
+
+      // Get parent's constrained width (the grid cell that's actually sized)
+      const parentWidth = wrapper.parentElement?.clientWidth || 0;
+      // Get content's natural width
+      const contentWidth = content.offsetWidth;
+
+      if (parentWidth > 0 && contentWidth > parentWidth) {
+        setScale(parentWidth / contentWidth);
+      } else {
+        setScale(1);
+      }
+    };
+
+    // Initial calculation after render
+    requestAnimationFrame(updateScale);
+
+    // Listen for resize
+    window.addEventListener("resize", updateScale);
+
+    // Observe wrapper for size changes (when settings change)
+    const observer = new ResizeObserver(updateScale);
+    if (wrapperRef.current) observer.observe(wrapperRef.current);
+    if (contentRef.current) observer.observe(contentRef.current);
+
+    return () => {
+      window.removeEventListener("resize", updateScale);
+      observer.disconnect();
+    };
+  }, [iconPx, connectorSize, horizontalGap, paddingHorizontal, paddingVertical]);
+
   // Build Google Fonts URL for loading
   const googleFontsUrl = previewFont
     ? `https://fonts.googleapis.com/css2?family=${encodeURIComponent(previewFont)}:wght@400;500;600;700&display=swap`
     : null;
 
   return (
-    <>
+    <div ref={wrapperRef} style={{ width: "100%" }}>
       {/* Load Google Fonts for preview */}
       {googleFontsUrl && <link href={googleFontsUrl} rel="stylesheet" />}
       <div
+        ref={contentRef}
         style={{
-          display: "flex",
+          display: "inline-flex",
           alignItems: connectorAlignment === "icon" ? "flex-start" : "center",
           gap: horizontalGap,
           padding: `${paddingVertical}px ${paddingHorizontal}px`,
-          maxWidth: "100%",
-          overflow: "hidden",
+          transformOrigin: "left top",
+          transform: scale < 1 ? `scale(${scale})` : "none",
           ...(borderWidth > 0 ? {
             border: `${borderWidth}px solid ${borderColor}`,
             borderRadius: borderRadius,
@@ -481,6 +522,6 @@ export function ETATimelinePreview({ rule, globalSettings }) {
           extraMarginRight={minDays !== maxDays && deliveryMinDate.getMonth() !== deliveryMaxDate.getMonth() ? 8 : 0}
         />
       </div>
-    </>
+    </div>
   );
 }

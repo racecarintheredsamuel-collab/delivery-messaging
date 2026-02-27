@@ -52,7 +52,8 @@
       "WebFetch(domain:mikefallows.com)",
       "WebFetch(domain:nickdrishinski.com)",
       "WebFetch(domain:nick-theme-dev-course.myshopify.com)",
-      "WebFetch(domain:liquid-ajax-cart.js.org)"
+      "WebFetch(domain:liquid-ajax-cart.js.org)",
+      "WebFetch(domain:dirask.com)"
     ]
   }
 }
