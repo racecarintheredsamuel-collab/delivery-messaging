@@ -723,7 +723,7 @@ function defaultRule() {
       show_eta_timeline: false,
       eta_left_padding: 0,
       eta_icon_size: 36,
-      eta_connector_style: "arrows",
+      eta_connector_style: "double-chevron",
       eta_connector_color: "#111827",
       eta_connector_use_main_color: true,
       eta_connector_alignment: "center",
@@ -4350,7 +4350,7 @@ export default function Index() {
                     <label>
                       <s-text>Connector style</s-text>
                       <select
-                        value={rule.settings?.eta_connector_style || "arrows"}
+                        value={rule.settings?.eta_connector_style || "double-chevron"}
                         onChange={(e) => {
                           const next = [...rules];
                           next[safeSelectedIndex] = {
@@ -4361,7 +4361,6 @@ export default function Index() {
                         }}
                         style={{ width: "100%" }}
                       >
-                        <option value="arrows">Arrows (3 chevrons)</option>
                         <option value="double-chevron">Double chevron (outline)</option>
                         <option value="double-chevron-solid">Double chevron (solid)</option>
                         <option value="dash">Dash</option>

@@ -123,10 +123,6 @@ export function getIconSvg(name, style = "solid") {
   if (name === "connector-big-arrow") {
     return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" style="display: block;"><path fill-rule="evenodd" d="M16.72 7.72a.75.75 0 0 1 1.06 0l3.75 3.75a.75.75 0 0 1 0 1.06l-3.75 3.75a.75.75 0 1 1-1.06-1.06l2.47-2.47H3a.75.75 0 0 1 0-1.5h16.19l-2.47-2.47a.75.75 0 0 1 0-1.06Z" clip-rule="evenodd"/></svg>`;
   }
-  // Connector: Chevron (single, for ETA timeline arrows)
-  if (name === "connector-chevron") {
-    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" style="display: block;"><path fill-rule="evenodd" d="M16.28 11.47a.75.75 0 0 1 0 1.06l-7.5 7.5a.75.75 0 0 1-1.06-1.06L14.69 12 7.72 5.03a.75.75 0 0 1 1.06-1.06l7.5 7.5Z" clip-rule="evenodd"/></svg>`;
-  }
   // Connector: Double Chevron (cleaner alternative to 3-chevron arrows)
   if (name === "connector-double-chevron") {
     return `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" style="display: block;"><path stroke-linecap="round" stroke-linejoin="round" d="m5.25 4.5 7.5 7.5-7.5 7.5m6-15 7.5 7.5-7.5 7.5" /></svg>`;
@@ -384,7 +380,6 @@ export const PRESET_ICONS = [
  */
 export const CONNECTOR_ICONS = [
   { value: "connector-big-arrow" },
-  { value: "connector-chevron" },
   { value: "connector-double-chevron" },
   { value: "connector-dash" },
   { value: "connector-double-chevron-solid" },
