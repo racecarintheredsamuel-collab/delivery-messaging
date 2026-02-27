@@ -457,22 +457,29 @@ export function ETATimelinePreview({ rule, globalSettings }) {
     if (!container || !content) return;
 
     const updateScale = () => {
-      const containerWidth = container.offsetWidth;
-      const contentWidth = content.scrollWidth;
-      if (contentWidth > 0 && containerWidth > 0) {
-        const newScale = Math.min(1, containerWidth / contentWidth);
-        setScale(newScale);
-      }
+      requestAnimationFrame(() => {
+        const containerWidth = container.offsetWidth;
+        const contentWidth = content.scrollWidth;
+        if (contentWidth > 0 && containerWidth > 0 && contentWidth > containerWidth) {
+          setScale(containerWidth / contentWidth);
+        } else {
+          setScale(1);
+        }
+      });
     };
 
-    updateScale();
+    // Delay initial measurement to ensure layout is complete
+    const timer = setTimeout(updateScale, 50);
 
     const resizeObserver = new ResizeObserver(updateScale);
     resizeObserver.observe(container);
     resizeObserver.observe(content);
 
-    return () => resizeObserver.disconnect();
-  }, [iconPx, connectorSize, horizontalGap, paddingHorizontal, minDays, maxDays]);
+    return () => {
+      clearTimeout(timer);
+      resizeObserver.disconnect();
+    };
+  }, [iconPx, connectorSize, horizontalGap, paddingHorizontal, paddingVertical, minDays, maxDays]);
 
   // Build Google Fonts URL for loading
   const googleFontsUrl = previewFont

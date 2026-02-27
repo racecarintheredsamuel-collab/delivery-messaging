@@ -2521,9 +2521,9 @@ export default function Index() {
                       <input
                         type="number"
                         min="0"
-                        max="40"
+                        max="20"
                         value={globalSettings?.eta_horizontal_gap ?? 12}
-                        onChange={(e) => setGlobalSettings({ ...globalSettings, eta_horizontal_gap: safeParseNumber(e.target.value, 12, 0, 40) })}
+                        onChange={(e) => setGlobalSettings({ ...globalSettings, eta_horizontal_gap: safeParseNumber(e.target.value, 12, 0, 20) })}
                         style={{ width: "100%" }}
                       />
                     </div>
