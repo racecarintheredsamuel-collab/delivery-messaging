@@ -594,6 +594,39 @@
       }
     });
 
+    // Listen for remove button clicks to pre-emptively hide bar
+    document.addEventListener('click', (e) => {
+      const target = e.target;
+      if (!target) return;
+
+      // Common remove/trash button selectors
+      const removeBtn = target.closest(
+        'cart-remove-button, .cart-remove-button, [data-cart-remove], ' +
+        '.remove-button, .cart__remove, [name="minus"], ' +
+        'button[aria-label*="Remove"], a[href*="/cart/change"][href*="quantity=0"]'
+      );
+
+      if (removeBtn) {
+        const cartDrawer = document.querySelector('cart-drawer');
+        if (cartDrawer) {
+          const cartItems = cartDrawer.querySelectorAll('.cart-item, [data-cart-item]');
+          // If only 1 item left and clicking remove, hide bar NOW
+          if (cartItems.length <= 1) {
+            debug('Remove button clicked with 1 item - hiding bar');
+            document.querySelectorAll('.dib-fd-bar').forEach(function(bar) {
+              bar.style.visibility = 'hidden';
+              bar.style.height = '0';
+              bar.style.overflow = 'hidden';
+              bar.style.padding = '0';
+              bar.style.margin = '0';
+              const msg = bar.querySelector('.dib-fd-message');
+              if (msg) msg.style.opacity = '0';
+            });
+          }
+        }
+      }
+    }, true); // Use capture phase to fire before other handlers
+
     // Listen for form submissions (add to cart)
     document.addEventListener('submit', (e) => {
       const form = e.target;
