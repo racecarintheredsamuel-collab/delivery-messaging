@@ -127,13 +127,13 @@ export function getIconSvg(name, style = "solid") {
   if (name === "connector-double-chevron") {
     return `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" style="display: block;"><path stroke-linecap="round" stroke-linejoin="round" d="m5.25 4.5 7.5 7.5-7.5 7.5m6-15 7.5 7.5-7.5 7.5" /></svg>`;
   }
-  // Connector: Dash (thick horizontal line)
-  if (name === "connector-dash") {
-    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" fill="currentColor" style="display: block;"><path d="M160-440v-80h640v80H160Z"/></svg>`;
+  // Connector: Arrow with dot (line with circle at end)
+  if (name === "connector-arrow-dot") {
+    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" fill="currentColor" style="display: block;"><path d="M780-380q-31 0-56-17t-36-43H80v-80h608q11-26 36-43t56-17q42 0 71 29t29 71q0 42-29 71t-71 29Z"/></svg>`;
   }
-  // Connector: Solid Double Chevron (Material Symbols)
-  if (name === "connector-double-chevron-solid") {
-    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" fill="currentColor" style="display: block;"><path d="m321-80-71-71 329-329-329-329 71-71 400 400L321-80Zm-200 0-71-71 329-329-329-329 71-71 400 400L121-80Z"/></svg>`;
+  // Connector: Circle with arrow inside
+  if (name === "connector-circle-arrow") {
+    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" style="display: block;"><path d="M12 2C17.52 2 22 6.48 22 12C22 17.52 17.52 22 12 22C6.48 22 2 17.52 2 12C2 6.48 6.48 2 12 2ZM12 11H8V13H12V16L16 12L12 8V11Z"/></svg>`;
   }
   return null;
 }
@@ -381,8 +381,8 @@ export const PRESET_ICONS = [
 export const CONNECTOR_ICONS = [
   { value: "connector-big-arrow" },
   { value: "connector-double-chevron" },
-  { value: "connector-dash" },
-  { value: "connector-double-chevron-solid" },
+  { value: "connector-arrow-dot" },
+  { value: "connector-circle-arrow" },
 ];
 
 /**

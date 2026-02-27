@@ -48,7 +48,11 @@
       "WebFetch(domain:shopify.dev)",
       "WebFetch(domain:fonts.google.com)",
       "Bash(node scripts/curate-fonts.js:*)",
-      "Bash(node scripts/curate-fonts.cjs:*)"
+      "Bash(node scripts/curate-fonts.cjs:*)",
+      "WebFetch(domain:mikefallows.com)",
+      "WebFetch(domain:nickdrishinski.com)",
+      "WebFetch(domain:nick-theme-dev-course.myshopify.com)",
+      "WebFetch(domain:liquid-ajax-cart.js.org)"
     ]
   }
 }
