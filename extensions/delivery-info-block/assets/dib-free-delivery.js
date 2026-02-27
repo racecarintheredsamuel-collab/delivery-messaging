@@ -87,6 +87,7 @@
     bar.setAttribute('data-dm-state', 'init');
     bar.setAttribute('data-dm-celebrated', '');
     // Inline styles to ensure rendering regardless of stylesheet loading
+    // Shell (background + progress track) is always visible - only message content transitions
     bar.style.cssText = `
       display: flex;
       flex-direction: column;
@@ -97,8 +98,6 @@
       font-size: 14px;
       line-height: 1.4;
       z-index: 10;
-      opacity: 0;
-      transition: opacity 400ms ease-in;
       width: 100%;
       box-sizing: border-box;
     `.replace(/\s+/g, ' ');
@@ -106,7 +105,8 @@
     const message = document.createElement('div');
     message.className = 'dib-fd-message';
     message.setAttribute('data-dm-message', '');
-    message.style.cssText = `text-align: center; font-weight: 500; color: ${config.barTextColor}; min-height: 20px; transition: opacity 0.15s ease-out;`;
+    // Message starts hidden and fades in once content is ready
+    message.style.cssText = `text-align: center; font-weight: 500; color: ${config.barTextColor}; min-height: 20px; opacity: 0; transition: opacity 400ms ease-in;`;
     message.innerHTML = '<div class="dib-fd-skeleton-text"></div>';
     bar.appendChild(message);
 
@@ -271,13 +271,14 @@
       const drawerObserver = new MutationObserver((mutations) => {
         for (const mutation of mutations) {
           if (mutation.attributeName === 'open') {
+            var msg = bar.querySelector('.dib-fd-message');
             if (cartDrawer.hasAttribute('open')) {
-              debug('Drawer opening, showing bar');
-              bar.style.opacity = '1';
+              debug('Drawer opening, showing message');
+              if (msg) msg.style.opacity = '1';
               bar.style.pointerEvents = '';
             } else {
-              debug('Drawer closing, fading bar');
-              bar.style.opacity = '0';
+              debug('Drawer closing, fading message');
+              if (msg) msg.style.opacity = '0';
               bar.style.pointerEvents = 'none';
             }
           }
@@ -299,11 +300,12 @@
         window.DeliveryMessaging.refresh();
       }
     }
-    // Mark all bars as ready for fade-in
+    // Mark all bars as ready and fade in message content
     setTimeout(function() {
       document.querySelectorAll('.dib-fd-bar:not(.is-ready)').forEach(function(bar) {
         bar.classList.add('is-ready');
-        bar.style.opacity = '1';
+        var msg = bar.querySelector('.dib-fd-message');
+        if (msg) msg.style.opacity = '1';
       });
     }, 50);
   }
