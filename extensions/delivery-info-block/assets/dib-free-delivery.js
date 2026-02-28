@@ -363,7 +363,10 @@
       document.querySelectorAll('.dib-fd-bar:not(.is-ready)').forEach(function(bar) {
         bar.classList.add('is-ready');
         var msg = bar.querySelector('.dib-fd-message');
-        if (msg) msg.style.opacity = '1';
+        // Only force opacity if still showing skeleton (let delivery-messaging.js handle real content transitions)
+        if (msg && msg.innerHTML.includes('dib-fd-skeleton')) {
+          msg.style.opacity = '1';
+        }
       });
     }, 50);
   }
