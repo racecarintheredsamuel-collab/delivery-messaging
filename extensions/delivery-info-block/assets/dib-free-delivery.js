@@ -63,13 +63,8 @@
     '.ajaxcart__inner',
     '.ajaxcart',
     '.cart-popup__inner',
-    '.cart-popup',
-    // Dawn popup notification (only when active/visible)
-    'cart-notification.active'
+    '.cart-popup'
   ];
-
-  // Mini cart / popup selectors - these get compact styling
-  const MINI_CART_SELECTORS = '.mini-cart, .mini-cart__inner, .ajaxcart, .ajaxcart__inner, .cart-popup, .cart-popup__inner, cart-notification.active';
 
   // Track injected containers to avoid duplicates
   const injectedContainers = new WeakSet();
@@ -115,10 +110,9 @@
   }
 
   // Create the free delivery bar element with inline styles for reliability
-  // isCompact: true for mini carts/popups (smaller padding, font, progress bar)
-  function createBarElement(config, isCompact = false) {
+  function createBarElement(config) {
     const bar = document.createElement('div');
-    bar.className = 'dib-fd-bar' + (isCompact ? ' dib-fd-compact' : '');
+    bar.className = 'dib-fd-bar';
     bar.setAttribute('data-dm-target', '');
     bar.setAttribute('data-dm-state', 'init');
     bar.setAttribute('data-dm-celebrated', '');
@@ -127,11 +121,11 @@
     bar.style.cssText = `
       display: flex;
       flex-direction: column;
-      gap: ${isCompact ? '4px' : '8px'};
-      padding: ${isCompact ? '8px 12px' : '12px 16px'};
+      gap: 8px;
+      padding: 12px 16px;
       background: ${config.barBgColor};
-      border-radius: ${isCompact ? '6px' : '8px'};
-      font-size: ${isCompact ? '12px' : '14px'};
+      border-radius: 8px;
+      font-size: 14px;
       line-height: 1.4;
       z-index: 10;
       width: 100%;
@@ -142,7 +136,7 @@
     message.className = 'dib-fd-message';
     message.setAttribute('data-dm-message', '');
     // Message starts hidden and fades in once content is ready
-    message.style.cssText = `text-align: center; font-weight: 500; color: ${config.barTextColor}; min-height: ${isCompact ? '16px' : '20px'}; opacity: 0; transition: opacity 150ms ease-in;`;
+    message.style.cssText = `text-align: center; font-weight: 500; color: ${config.barTextColor}; min-height: 20px; opacity: 0; transition: opacity 150ms ease-in;`;
     message.innerHTML = '<div class="dib-fd-skeleton-text"></div>';
     bar.appendChild(message);
 
@@ -156,8 +150,8 @@
       progressBar.style.cssText = `
         display: block;
         width: 100%;
-        height: ${isCompact ? '4px' : '8px'};
-        border-radius: ${isCompact ? '2px' : '4px'};
+        height: 8px;
+        border-radius: 4px;
         transition: background 0.3s;
         background: linear-gradient(to right, ${config.progressBarColor} 0%, ${config.progressBarBg} 0%);
       `.replace(/\s+/g, ' ');
@@ -179,12 +173,8 @@
     const checkContainer = drawerRoot || container;
     if (checkContainer.querySelector('.dib-fd-bar')) return false;
 
-    // Check if this is a mini cart/popup (use compact styling)
-    const isMiniCart = container.matches && (container.matches(MINI_CART_SELECTORS) || !!container.closest(MINI_CART_SELECTORS));
-
-    // Create bar element (compact for mini carts)
-    const bar = createBarElement(config, isMiniCart);
-    if (isMiniCart) debug('Using compact bar for mini cart');
+    // Create bar element
+    const bar = createBarElement(config);
 
     // For cart drawers, try theme-specific positioning first
     const isInDrawer = drawerRoot || container.matches('cart-drawer, .cart-drawer, [data-cart-drawer]');
