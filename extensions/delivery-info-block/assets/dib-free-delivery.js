@@ -64,12 +64,12 @@
     '.ajaxcart',
     '.cart-popup__inner',
     '.cart-popup',
-    // Dawn popup notification
-    'cart-notification'
+    // Dawn popup notification (only when active/visible)
+    'cart-notification.active'
   ];
 
   // Mini cart / popup selectors - these get compact styling
-  const MINI_CART_SELECTORS = '.mini-cart, .mini-cart__inner, .ajaxcart, .ajaxcart__inner, .cart-popup, .cart-popup__inner, cart-notification';
+  const MINI_CART_SELECTORS = '.mini-cart, .mini-cart__inner, .ajaxcart, .ajaxcart__inner, .cart-popup, .cart-popup__inner, cart-notification.active';
 
   // Track injected containers to avoid duplicates
   const injectedContainers = new WeakSet();
