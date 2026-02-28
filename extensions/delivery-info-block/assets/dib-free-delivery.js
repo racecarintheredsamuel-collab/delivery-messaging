@@ -506,9 +506,9 @@
     const config = getConfig();
     if (!config) return;
 
-    // Cart page - skip if Liquid shell already exists
+    // Cart page
     const cartPage = findCartPageContainer();
-    if (cartPage && !document.querySelector('.dib-fd-cart-shell')) {
+    if (cartPage) {
       injectIntoContainer(cartPage, 'prepend');
     }
 
