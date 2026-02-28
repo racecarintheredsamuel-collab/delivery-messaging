@@ -307,23 +307,22 @@
               return;
             }
 
-            // Preserve state from old bar for animation continuity
+            // Preserve state and content from old bar for animation continuity
             const oldState = bar.dataset.dmState;
             const oldCelebrated = bar.dataset.dmCelebrated;
+            // Capture OLD content from the destroyed bar - this is what was VISIBLE
+            const oldMessageEl = bar.querySelector('[data-dm-message]');
+            const oldContent = oldMessageEl ? oldMessageEl.innerHTML : null;
 
             // Re-inject only if cart has items
             debug('Container still valid, re-injecting');
 
-            // Get current content BEFORE re-injection to avoid skeleton flash
-            let currentContent = null;
-            if (window.DeliveryMessaging && window.DeliveryMessaging.getState) {
-              const state = window.DeliveryMessaging.getState();
-              currentContent = state.messageText;
-              debug('Got current content for re-injection:', currentContent ? 'yes' : 'no');
-            }
+            // Use OLD content (what was visible) so animation can transition TO new content
+            const hasRealContent = oldContent && !oldContent.includes('dib-fd-skeleton');
+            debug('Using old content for re-injection:', hasRealContent ? 'yes' : 'no');
 
-            // Pass current content so bar starts with it instead of skeleton
-            injectIntoContainer(container, position, currentContent);
+            // Pass old content so bar starts with it, then updateTarget will animate to new
+            injectIntoContainer(container, position, hasRealContent ? oldContent : null);
 
             // Restore state to new bar so animations can trigger correctly
             const newBar = drawerRoot.querySelector('.dib-fd-bar');
