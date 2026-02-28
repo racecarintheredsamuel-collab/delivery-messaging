@@ -335,6 +335,10 @@
             if (cartDrawer.hasAttribute('open')) {
               debug('Drawer opening');
               bar.style.pointerEvents = '';
+              // Trigger update to ensure message is visible
+              if (window.DeliveryMessaging && window.DeliveryMessaging.forceUpdate) {
+                window.DeliveryMessaging.forceUpdate();
+              }
             } else {
               debug('Drawer closing');
               bar.style.pointerEvents = 'none';
