@@ -110,7 +110,8 @@
   }
 
   // Create the free delivery bar element with inline styles for reliability
-  function createBarElement(config) {
+  // initialContent: optional - if provided, use instead of skeleton (for re-injection)
+  function createBarElement(config, initialContent) {
     const bar = document.createElement('div');
     bar.className = 'dib-fd-bar';
     bar.setAttribute('data-dm-target', '');
@@ -137,7 +138,8 @@
     message.setAttribute('data-dm-message', '');
     // Message starts visible; delivery-messaging.js handles all transitions
     message.style.cssText = `text-align: center; font-weight: 500; color: ${config.barTextColor}; min-height: 20px; opacity: 1; transition: opacity 150ms ease-in;`;
-    message.innerHTML = '<div class="dib-fd-skeleton-text"></div>';
+    // Use initial content if provided (re-injection), otherwise skeleton
+    message.innerHTML = initialContent || '<div class="dib-fd-skeleton-text"></div>';
     bar.appendChild(message);
 
     if (config.showProgressBar) {
@@ -162,7 +164,8 @@
   }
 
   // Find and inject into a container
-  function injectIntoContainer(container, position = 'prepend') {
+  // initialContent: optional - if provided, bar starts with this content instead of skeleton
+  function injectIntoContainer(container, position = 'prepend', initialContent = null) {
     if (!container) return false;
 
     const config = getConfig();
@@ -174,7 +177,7 @@
     if (checkContainer.querySelector('.dib-fd-bar')) return false;
 
     // Create bar element
-    const bar = createBarElement(config);
+    const bar = createBarElement(config, initialContent);
 
     // For cart drawers, try theme-specific positioning first
     const isInDrawer = drawerRoot || container.matches('cart-drawer, .cart-drawer, [data-cart-drawer]');
@@ -310,7 +313,17 @@
 
             // Re-inject only if cart has items
             debug('Container still valid, re-injecting');
-            injectIntoContainer(container, position);
+
+            // Get current content BEFORE re-injection to avoid skeleton flash
+            let currentContent = null;
+            if (window.DeliveryMessaging && window.DeliveryMessaging.getState) {
+              const state = window.DeliveryMessaging.getState();
+              currentContent = state.messageText;
+              debug('Got current content for re-injection:', currentContent ? 'yes' : 'no');
+            }
+
+            // Pass current content so bar starts with it instead of skeleton
+            injectIntoContainer(container, position, currentContent);
 
             // Restore state to new bar so animations can trigger correctly
             const newBar = drawerRoot.querySelector('.dib-fd-bar');
