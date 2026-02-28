@@ -337,8 +337,11 @@
                 newBar.dataset.dmCelebrated = oldCelebrated;
                 debug('Restored bar state:', oldState, 'celebrated:', oldCelebrated);
               } else {
-                // State changed (progress → unlocked) - let celebration trigger naturally
-                debug('State changed, not restoring to allow celebration');
+                // State changed (progress → unlocked) - SET progress state so celebration can trigger
+                // updateTarget() checks wasProgress = (dmState === 'progress'), so we must set it
+                newBar.dataset.dmState = 'progress';
+                newBar.dataset.dmCelebrated = '';
+                debug('State changed, set to progress for celebration');
               }
             }
             return;
