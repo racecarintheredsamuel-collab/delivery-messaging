@@ -329,6 +329,19 @@
       // Check if cart state actually changed (not just a refresh)
       const cartStateKey = `${state.cartTotal}-${state.isEmpty}-${state.excluded}-${state.unlocked}`;
 
+      // Trigger celebration on progress → unlocked transition
+      if (lastCartState !== null) {
+        // Parse old state - format is "total-isEmpty-excluded-unlocked"
+        const wasUnlocked = lastCartState.endsWith('-true');
+        if (state.unlocked && !wasUnlocked) {
+          target.classList.add('dib-fd-celebrate');
+          target.addEventListener('animationend', function handler() {
+            target.classList.remove('dib-fd-celebrate');
+            target.removeEventListener('animationend', handler);
+          }, { once: true });
+        }
+      }
+
       if (lastCartState !== null && lastCartState !== cartStateKey) {
         // Cart changed - reset to FD message (index 0)
         stopCycle();

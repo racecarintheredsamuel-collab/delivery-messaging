@@ -324,12 +324,22 @@
             // Pass old content so bar starts with it, then updateTarget will animate to new
             injectIntoContainer(container, position, hasRealContent ? oldContent : null);
 
-            // Restore state to new bar so animations can trigger correctly
+            // Restore state to new bar - but only if state hasn't changed
+            // This allows celebration to trigger on progress → unlocked transition
             const newBar = drawerRoot.querySelector('.dib-fd-bar');
             if (newBar && oldState) {
-              newBar.dataset.dmState = oldState;
-              newBar.dataset.dmCelebrated = oldCelebrated;
-              debug('Restored bar state:', oldState, 'celebrated:', oldCelebrated);
+              const currentState = window.DeliveryMessaging ? window.DeliveryMessaging.getState() : null;
+              const stateChanged = currentState && (oldState === 'progress' && currentState.unlocked);
+
+              if (!stateChanged) {
+                // State same - restore to prevent double-celebration
+                newBar.dataset.dmState = oldState;
+                newBar.dataset.dmCelebrated = oldCelebrated;
+                debug('Restored bar state:', oldState, 'celebrated:', oldCelebrated);
+              } else {
+                // State changed (progress → unlocked) - let celebration trigger naturally
+                debug('State changed, not restoring to allow celebration');
+              }
             }
             return;
           }
