@@ -326,20 +326,17 @@
     });
     barObserver.observe(container, { childList: true, subtree: true });
 
-    // Watch for drawer opening/closing
+    // Watch for drawer opening/closing - only control pointerEvents, let delivery-messaging.js handle opacity
     const cartDrawer = container.closest('cart-drawer') || document.querySelector('cart-drawer');
     if (cartDrawer) {
       const drawerObserver = new MutationObserver((mutations) => {
         for (const mutation of mutations) {
           if (mutation.attributeName === 'open') {
-            var msg = bar.querySelector('.dib-fd-message');
             if (cartDrawer.hasAttribute('open')) {
-              debug('Drawer opening, showing message');
-              if (msg) msg.style.opacity = '1';
+              debug('Drawer opening');
               bar.style.pointerEvents = '';
             } else {
-              debug('Drawer closing, fading message');
-              if (msg) msg.style.opacity = '0';
+              debug('Drawer closing');
               bar.style.pointerEvents = 'none';
             }
           }
@@ -509,9 +506,9 @@
     const config = getConfig();
     if (!config) return;
 
-    // Cart page
+    // Cart page - skip if Liquid shell already exists
     const cartPage = findCartPageContainer();
-    if (cartPage) {
+    if (cartPage && !document.querySelector('.dib-fd-cart-shell')) {
       injectIntoContainer(cartPage, 'prepend');
     }
 
