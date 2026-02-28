@@ -136,7 +136,7 @@
     message.className = 'dib-fd-message';
     message.setAttribute('data-dm-message', '');
     // Message starts hidden and fades in once content is ready
-    message.style.cssText = `text-align: center; font-weight: 500; color: ${config.barTextColor}; min-height: 20px; opacity: 0; transition: opacity 150ms ease-in;`;
+    message.style.cssText = `text-align: center; font-weight: 500; color: ${config.barTextColor}; min-height: 20px; opacity: 1; transition: opacity 150ms ease-in;`;
     message.innerHTML = '<div class="dib-fd-skeleton-text"></div>';
     bar.appendChild(message);
 
@@ -362,11 +362,6 @@
     setTimeout(function() {
       document.querySelectorAll('.dib-fd-bar:not(.is-ready)').forEach(function(bar) {
         bar.classList.add('is-ready');
-        var msg = bar.querySelector('.dib-fd-message');
-        // Only force opacity if still showing skeleton (let delivery-messaging.js handle real content transitions)
-        if (msg && msg.innerHTML.includes('dib-fd-skeleton')) {
-          msg.style.opacity = '1';
-        }
       });
     }, 50);
   }
@@ -457,7 +452,6 @@
         if (!drawer) return; // Only for drawer bars
 
         const hasItems = checkCartHasItems(drawer);
-        const msg = bar.querySelector('.dib-fd-message');
         const wasHidden = bar.style.visibility === 'hidden';
 
         if (hasItems) {
@@ -487,7 +481,6 @@
           }
           // Otherwise just show
           bar.style.display = 'flex';
-          if (msg) msg.style.opacity = '1';
         } else {
           // Hide INSTANTLY with visibility (no render frame delay)
           // Using visibility + height collapse prevents any visual flash
@@ -496,7 +489,6 @@
           bar.style.overflow = 'hidden';
           bar.style.padding = '0';
           bar.style.margin = '0';
-          if (msg) msg.style.opacity = '0';
         }
       });
     } finally {
