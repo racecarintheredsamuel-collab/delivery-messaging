@@ -135,7 +135,7 @@
     const message = document.createElement('div');
     message.className = 'dib-fd-message';
     message.setAttribute('data-dm-message', '');
-    // Message starts hidden and fades in once content is ready
+    // Message starts visible; delivery-messaging.js handles all transitions
     message.style.cssText = `text-align: center; font-weight: 500; color: ${config.barTextColor}; min-height: 20px; opacity: 1; transition: opacity 150ms ease-in;`;
     message.innerHTML = '<div class="dib-fd-skeleton-text"></div>';
     bar.appendChild(message);
@@ -358,12 +358,6 @@
         window.DeliveryMessaging.refresh();
       }
     }
-    // Mark all bars as ready and fade in message content
-    setTimeout(function() {
-      document.querySelectorAll('.dib-fd-bar:not(.is-ready)').forEach(function(bar) {
-        bar.classList.add('is-ready');
-      });
-    }, 50);
   }
 
   // Find cart page container
