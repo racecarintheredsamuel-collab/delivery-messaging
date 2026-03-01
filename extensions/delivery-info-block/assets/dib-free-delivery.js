@@ -9,24 +9,6 @@
     if (window.__DIB_DEBUG__) console.log('[DIB FD]', ...args);
   };
 
-  // Theme-specific drawer configurations
-  // Add more themes here as they are tested
-  const THEME_DRAWER_CONFIGS = {
-    'Dawn': {
-      headingSelector: '.drawer__header',
-      insertPosition: 'afterend'
-    },
-    'Craft': {
-      headingSelector: '.drawer__header, [class*="cart-drawer"] > header, .cart-drawer header',
-      insertPosition: 'afterend'
-    }
-  };
-
-  function getThemeConfig() {
-    const themeName = window.Shopify?.theme?.name;
-    return themeName ? THEME_DRAWER_CONFIGS[themeName] : null;
-  }
-
   // Cart page selectors (in priority order)
   const CART_PAGE_SELECTORS = [
     '.cart__items',
@@ -197,23 +179,31 @@
       bar.style.width = 'calc(100% - 24px)';
       bar.style.margin = '0 auto 12px auto';
 
-      const themeConfig = getThemeConfig();
       const searchRoot = drawerRoot || container;
 
-      // Try theme-specific heading injection
-      if (themeConfig && themeConfig.headingSelector) {
-        const headingEl = searchRoot.querySelector(themeConfig.headingSelector);
-        if (headingEl) {
-          headingEl.insertAdjacentElement(themeConfig.insertPosition || 'afterend', bar);
+      // Try common header container selectors first (most reliable)
+      const headerSelectors = [
+        '.drawer__header',
+        '.cart-drawer__header',
+        '[class*="cart-drawer"] > header',
+        '.cart-drawer header',
+        '[class*="drawer"] > header',
+        'header[class*="cart"]',
+        'header[class*="drawer"]'
+      ];
+      for (const selector of headerSelectors) {
+        const headerEl = searchRoot.querySelector(selector);
+        if (headerEl) {
+          headerEl.insertAdjacentElement('afterend', bar);
           injectedContainers.add(searchRoot);
-          debug('Injected bar after heading (theme:', window.Shopify?.theme?.name, ')');
+          debug('Injected bar after header container:', selector);
           setupBarObservers(bar, searchRoot, position);
           triggerUpdate();
           return true;
         }
       }
 
-      // Universal fallback: find heading by common cart text
+      // Fallback: find heading by common cart text
       const cartHeadingTexts = ['your cart', 'cart', 'shopping cart', 'your bag', 'bag'];
       const headingTags = searchRoot.querySelectorAll('h1, h2, h3, h4, h5, h6, [class*="heading"], [class*="title"], .drawer__heading, .cart-drawer__heading');
       for (const el of headingTags) {
