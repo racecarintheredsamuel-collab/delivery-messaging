@@ -37,6 +37,11 @@
     '.cart-drawer',
     '[data-cart-drawer] .drawer__inner',
     '[data-cart-drawer]',
+    // Impulse theme (uses #CartDrawer, not cart-drawer element)
+    '#CartDrawer',
+    '[data-location="cart-drawer"]',
+    '.drawer--right',
+    // Other themes
     '.mini-cart__inner',
     '.mini-cart',
     '.drawer__cart',
