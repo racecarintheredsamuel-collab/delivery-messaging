@@ -15,6 +15,9 @@
 {%- assign fd_progress_bar_bg = '#e5e7eb' -%}
 {%- assign fd_bar_bg_color = '#f9fafb' -%}
 {%- assign fd_bar_text_color = '#374151' -%}
+{%- assign fd_bar_border_width = '0' -%}
+{%- assign fd_bar_border_radius = '8' -%}
+{%- assign fd_bar_border_color = '#e5e7eb' -%}
 {%- assign fd_exclusion_rules = '' -%}
 {%- assign fd_exclude_tags = '' -%}
 {%- assign fd_exclude_handles = '' -%}
@@ -53,6 +56,15 @@
   {%- if global_settings.fd_bar_text_color != blank -%}
     {%- assign fd_bar_text_color = global_settings.fd_bar_text_color -%}
   {%- endif -%}
+  {%- if global_settings.fd_bar_border_width != blank -%}
+    {%- assign fd_bar_border_width = global_settings.fd_bar_border_width -%}
+  {%- endif -%}
+  {%- if global_settings.fd_bar_border_radius != blank -%}
+    {%- assign fd_bar_border_radius = global_settings.fd_bar_border_radius -%}
+  {%- endif -%}
+  {%- if global_settings.fd_bar_border_color != blank -%}
+    {%- assign fd_bar_border_color = global_settings.fd_bar_border_color -%}
+  {%- endif -%}
   {%- if global_settings.fd_exclusion_rules != blank -%}
     {%- assign fd_exclusion_rules = global_settings.fd_exclusion_rules | json -%}
   {%- endif -%}
@@ -88,6 +100,9 @@
   data-progress-bar-bg="{{ fd_progress_bar_bg }}"
   data-bar-bg-color="{{ fd_bar_bg_color }}"
   data-bar-text-color="{{ fd_bar_text_color }}"
+  data-bar-border-width="{{ fd_bar_border_width }}"
+  data-bar-border-radius="{{ fd_bar_border_radius }}"
+  data-bar-border-color="{{ fd_bar_border_color }}"
   data-multi-match-message="{{ fd_multi_match_message | escape }}"
 ></div>
 <style>

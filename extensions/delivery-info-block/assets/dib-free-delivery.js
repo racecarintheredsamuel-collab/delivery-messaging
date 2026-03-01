@@ -105,7 +105,10 @@
       progressBarColor: configEl.dataset.progressBarColor || '#22c55e',
       progressBarBg: configEl.dataset.progressBarBg || '#e5e7eb',
       barBgColor: configEl.dataset.barBgColor || '#f9fafb',
-      barTextColor: configEl.dataset.barTextColor || '#374151'
+      barTextColor: configEl.dataset.barTextColor || '#374151',
+      barBorderWidth: configEl.dataset.barBorderWidth || '0',
+      barBorderRadius: configEl.dataset.barBorderRadius || '8',
+      barBorderColor: configEl.dataset.barBorderColor || '#e5e7eb'
     };
   }
 
@@ -125,7 +128,8 @@
       gap: 8px;
       padding: 12px 16px;
       background: ${config.barBgColor};
-      border-radius: 8px;
+      border-radius: ${config.barBorderRadius}px;
+      border: ${config.barBorderWidth}px solid ${config.barBorderColor};
       font-size: 14px;
       line-height: 1.4;
       z-index: 10;

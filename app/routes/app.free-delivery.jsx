@@ -497,6 +497,42 @@ export default function FreeDeliveryPage() {
                     onInput={(e) => setSettings({ ...settings, fd_bar_text_color: e.target.value })}
                   />
                 </div>
+
+                {/* Border Styling sub-section */}
+                <div style={{ borderTop: "1px solid var(--p-color-border, #e5e7eb)", paddingTop: 12, marginTop: 4, display: "grid", gap: 12 }}>
+                  <s-text style={{ fontWeight: 600 }}>Border Styling</s-text>
+
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                    <label>
+                      <s-text>Border thickness (px)</s-text>
+                      <input
+                        type="number"
+                        min="0"
+                        max="10"
+                        value={String(settings.fd_bar_border_width ?? 0)}
+                        onChange={(e) => setSettings({ ...settings, fd_bar_border_width: Math.max(0, Number(e.target.value) || 0) })}
+                        style={{ width: "100%" }}
+                      />
+                    </label>
+                    <label>
+                      <s-text>Border radius (px)</s-text>
+                      <input
+                        type="number"
+                        min="0"
+                        value={String(settings.fd_bar_border_radius ?? 8)}
+                        onChange={(e) => setSettings({ ...settings, fd_bar_border_radius: Number(e.target.value) || 0 })}
+                        style={{ width: "100%" }}
+                      />
+                    </label>
+                  </div>
+
+                  <s-color-field
+                    label="Border color"
+                    placeholder="#e5e7eb"
+                    value={settings.fd_bar_border_color || "#e5e7eb"}
+                    onInput={(e) => setSettings({ ...settings, fd_bar_border_color: e.target.value })}
+                  />
+                </div>
               </div>
             </div>
 
