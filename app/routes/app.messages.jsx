@@ -826,22 +826,6 @@ const setCollapsedState = (ruleId, section, collapsed) => {
 export default function Index() {
   const { config, globalSettings: loaderGlobalSettings, shopId, shopCurrency, hasExistingConfig, hasExistingSettings, hasRules } = useLoaderData();
 
-  // Show empty state for new users with no rules
-  if (!hasRules) {
-    return (
-      <s-page title="Messages">
-        <s-box padding="800">
-          <s-empty-state
-            heading="No delivery messages yet"
-            description="Set up your first delivery rule to start showing messages to customers."
-          >
-            <s-button href="/app" variant="primary">Get Started</s-button>
-          </s-empty-state>
-        </s-box>
-      </s-page>
-    );
-  }
-
   // Track whether we loaded with existing data (prevents overwriting with empty data)
   const [loadedWithData] = useState(hasExistingConfig || hasExistingSettings);
 
@@ -3095,6 +3079,27 @@ export default function Index() {
                 </div>
               </div>
             )}
+
+              {/* Empty state when no rules exist */}
+              {!rule && !showTypographyPanel && !showAlignmentPanel && !showGlobalSettingsPanel && (
+                <div style={{
+                  border: "1px solid var(--p-color-border, #e5e7eb)",
+                  borderRadius: "8px",
+                  padding: "24px",
+                  background: "var(--p-color-bg-surface, #ffffff)",
+                  textAlign: "center",
+                }}>
+                  <s-heading>No rules yet</s-heading>
+                  <s-box paddingBlockStart="base">
+                    <s-text tone="subdued">
+                      Create your first delivery rule to start showing messages on product pages.
+                    </s-text>
+                  </s-box>
+                  <s-box paddingBlockStart="large">
+                    <s-button href="/app" variant="primary">Go to Dashboard</s-button>
+                  </s-box>
+                </div>
+              )}
 
               {/* Rule-specific sections (only shown when a rule is selected AND no styling panel is open) */}
               {rule && !showTypographyPanel && !showAlignmentPanel && !showGlobalSettingsPanel && (
