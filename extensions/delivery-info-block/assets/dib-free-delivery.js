@@ -188,6 +188,7 @@
 
       // Try common header container selectors first (most reliable)
       const headerSelectors = [
+        '.drawer__fixed-header',  // Impulse - insert after entire fixed header block
         '.drawer__header',
         '.cart-drawer__header',
         '[class*="cart-drawer"] > header',
