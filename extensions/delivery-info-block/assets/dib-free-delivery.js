@@ -171,7 +171,7 @@
     const bar = createBarElement(config, initialContent);
 
     // For cart drawers, try theme-specific positioning first
-    const isInDrawer = drawerRoot || container.matches('cart-drawer, .cart-drawer, [data-cart-drawer]');
+    const isInDrawer = drawerRoot || container.matches('cart-drawer, .cart-drawer, [data-cart-drawer], #CartDrawer, .drawer--right');
     if (isInDrawer) {
       // Check if cart has items - hide bar if empty to prevent layout conflicts
       const hasItems = checkCartHasItems(checkContainer);
