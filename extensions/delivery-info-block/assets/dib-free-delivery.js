@@ -186,21 +186,20 @@
 
       const searchRoot = drawerRoot || container;
 
-      // Impulse/themes with scrollable containers: prepend inside scroll area
-      const scrollableSelectors = ['.drawer__scrollable', '.drawer__inner'];
-      for (const selector of scrollableSelectors) {
-        const scrollable = searchRoot.querySelector(selector);
+      // Impulse-specific: prepend inside .drawer__scrollable
+      if (searchRoot.id === 'CartDrawer' || searchRoot.closest('#CartDrawer')) {
+        const scrollable = searchRoot.querySelector('.drawer__scrollable');
         if (scrollable) {
           scrollable.insertBefore(bar, scrollable.firstChild);
           injectedContainers.add(searchRoot);
-          debug('Injected bar (prepended to scrollable):', selector);
+          debug('Injected bar (Impulse scrollable):', scrollable.className);
           setupBarObservers(bar, searchRoot, position);
           triggerUpdate();
           return true;
         }
       }
 
-      // Try common header container selectors first (most reliable)
+      // Try common header container selectors (most reliable)
       const headerSelectors = [
         '.drawer__header',
         '.cart-drawer__header',
