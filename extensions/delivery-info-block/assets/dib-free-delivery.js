@@ -219,32 +219,26 @@
       for (const el of headingTags) {
         const text = el.textContent?.trim().toLowerCase();
         if (text && cartHeadingTexts.some(t => text === t || text.startsWith(t))) {
-          // Check if heading is in a flex row - need to insert BELOW header container
+          // Traverse up to find outermost flex container - ensures we insert BELOW the entire header
           let insertTarget = el;
-          const parent = el.parentElement;
-          if (parent) {
-            const parentStyle = window.getComputedStyle(parent);
-            if (parentStyle.display === 'flex' && parentStyle.flexDirection === 'row') {
-              // Parent contains heading + other elements (like close button)
-              // Go UP one more level to find the actual header container
-              const grandparent = parent.parentElement;
-              if (grandparent && (
-                grandparent.matches('.drawer__header, [class*="header"], header') ||
-                grandparent.tagName === 'HEADER'
-              )) {
-                // Insert after the entire header section
-                insertTarget = grandparent;
-                debug('Found header container, inserting after it');
-              } else {
-                // Fallback: insert after the flex parent
-                insertTarget = parent;
-                debug('Heading in flex row, inserting after parent');
-              }
-              // When inserting after flex parent/grandparent, use calc width and auto margins
-              bar.style.width = 'calc(100% - 24px)';
-              bar.style.margin = '0 auto 12px auto';
+          let current = el;
+          while (current.parentElement && current.parentElement !== searchRoot) {
+            const parentStyle = window.getComputedStyle(current.parentElement);
+            const isFlexContainer = parentStyle.display === 'flex' || parentStyle.display === 'inline-flex';
+            if (isFlexContainer) {
+              // Parent is a flex container, so current element is a flex item
+              // Move up to insert after the flex container instead
+              insertTarget = current.parentElement;
+              current = current.parentElement;
+              debug('Found flex container, moving up:', insertTarget.className || insertTarget.tagName);
+            } else {
+              // Parent is not a flex container, we've exited flex nesting
+              break;
             }
           }
+          // Ensure proper block layout
+          bar.style.width = 'calc(100% - 24px)';
+          bar.style.margin = '0 auto 12px auto';
           insertTarget.insertAdjacentElement('afterend', bar);
           injectedContainers.add(searchRoot);
           debug('Injected bar after cart heading (universal):', text);
