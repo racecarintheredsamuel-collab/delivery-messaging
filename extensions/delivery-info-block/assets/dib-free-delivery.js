@@ -186,9 +186,22 @@
 
       const searchRoot = drawerRoot || container;
 
+      // Impulse/themes with scrollable containers: prepend inside scroll area
+      const scrollableSelectors = ['.drawer__scrollable', '.drawer__inner'];
+      for (const selector of scrollableSelectors) {
+        const scrollable = searchRoot.querySelector(selector);
+        if (scrollable) {
+          scrollable.insertBefore(bar, scrollable.firstChild);
+          injectedContainers.add(searchRoot);
+          debug('Injected bar (prepended to scrollable):', selector);
+          setupBarObservers(bar, searchRoot, position);
+          triggerUpdate();
+          return true;
+        }
+      }
+
       // Try common header container selectors first (most reliable)
       const headerSelectors = [
-        '.drawer__fixed-header',  // Impulse - insert after entire fixed header block
         '.drawer__header',
         '.cart-drawer__header',
         '[class*="cart-drawer"] > header',
