@@ -11,15 +11,17 @@
 
   // Cart page selectors (in priority order)
   const CART_PAGE_SELECTORS = [
-    '.cart__items',
-    '.cart-items',
-    'cart-items',
-    '[data-cart-items]',
+    // Full cart wrappers first (gives full-width bar)
+    'form[action="/cart"]',
     '.cart-form',
     '#cart',
     '.cart',
     '[data-cart]',
-    'form[action="/cart"]'
+    // Item containers last (fallback)
+    '.cart__items',
+    '.cart-items',
+    'cart-items',
+    '[data-cart-items]'
   ];
 
   // Cart drawer selectors (in priority order)
