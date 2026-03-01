@@ -11,6 +11,11 @@
 
   // Cart page selectors (in priority order)
   const CART_PAGE_SELECTORS = [
+    // Impulse cart page form (excludes drawer)
+    '#CartPageForm',
+    // Generic cart page form (excludes drawer forms)
+    'form[action="/cart"]:not(.cart-drawer__form):not(#CartDrawer-Form)',
+    // Theme-specific containers
     '.cart__items',
     '.cart-items',
     'cart-items',
@@ -19,6 +24,7 @@
     '#cart',
     '.cart',
     '[data-cart]',
+    // Fallback
     'form[action="/cart"]'
   ];
 
