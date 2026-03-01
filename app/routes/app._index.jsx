@@ -3,7 +3,7 @@
 // ============================================================================
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useFetcher, useLoaderData, useRouteError, redirect, useSearchParams } from "react-router";
+import { useFetcher, useLoaderData, useRouteError, useSearchParams } from "react-router";
 import { boundary } from "@shopify/shopify-app-react-router/server";
 import { authenticate } from "../shopify.server";
 import { ensureDeliveryRulesDefinition } from "../models/deliveryRules.server";
@@ -236,27 +236,17 @@ export const loader = async ({ request }) => {
     }
   }
 
-  // Check if user has any rules - if not, redirect to Getting Started
-  // (but only for first-time users, not if they deleted all rules)
-  const url = new URL(request.url);
-  const skipOnboarding = url.searchParams.get("skip_onboarding") === "true";
-
-  if (!skipOnboarding) {
-    let hasRules = false;
-    try {
-      const configToCheck = configMf?.value ? JSON.parse(configMf.value) : null;
-      if (configToCheck?.version === 2 && configToCheck.profiles) {
-        hasRules = configToCheck.profiles.some(p => p.rules && p.rules.length > 0);
-      } else if (configToCheck?.rules) {
-        hasRules = configToCheck.rules.length > 0;
-      }
-    } catch (e) {
-      // Ignore parse errors
+  // Check if user has any rules (for empty state display)
+  let hasRules = false;
+  try {
+    const configToCheck = configMf?.value ? JSON.parse(configMf.value) : null;
+    if (configToCheck?.version === 2 && configToCheck.profiles) {
+      hasRules = configToCheck.profiles.some(p => p.rules && p.rules.length > 0);
+    } else if (configToCheck?.rules) {
+      hasRules = configToCheck.rules.length > 0;
     }
-
-    if (!hasRules) {
-      return redirect("/app/dashboard");
-    }
+  } catch (e) {
+    // Ignore parse errors
   }
 
   const shopCurrency = json?.data?.shop?.currencyCode || 'GBP';
@@ -272,6 +262,7 @@ export const loader = async ({ request }) => {
     shopCurrency, // For preview formatting
     hasExistingConfig,
     hasExistingSettings,
+    hasRules, // For empty state display
   };
 };
 
@@ -833,7 +824,23 @@ const setCollapsedState = (ruleId, section, collapsed) => {
 // ============================================================================
 
 export default function Index() {
-  const { config, globalSettings: loaderGlobalSettings, shopId, shopCurrency, hasExistingConfig, hasExistingSettings } = useLoaderData();
+  const { config, globalSettings: loaderGlobalSettings, shopId, shopCurrency, hasExistingConfig, hasExistingSettings, hasRules } = useLoaderData();
+
+  // Show empty state for new users with no rules
+  if (!hasRules) {
+    return (
+      <s-page title="Messages">
+        <s-box padding="800">
+          <s-empty-state
+            heading="No delivery messages yet"
+            description="Set up your first delivery rule to start showing messages to customers."
+          >
+            <s-button href="/app/dashboard" variant="primary">Get Started</s-button>
+          </s-empty-state>
+        </s-box>
+      </s-page>
+    );
+  }
 
   // Track whether we loaded with existing data (prevents overwriting with empty data)
   const [loadedWithData] = useState(hasExistingConfig || hasExistingSettings);
