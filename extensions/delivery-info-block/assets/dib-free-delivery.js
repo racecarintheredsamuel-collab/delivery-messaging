@@ -793,6 +793,7 @@
 
           if (!involvesBar) {
             debug('Cart items changed in ' + label + ', triggering update');
+            scanAndInject();  // Ensure bar exists (may have been removed during theme re-render)
             updateBarVisibility();
             triggerUpdate();
           }
