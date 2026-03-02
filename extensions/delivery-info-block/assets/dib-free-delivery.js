@@ -356,6 +356,12 @@
                 debug('State changed, set to progress for celebration');
               }
             }
+
+            // CRITICAL: Trigger update to refresh bar with current cart data
+            // The bar was re-injected with oldContent, now fetch fresh values
+            debug('Re-injection complete, triggering update for fresh data');
+            triggerUpdate();
+
             return;
           }
         }
