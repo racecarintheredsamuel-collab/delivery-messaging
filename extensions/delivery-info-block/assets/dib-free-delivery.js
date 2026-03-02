@@ -408,6 +408,11 @@
   // Trigger DeliveryMessaging to update the new target
   function triggerUpdate() {
     if (window.DeliveryMessaging) {
+      // Skip if no bar exists on page (prevents animation error on detached element)
+      if (!document.querySelector('.dib-fd-bar')) {
+        debug('triggerUpdate skipped - no bar exists');
+        return;
+      }
       // Refresh to get fresh cart data
       if (window.DeliveryMessaging.refresh) {
         window.DeliveryMessaging.refresh();
