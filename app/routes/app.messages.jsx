@@ -5528,47 +5528,42 @@ export default function Index() {
                         </label>
                       )}
 
-                      {/* Max width - only when not matching ETA width */}
+                      {/* Max width slider - only when not matching ETA width */}
                       {(!rule.settings?.show_eta_timeline || !rule.settings?.special_delivery_match_eta_width) && (
-                        <label>
-                          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                            <s-text>Max width</s-text>
+                        <div>
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
+                            <s-text size="small">
+                              Max width ({(rule.settings?.special_delivery_max_width ?? 600) === 0 ? "fit-content" : `${rule.settings?.special_delivery_max_width ?? 600}px`})
+                            </s-text>
                             <span
-                              title="Text wraps within this width."
+                              title="Text wraps within this width. Set to 0 for fit-content."
                               style={{ cursor: "help", fontSize: 12, color: "var(--p-color-text-subdued)" }}
                             >ℹ️</span>
                           </div>
                           <input
-                            type="number"
+                            type="range"
                             min="0"
+                            max="800"
+                            step="10"
                             value={rule.settings?.special_delivery_max_width ?? 600}
                             onChange={(e) => {
                               const next = [...rules];
                               next[safeSelectedIndex] = {
                                 ...rule,
-                                settings: { ...rule.settings, special_delivery_max_width: Number(e.target.value) || 0 },
+                                settings: { ...rule.settings, special_delivery_max_width: Number(e.target.value) },
                               };
                               setRules(next);
                             }}
-                            onBlur={(e) => {
-                              const v = Number(e.target.value) || 0;
-                              const clamped = v === 0 ? 0 : Math.max(200, v);
-                              if (clamped !== v) {
-                                const next = [...rules];
-                                next[safeSelectedIndex] = {
-                                  ...rule,
-                                  settings: { ...rule.settings, special_delivery_max_width: clamped },
-                                };
-                                setRules(next);
-                              }
-                            }}
                             style={{ width: "100%" }}
                           />
-                          <div style={{ display: "grid", gap: 2, color: "var(--p-color-text-subdued, #6b7280)", fontSize: 12, marginTop: 4 }}>
-                            <span>💡 Set to 0 for no maximum width (block sizes to fit content).</span>
-                            <span>💡 Actual width may be limited by container.</span>
+                          <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, color: "var(--p-color-text-subdued, #9ca3af)", marginTop: 2 }}>
+                            <span>0 (fit)</span>
+                            <span>200</span>
+                            <span>400</span>
+                            <span>600</span>
+                            <span>800</span>
                           </div>
-                        </label>
+                        </div>
                       )}
                     </div>
 
