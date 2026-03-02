@@ -739,8 +739,9 @@
           }
 
           if (!involvesBar) {
-            debug('Cart items changed in ' + label + ', updating bar visibility');
+            debug('Cart items changed in ' + label + ', triggering update');
             updateBarVisibility();
+            triggerUpdate();
           }
           break;
         }
