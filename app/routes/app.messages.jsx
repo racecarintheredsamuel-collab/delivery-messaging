@@ -49,8 +49,8 @@ function defaultGlobalSettings() {
     custom_font_family: "",
     // Typography - Messages text styling
     use_theme_text_styling: true,
-    text_color: "var(--p-color-text, #374151)",
-    font_size: "medium",
+    text_color: "#374151",
+    font_size: 16,
     font_weight: "normal",
     // Typography - Preview font (for admin UI preview to match theme)
     preview_body_font: "",
@@ -741,19 +741,19 @@ function defaultRule() {
 
       // Text styling (per-rule override for messages)
       override_global_text_styling: false,
-      text_color: "var(--p-color-text, #374151)",
-      font_size: "medium",
+      text_color: "#374151",
+      font_size: 16,
       font_weight: "normal",
 
       // ETA text styling (per-rule override) - Labels (Ordered, Shipped, Delivered)
       override_eta_text_styling: false,
-      eta_label_color: "var(--p-color-text, #374151)",
-      eta_label_font_size: "small",
+      eta_label_color: "#374151",
+      eta_label_font_size: 12,
       eta_label_font_weight: "normal",
 
       // ETA text styling - Dates (Jan 20, Jan 21-24)
-      eta_date_color: "var(--p-color-text-subdued, #6b7280)",
-      eta_date_font_size: "xsmall",
+      eta_date_color: "#6b7280",
+      eta_date_font_size: 11,
       eta_date_font_weight: "normal",
 
       // Special Delivery block
@@ -2001,12 +2001,12 @@ export default function Index() {
                         />
                       </div>
                       <div>
-                        <s-text size="small">Font size ({globalSettings?.font_size ?? 16}px)</s-text>
+                        <s-text size="small">Font size ({normalizeFontSize(globalSettings?.font_size, 16)}px)</s-text>
                         <input
                           type="range"
                           min="10"
                           max="22"
-                          value={globalSettings?.font_size ?? 16}
+                          value={normalizeFontSize(globalSettings?.font_size, 16)}
                           onChange={(e) => setGlobalSettings({ ...globalSettings, font_size: Number(e.target.value) })}
                           style={{ width: "100%" }}
                         />
@@ -6095,7 +6095,7 @@ export default function Index() {
                               // For special delivery: match ETA = exact width (with box-sizing), max_width > 0 = expand TO width, 0 = fit content
                               const widthStyle = matchEtaWidth
                                 ? { width: etaTimelineWidth, minWidth: etaTimelineWidth, maxWidth: etaTimelineWidth, boxSizing: "border-box" }
-                                : (sdMaxWidth > 0 ? { width: `min(${sdMaxWidth}px, 100%)` } : { width: "fit-content" });
+                                : (sdMaxWidth > 0 ? { width: `min(${sdMaxWidth}px, 100%)`, minWidth: 200 } : { width: "fit-content" });
 
                               // Text styling
                               const textColor = rule.settings.special_delivery_override_global_text_styling
