@@ -712,11 +712,8 @@
     debug('Fetch interceptor installed');
   }
 
-  // Watch for cart item changes using MutationObserver for instant reaction
-  function watchCartItems() {
-    const cartDrawer = document.querySelector('cart-drawer');
-    if (!cartDrawer) return;
-
+  // Helper to set up MutationObserver on a cart container
+  function setupCartObserver(container, label) {
     const observer = new MutationObserver(function(mutations) {
       for (const mutation of mutations) {
         if (mutation.type === 'childList') {
@@ -742,7 +739,7 @@
           }
 
           if (!involvesBar) {
-            debug('Cart items changed, updating bar visibility');
+            debug('Cart items changed in ' + label + ', updating bar visibility');
             updateBarVisibility();
           }
           break;
@@ -750,13 +747,29 @@
       }
     });
 
-    // Observe the drawer for changes to its children (items added/removed)
-    observer.observe(cartDrawer, {
-      childList: true,
-      subtree: true
-    });
+    observer.observe(container, { childList: true, subtree: true });
+    debug('Cart items observer installed for ' + label);
+  }
 
-    debug('Cart items observer installed');
+  // Watch for cart item changes using MutationObserver for instant reaction
+  function watchCartItems() {
+    // Watch Dawn's cart-drawer
+    const cartDrawer = document.querySelector('cart-drawer');
+    if (cartDrawer) {
+      setupCartObserver(cartDrawer, 'cart-drawer');
+    }
+
+    // Watch Impulse's #CartDrawer
+    const impulseDrawer = document.getElementById('CartDrawer');
+    if (impulseDrawer) {
+      setupCartObserver(impulseDrawer, 'Impulse #CartDrawer');
+    }
+
+    // Watch Impulse's cart page form
+    const cartPageForm = document.getElementById('CartPageForm');
+    if (cartPageForm) {
+      setupCartObserver(cartPageForm, 'Impulse #CartPageForm');
+    }
   }
 
   // Initialize
