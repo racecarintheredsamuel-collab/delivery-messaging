@@ -1,5 +1,6 @@
 (function() {
   'use strict';
+  // v426 - simplified: drawer=instant, others=fade, all=celebration
 
   // Prevent double initialization
   if (window.__DIB_FD_INIT__) return;
@@ -405,10 +406,7 @@
           if (mutation.attributeName === 'open') {
             if (cartDrawer.hasAttribute('open')) {
               debug('Drawer opening');
-              window.__DIB_DRAWER_OPENING__ = true;
               bar.style.pointerEvents = '';
-              // Clear flag after drawer animation completes (Dawn uses ~200ms transition)
-              setTimeout(() => { window.__DIB_DRAWER_OPENING__ = false; }, 250);
               // Trigger update to ensure message is visible
               if (window.DeliveryMessaging && window.DeliveryMessaging.forceUpdate) {
                 window.DeliveryMessaging.forceUpdate();
