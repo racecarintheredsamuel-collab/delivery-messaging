@@ -711,6 +711,28 @@
       return result;
     };
     debug('Fetch interceptor installed');
+
+    // Intercept XMLHttpRequest for AJAX cart updates (Impulse uses XHR)
+    const originalXHROpen = XMLHttpRequest.prototype.open;
+    const originalXHRSend = XMLHttpRequest.prototype.send;
+
+    XMLHttpRequest.prototype.open = function(method, url, ...rest) {
+      this._dibUrl = url;
+      return originalXHROpen.apply(this, [method, url, ...rest]);
+    };
+
+    XMLHttpRequest.prototype.send = function(...args) {
+      if (this._dibUrl && (this._dibUrl.includes('/cart/add') || this._dibUrl.includes('/cart/change'))) {
+        this.addEventListener('load', function() {
+          debug('XHR to cart detected:', this._dibUrl);
+          setTimeout(scanAndInject, 300);
+          setTimeout(scanAndInject, 600);
+          triggerUpdate();
+        });
+      }
+      return originalXHRSend.apply(this, args);
+    };
+    debug('XHR interceptor installed');
   }
 
   // Helper to set up MutationObserver on a cart container
