@@ -794,6 +794,7 @@
           if (!involvesBar) {
             debug('Cart items changed in ' + label + ', triggering update');
             scanAndInject();  // Ensure bar exists (may have been removed during theme re-render)
+            reattachCartPageObserver();  // Re-attach observer if #CartPageForm was replaced
             updateBarVisibility();
             triggerUpdate();
           }
@@ -804,6 +805,16 @@
 
     observer.observe(container, { childList: true, subtree: true });
     debug('Cart items observer installed for ' + label);
+  }
+
+  // Re-attach observer to cart page form (after Impulse replaces it via Section Rendering)
+  function reattachCartPageObserver() {
+    const cartPageForm = document.getElementById('CartPageForm');
+    if (cartPageForm && !cartPageForm._dibObserverAttached) {
+      setupCartObserver(cartPageForm, 'Impulse #CartPageForm');
+      cartPageForm._dibObserverAttached = true;
+      debug('Re-attached observer to new #CartPageForm');
+    }
   }
 
   // Watch for cart item changes using MutationObserver for instant reaction
@@ -824,6 +835,7 @@
     const cartPageForm = document.getElementById('CartPageForm');
     if (cartPageForm) {
       setupCartObserver(cartPageForm, 'Impulse #CartPageForm');
+      cartPageForm._dibObserverAttached = true;
     }
   }
 
