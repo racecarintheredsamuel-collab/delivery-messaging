@@ -631,7 +631,18 @@
       document.addEventListener(eventName, () => {
         debug('Event fired:', eventName);
         setTimeout(scanAndInject, 150);
+        // For cart update events, also refresh bar content
+        if (eventName === 'cart:updated' || eventName === 'cart:refresh' || eventName === 'theme:cart:refresh') {
+          triggerUpdate();
+        }
       });
+    });
+
+    // Listen for Archetype ajaxProduct:added (Impulse, Motion, etc.)
+    document.addEventListener('ajaxProduct:added', () => {
+      debug('Archetype ajaxProduct:added event');
+      setTimeout(scanAndInject, 300);
+      triggerUpdate();
     });
 
     // Dawn's cart-drawer dispatches on itself when opened
