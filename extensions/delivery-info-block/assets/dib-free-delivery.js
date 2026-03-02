@@ -393,14 +393,16 @@
   // Trigger DeliveryMessaging to update the new target
   function triggerUpdate() {
     if (window.DeliveryMessaging) {
-      // Update immediately with current state for initial bar population
-      if (window.DeliveryMessaging.forceUpdate) {
-        window.DeliveryMessaging.forceUpdate();
-      }
-      // Also schedule a refresh to ensure fresh data
+      // First refresh to get fresh cart data
       if (window.DeliveryMessaging.refresh) {
         window.DeliveryMessaging.refresh();
       }
+      // Then force update after data has propagated
+      setTimeout(function() {
+        if (window.DeliveryMessaging && window.DeliveryMessaging.forceUpdate) {
+          window.DeliveryMessaging.forceUpdate();
+        }
+      }, 150);
     }
   }
 
