@@ -143,6 +143,15 @@
     bar.appendChild(message);
 
     if (config.showProgressBar) {
+      // Calculate initial percent from current cart state to avoid 0% flash on re-injection
+      let initialPercent = 0;
+      if (window.DeliveryMessaging) {
+        const dmState = window.DeliveryMessaging.getState();
+        const dmConfig = window.DeliveryMessaging.getConfig();
+        if (dmConfig.threshold > 0) {
+          initialPercent = Math.min(100, (dmState.cartTotal / dmConfig.threshold) * 100);
+        }
+      }
       // Single element with gradient - no nested divs that can have height issues
       const progressBar = document.createElement('div');
       progressBar.className = 'dib-fd-progress';
@@ -155,7 +164,7 @@
         height: 8px;
         border-radius: 4px;
         transition: background 0.3s;
-        background: linear-gradient(to right, ${config.progressBarColor} 0%, ${config.progressBarBg} 0%);
+        background: linear-gradient(to right, ${config.progressBarColor} ${initialPercent}%, ${config.progressBarBg} ${initialPercent}%);
       `.replace(/\s+/g, ' ');
       bar.appendChild(progressBar);
     }
