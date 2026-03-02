@@ -324,12 +324,18 @@
               return;
             }
 
+            // Preserve state from old bar BEFORE checking isInDrawer
+            const oldState = bar.dataset.dmState;
+            const oldCelebrated = bar.dataset.dmCelebrated;
+
             // For CART PAGE bars (not drawers), don't re-inject here
             // Let cart:updated event + scanAndInject handle it after Impulse finishes Section Rendering
             const isInDrawer = container.closest('cart-drawer') || container.matches?.('cart-drawer') ||
                                container.closest('#CartDrawer') || container.id === 'CartDrawer';
             if (!isInDrawer) {
               debug('Cart page bar removed - waiting for cart:updated to re-inject');
+              // Store state globally so it can be restored after re-injection
+              window.__DIB_CART_PAGE_BAR_STATE__ = { oldState, oldCelebrated };
               return;
             }
 
@@ -340,9 +346,6 @@
               return;
             }
 
-            // Preserve state and content from old bar for animation continuity
-            const oldState = bar.dataset.dmState;
-            const oldCelebrated = bar.dataset.dmCelebrated;
             // Capture OLD content from the destroyed bar - this is what was VISIBLE
             const oldMessageEl = bar.querySelector('[data-dm-message]');
             const oldContent = oldMessageEl ? oldMessageEl.innerHTML : null;
@@ -600,6 +603,28 @@
     const cartPage = findCartPageContainer();
     if (cartPage) {
       injectIntoContainer(cartPage, 'prepend');
+
+      // Restore state from previous bar if available (for celebration continuity)
+      if (window.__DIB_CART_PAGE_BAR_STATE__) {
+        const { oldState, oldCelebrated } = window.__DIB_CART_PAGE_BAR_STATE__;
+        const newBar = cartPage.querySelector('.dib-fd-bar');
+        if (newBar && oldState) {
+          const currentState = window.DeliveryMessaging ? window.DeliveryMessaging.getState() : null;
+          const stateChanged = currentState && (oldState === 'progress' && currentState.unlocked);
+          if (stateChanged) {
+            // State changed (progress → unlocked) - SET progress state so celebration can trigger
+            newBar.dataset.dmState = 'progress';
+            newBar.dataset.dmCelebrated = '';
+            debug('Cart page bar: set to progress for celebration');
+          } else {
+            // State same - restore to prevent issues
+            newBar.dataset.dmState = oldState;
+            newBar.dataset.dmCelebrated = oldCelebrated;
+            debug('Cart page bar: restored state', oldState);
+          }
+        }
+        window.__DIB_CART_PAGE_BAR_STATE__ = null;
+      }
     }
 
     // Cart drawer
