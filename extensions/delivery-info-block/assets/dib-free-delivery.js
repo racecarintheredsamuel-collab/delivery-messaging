@@ -393,16 +393,18 @@
   // Trigger DeliveryMessaging to update the new target
   function triggerUpdate() {
     if (window.DeliveryMessaging) {
-      // First refresh to get fresh cart data
+      // Refresh to get fresh cart data
       if (window.DeliveryMessaging.refresh) {
         window.DeliveryMessaging.refresh();
       }
-      // Then force update after data has propagated
-      setTimeout(function() {
-        if (window.DeliveryMessaging && window.DeliveryMessaging.forceUpdate) {
-          window.DeliveryMessaging.forceUpdate();
-        }
-      }, 150);
+      // Multiple delayed forceUpdate calls to catch fresh data when it arrives
+      [200, 400, 700].forEach(function(delay) {
+        setTimeout(function() {
+          if (window.DeliveryMessaging && window.DeliveryMessaging.forceUpdate) {
+            window.DeliveryMessaging.forceUpdate();
+          }
+        }, delay);
+      });
     }
   }
 
