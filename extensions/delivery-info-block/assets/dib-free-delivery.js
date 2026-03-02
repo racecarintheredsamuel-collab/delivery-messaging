@@ -651,7 +651,9 @@
         debug('Event fired:', eventName);
         setTimeout(scanAndInject, 150);
         // For cart update events, also refresh bar content
-        if (eventName === 'cart:updated' || eventName === 'cart:refresh' || eventName === 'theme:cart:refresh') {
+        // NOTE: Removed cart:updated - it fires BEFORE server processes update, causing stale data
+        // MutationObserver on #CartPageForm fires AFTER and has correct timing
+        if (eventName === 'cart:refresh' || eventName === 'theme:cart:refresh') {
           triggerUpdate();
         }
       });
