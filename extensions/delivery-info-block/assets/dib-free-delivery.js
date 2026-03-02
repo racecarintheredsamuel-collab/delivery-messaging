@@ -702,9 +702,10 @@
       if (typeof url === 'string' && (url.includes('/cart/add') || url.includes('/cart/change'))) {
         debug('Fetch to cart detected:', url);
         result.then(() => {
-          // MutationObserver handles visibility, just ensure bar exists
+          // Ensure bar exists and refresh content
           setTimeout(scanAndInject, 300);
           setTimeout(scanAndInject, 600);
+          triggerUpdate();
         }).catch(() => {});
       }
       return result;
