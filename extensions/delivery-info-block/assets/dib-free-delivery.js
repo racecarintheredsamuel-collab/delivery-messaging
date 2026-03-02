@@ -795,10 +795,14 @@
 
           if (!involvesBar) {
             debug('Cart items changed in ' + label + ', triggering update');
-            scanAndInject();  // Ensure bar exists (may have been removed during theme re-render)
-            reattachCartPageObserver();  // Re-attach observer if #CartPageForm was replaced
-            updateBarVisibility();
-            triggerUpdate();
+            // Delay to let Impulse finish DOM replacement before we inject/update
+            // Prevents "Animation.commitStyles: Target is not rendered" error
+            setTimeout(function() {
+              scanAndInject();  // Ensure bar exists (may have been removed during theme re-render)
+              reattachCartPageObserver();  // Re-attach observer if #CartPageForm was replaced
+              updateBarVisibility();
+              triggerUpdate();
+            }, 100);
           }
           break;
         }
