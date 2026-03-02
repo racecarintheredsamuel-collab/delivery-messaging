@@ -5,6 +5,9 @@
   if (window.__DIB_FD_INIT__) return;
   window.__DIB_FD_INIT__ = true;
 
+  // Debounce timer for cart page updates (waits for Impulse to finish)
+  let cartPageDebounceTimer = null;
+
   const debug = (...args) => {
     if (window.__DIB_DEBUG__) console.log('[DIB FD]', ...args);
   };
@@ -428,6 +431,20 @@
     }
   }
 
+  // Debounced cart page update - waits for Impulse to finish ALL updates before triggering
+  // This prevents early stale updates from blocking correct updates via "fade in progress"
+  function debouncedCartPageUpdate() {
+    if (cartPageDebounceTimer) clearTimeout(cartPageDebounceTimer);
+    cartPageDebounceTimer = setTimeout(function() {
+      debug('Debounced cart page update firing');
+      scanAndInject();
+      reattachCartPageObserver();
+      if (document.querySelector('.dib-fd-bar')) {
+        triggerUpdate();
+      }
+    }, 500);
+  }
+
   // Find cart page container
   function findCartPageContainer() {
     // Only on /cart page
@@ -739,10 +756,8 @@
       if (typeof url === 'string' && (url.includes('/cart/add') || url.includes('/cart/change'))) {
         debug('Fetch to cart detected:', url);
         result.then(() => {
-          // Ensure bar exists and refresh content
-          setTimeout(scanAndInject, 300);
-          setTimeout(scanAndInject, 600);
-          triggerUpdate();
+          // Use debounced update to avoid early stale updates blocking correct ones
+          debouncedCartPageUpdate();
         }).catch(() => {});
       }
       return result;
@@ -762,9 +777,8 @@
       if (this._dibUrl && (this._dibUrl.includes('/cart/add') || this._dibUrl.includes('/cart/change'))) {
         this.addEventListener('load', function() {
           debug('XHR to cart detected:', this._dibUrl);
-          setTimeout(scanAndInject, 300);
-          setTimeout(scanAndInject, 600);
-          triggerUpdate();
+          // Use debounced update to avoid early stale updates blocking correct ones
+          debouncedCartPageUpdate();
         });
       }
       return originalXHRSend.apply(this, args);
@@ -799,15 +813,10 @@
           }
 
           if (!involvesBar) {
-            debug('Cart items changed in ' + label + ', triggering update');
-            // Delay to let Impulse finish DOM replacement before we inject/update
-            // Prevents "Animation.commitStyles: Target is not rendered" error
-            setTimeout(function() {
-              scanAndInject();  // Ensure bar exists (may have been removed during theme re-render)
-              reattachCartPageObserver();  // Re-attach observer if #CartPageForm was replaced
-              updateBarVisibility();
-              triggerUpdate();
-            }, 100);
+            debug('Cart items changed in ' + label + ', scheduling debounced update');
+            // Use debounced update - waits for Impulse to finish ALL updates
+            // This prevents early stale updates from blocking correct ones via "fade in progress"
+            debouncedCartPageUpdate();
           }
           break;
         }
