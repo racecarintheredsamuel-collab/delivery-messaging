@@ -57,7 +57,10 @@
       "WebFetch(domain:gaurav5430.medium.com)",
       "Bash(git revert HEAD --no-edit)",
       "WebFetch(domain:community.shopify.dev)",
-      "Bash(curl -I https://delivery-messaging.app)"
+      "Bash(curl -I https://delivery-messaging.app)",
+      "WebFetch(domain:archetypethemes.co)",
+      "WebFetch(domain:help.archetypethemes.co)",
+      "WebFetch(domain:help.upsellplus.com)"
     ]
   }
 }
