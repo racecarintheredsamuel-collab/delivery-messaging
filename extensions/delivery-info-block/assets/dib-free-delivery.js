@@ -436,11 +436,18 @@
     const config = getConfig();
     if (!config) return;
 
-    // Find cart-drawer even when closed
+    // Find cart-drawer even when closed (Dawn)
     const cartDrawer = document.querySelector('cart-drawer');
     if (cartDrawer && !cartDrawer.querySelector('.dib-fd-bar')) {
       debug('Pre-injecting into closed cart-drawer');
       injectIntoContainer(cartDrawer, 'prepend');
+    }
+
+    // Also check Impulse's #CartDrawer
+    const impulseDrawer = document.getElementById('CartDrawer');
+    if (impulseDrawer && !impulseDrawer.querySelector('.dib-fd-bar')) {
+      debug('Pre-injecting into Impulse #CartDrawer');
+      injectIntoContainer(impulseDrawer, 'prepend');
     }
   }
 
