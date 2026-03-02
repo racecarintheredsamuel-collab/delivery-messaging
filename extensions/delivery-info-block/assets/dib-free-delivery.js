@@ -335,7 +335,10 @@
             if (!isInDrawer) {
               debug('Cart page bar removed - waiting for cart:updated to re-inject');
               // Store state globally so it can be restored after re-injection
-              window.__DIB_CART_PAGE_BAR_STATE__ = { oldState, oldCelebrated };
+              // Also capture if celebration was interrupted (bar destroyed mid-animation)
+              const celebrationInterrupted = window.__DIB_CELEBRATION_IN_PROGRESS__;
+              window.__DIB_CART_PAGE_BAR_STATE__ = { oldState, oldCelebrated, celebrationInterrupted };
+              window.__DIB_CELEBRATION_IN_PROGRESS__ = false;
               return;
             }
 
@@ -606,20 +609,25 @@
 
       // Restore state from previous bar if available (for celebration continuity)
       if (window.__DIB_CART_PAGE_BAR_STATE__) {
-        const { oldState, oldCelebrated } = window.__DIB_CART_PAGE_BAR_STATE__;
+        const { oldState, oldCelebrated, celebrationInterrupted } = window.__DIB_CART_PAGE_BAR_STATE__;
         const newBar = cartPage.querySelector('.dib-fd-bar');
-        if (newBar && oldState) {
+        if (newBar) {
           const currentState = window.DeliveryMessaging ? window.DeliveryMessaging.getState() : null;
-          const stateChanged = currentState && (oldState === 'progress' && currentState.unlocked);
-          if (stateChanged) {
-            // State changed (progress → unlocked) - SET progress state so celebration can trigger
+          // Trigger celebration if:
+          // 1. Normal transition: was progress, now unlocked
+          // 2. Interrupted celebration: celebration was running when bar was destroyed
+          const shouldCelebrate = currentState && currentState.unlocked && (
+            oldState === 'progress' ||
+            celebrationInterrupted
+          );
+
+          if (shouldCelebrate) {
             newBar.dataset.dmState = 'progress';
             newBar.dataset.dmCelebrated = '';
             debug('Cart page bar: set to progress for celebration');
-          } else {
-            // State same - restore to prevent issues
+          } else if (oldState) {
             newBar.dataset.dmState = oldState;
-            newBar.dataset.dmCelebrated = oldCelebrated;
+            newBar.dataset.dmCelebrated = oldCelebrated || '';
             debug('Cart page bar: restored state', oldState);
           }
         }
