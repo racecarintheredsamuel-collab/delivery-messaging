@@ -312,6 +312,15 @@
               return;
             }
 
+            // For CART PAGE bars (not drawers), don't re-inject here
+            // Let cart:updated event + scanAndInject handle it after Impulse finishes Section Rendering
+            const isInDrawer = container.closest('cart-drawer') || container.matches?.('cart-drawer') ||
+                               container.closest('#CartDrawer') || container.id === 'CartDrawer';
+            if (!isInDrawer) {
+              debug('Cart page bar removed - waiting for cart:updated to re-inject');
+              return;
+            }
+
             // Don't re-inject if cart is empty - just let it stay removed
             const drawerRoot = container.closest('cart-drawer') || container;
             if (!checkCartHasItems(drawerRoot)) {
