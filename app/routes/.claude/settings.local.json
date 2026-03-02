@@ -60,7 +60,8 @@
       "Bash(curl -I https://delivery-messaging.app)",
       "WebFetch(domain:archetypethemes.co)",
       "WebFetch(domain:help.archetypethemes.co)",
-      "WebFetch(domain:help.upsellplus.com)"
+      "WebFetch(domain:help.upsellplus.com)",
+      "WebFetch(domain:www.developerway.com)"
     ]
   }
 }
