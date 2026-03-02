@@ -384,12 +384,11 @@
               }
             }
 
-            // CRITICAL: Trigger update to refresh bar with current cart data
-            // The bar was re-injected with oldContent, now fetch fresh values
+            // Trigger update to refresh bar with current cart data
+            // Note: Don't set __DIB_DRAWER_OPENING__ here - that flag is only for
+            // drawer OPENING, not for normal cart updates. We want crossfade animations.
             debug('Re-injection complete, triggering update for fresh data');
-            window.__DIB_DRAWER_OPENING__ = true;
             triggerUpdate();
-            setTimeout(() => { window.__DIB_DRAWER_OPENING__ = false; }, 100);
 
             return;
           }
