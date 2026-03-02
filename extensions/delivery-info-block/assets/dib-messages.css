@@ -119,7 +119,7 @@
 }
 
 .dib-messages .dib-container.is-ready {
-  opacity: 1;
+  opacity: 1 !important;
 }
 
 .dib-messages .dib-container.has-border {
@@ -165,7 +165,7 @@
 }
 
 .dib-eta-timeline-block .dib-eta-timeline.is-ready {
-  opacity: 1;
+  opacity: 1 !important;
 }
 
 .dib-eta-timeline-block .dib-eta-scale-wrapper {
@@ -205,5 +205,5 @@
 }
 
 .dib-special-delivery-block .dib-container.is-ready {
-  opacity: 1;
+  opacity: 1 !important;
 }
