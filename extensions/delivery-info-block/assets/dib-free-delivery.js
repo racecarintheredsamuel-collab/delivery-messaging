@@ -1,6 +1,6 @@
 (function() {
   'use strict';
-  // v430 - Prestige: inject in footer slot to survive DOM diff
+  // v431 - Prestige: clone bar before cart update to prevent flash
 
   // Prevent double initialization
   if (window.__DIB_FD_INIT__) return;
@@ -69,6 +69,45 @@
 
   // Guard against re-entrant calls from MutationObserver
   let isUpdatingBar = false;
+
+  // Prestige theme: clone holder for flash prevention
+  let prestigeBarClone = null;
+
+  // Clone Prestige drawer bar before cart update (covers visual gap during DOM diff)
+  function clonePrestigeBars() {
+    // Only for Prestige theme (has cart-drawer element)
+    const bar = document.querySelector('cart-drawer .dib-fd-bar');
+    if (!bar) return;
+
+    // Remove any existing clone first
+    removePrestigeClone();
+
+    const rect = bar.getBoundingClientRect();
+    const clone = bar.cloneNode(true);
+    clone.classList.add('dib-clone');
+    clone.style.cssText = `
+      position: fixed !important;
+      top: ${rect.top}px !important;
+      left: ${rect.left}px !important;
+      width: ${rect.width}px !important;
+      height: ${rect.height}px !important;
+      z-index: 99999 !important;
+      pointer-events: none !important;
+      margin: 0 !important;
+    `;
+    document.body.appendChild(clone);
+    prestigeBarClone = clone;
+    debug('Cloned Prestige bar for flash prevention');
+  }
+
+  // Remove Prestige clone after re-injection
+  function removePrestigeClone() {
+    if (prestigeBarClone) {
+      prestigeBarClone.remove();
+      prestigeBarClone = null;
+      debug('Removed Prestige bar clone');
+    }
+  }
 
   // Inject CSS to hide bar when cart is empty (multiple theme patterns)
   function injectEmptyCartCSS() {
@@ -409,6 +448,9 @@
             // drawer OPENING, not for normal cart updates. We want crossfade animations.
             debug('Re-injection complete, triggering update for fresh data');
             triggerUpdate();
+
+            // Remove Prestige clone now that new bar is injected
+            removePrestigeClone();
 
             return;
           }
@@ -811,10 +853,14 @@
     // Intercept fetch for AJAX add to cart (Dawn uses fetch)
     const originalFetch = window.fetch;
     window.fetch = function(...args) {
-      const result = originalFetch.apply(this, args);
       const url = args[0];
       if (typeof url === 'string' && (url.includes('/cart/add') || url.includes('/cart/change'))) {
+        // Clone Prestige bar BEFORE fetch (covers visual gap during DOM diff)
+        clonePrestigeBars();
         debug('Fetch to cart detected:', url);
+      }
+      const result = originalFetch.apply(this, args);
+      if (typeof url === 'string' && (url.includes('/cart/add') || url.includes('/cart/change'))) {
         result.then(() => {
           // Use debounced update to avoid early stale updates blocking correct ones
           debouncedCartPageUpdate();
@@ -835,8 +881,10 @@
 
     XMLHttpRequest.prototype.send = function(...args) {
       if (this._dibUrl && (this._dibUrl.includes('/cart/add') || this._dibUrl.includes('/cart/change'))) {
+        // Clone Prestige bar BEFORE XHR (covers visual gap during DOM diff)
+        clonePrestigeBars();
+        debug('XHR to cart detected:', this._dibUrl);
         this.addEventListener('load', function() {
-          debug('XHR to cart detected:', this._dibUrl);
           // Use debounced update to avoid early stale updates blocking correct ones
           debouncedCartPageUpdate();
         });
