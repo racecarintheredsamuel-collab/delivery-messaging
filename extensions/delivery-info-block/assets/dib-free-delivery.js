@@ -1,6 +1,6 @@
 (function() {
   'use strict';
-  // v433 - Prestige: content INSIDE shadow DOM (not slotted) to survive DOM diff
+  // v430 - Prestige: inject in footer slot to survive DOM diff
 
   // Prevent double initialization
   if (window.__DIB_FD_INIT__) return;
@@ -69,19 +69,6 @@
 
   // Guard against re-entrant calls from MutationObserver
   let isUpdatingBar = false;
-
-  // Define custom element to protect bar from DOM diffing (Prestige theme)
-  // Content lives INSIDE shadow DOM where morphing can't reach it
-  if (!customElements.get('dib-delivery-bar')) {
-    customElements.define('dib-delivery-bar', class extends HTMLElement {
-      constructor() {
-        super();
-        // Open shadow DOM - content inside is protected from page morphing
-        this.attachShadow({ mode: 'open' });
-      }
-      // No connectedCallback needed - bar content appended directly to shadowRoot
-    });
-  }
 
   // Inject CSS to hide bar when cart is empty (multiple theme patterns)
   function injectEmptyCartCSS() {
@@ -219,18 +206,11 @@
 
       const searchRoot = drawerRoot || container;
 
-      // Wrap bar in custom element with unique ID to protect from DOM diffing
-      // Content lives INSIDE shadow DOM where morphing can't reach it
-      const wrapper = document.createElement('dib-delivery-bar');
-      wrapper.id = 'dib-fd-bar-drawer';
-      wrapper.shadowRoot.appendChild(bar);  // Put bar INSIDE shadow DOM
-      const injectElement = wrapper;
-
       // Impulse-specific: prepend inside .drawer__scrollable
       if (searchRoot.id === 'CartDrawer' || searchRoot.closest('#CartDrawer')) {
         const scrollable = searchRoot.querySelector('.drawer__scrollable');
         if (scrollable) {
-          scrollable.insertBefore(injectElement, scrollable.firstChild);
+          scrollable.insertBefore(bar, scrollable.firstChild);
           injectedContainers.add(searchRoot);
           debug('Injected bar (Impulse scrollable):', scrollable.className);
           setupBarObservers(bar, searchRoot, position);
@@ -253,7 +233,7 @@
       for (const selector of headerSelectors) {
         const headerEl = searchRoot.querySelector(selector);
         if (headerEl) {
-          headerEl.insertAdjacentElement('afterend', injectElement);
+          headerEl.insertAdjacentElement('afterend', bar);
           injectedContainers.add(searchRoot);
           debug('Injected bar after header container:', selector);
           setupBarObservers(bar, searchRoot, position);
@@ -288,7 +268,7 @@
           // Ensure proper block layout
           bar.style.width = 'calc(100% - 24px)';
           bar.style.margin = '0 auto 12px auto';
-          insertTarget.insertAdjacentElement('afterend', injectElement);
+          insertTarget.insertAdjacentElement('afterend', bar);
           injectedContainers.add(searchRoot);
           debug('Injected bar after cart heading (universal):', text);
           setupBarObservers(bar, searchRoot, position);
@@ -310,7 +290,7 @@
       if (currentPadding < 90) {
         container.style.paddingTop = '90px';
       }
-      container.insertBefore(injectElement, container.firstChild);
+      container.insertBefore(bar, container.firstChild);
       injectedContainers.add(container);
       debug('Injected bar (fallback absolute):', container.className || container.tagName);
     } else {
