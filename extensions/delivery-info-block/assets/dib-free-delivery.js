@@ -1,6 +1,6 @@
 (function() {
   'use strict';
-  // v430 - Prestige: inject in footer slot to survive DOM diff
+  // v432 - Prestige: unique ID + custom element to survive DOM diff
 
   // Prevent double initialization
   if (window.__DIB_FD_INIT__) return;
@@ -69,6 +69,25 @@
 
   // Guard against re-entrant calls from MutationObserver
   let isUpdatingBar = false;
+
+  // Define custom element to protect bar from DOM diffing (Prestige theme)
+  // Custom elements with unique IDs are preserved by DOM morphers (morphdom, idiomorph, etc.)
+  if (!customElements.get('dib-delivery-bar')) {
+    customElements.define('dib-delivery-bar', class extends HTMLElement {
+      constructor() {
+        super();
+        // Use open shadow DOM so content is isolated from morphing
+        this.attachShadow({ mode: 'open' });
+      }
+      connectedCallback() {
+        // Slot allows light DOM content to be projected into shadow DOM
+        // This keeps the bar isolated while still accessible for updates
+        if (!this.shadowRoot.querySelector('slot')) {
+          this.shadowRoot.innerHTML = '<style>:host{display:block;width:100%;}</style><slot></slot>';
+        }
+      }
+    });
+  }
 
   // Inject CSS to hide bar when cart is empty (multiple theme patterns)
   function injectEmptyCartCSS() {
@@ -206,11 +225,18 @@
 
       const searchRoot = drawerRoot || container;
 
+      // Wrap bar in custom element with unique ID to protect from DOM diffing
+      // DOM morphers (morphdom, idiomorph) preserve elements with stable IDs
+      const wrapper = document.createElement('dib-delivery-bar');
+      wrapper.id = 'dib-fd-bar-drawer';
+      wrapper.appendChild(bar);
+      const injectElement = wrapper;  // Inject wrapper instead of bar
+
       // Impulse-specific: prepend inside .drawer__scrollable
       if (searchRoot.id === 'CartDrawer' || searchRoot.closest('#CartDrawer')) {
         const scrollable = searchRoot.querySelector('.drawer__scrollable');
         if (scrollable) {
-          scrollable.insertBefore(bar, scrollable.firstChild);
+          scrollable.insertBefore(injectElement, scrollable.firstChild);
           injectedContainers.add(searchRoot);
           debug('Injected bar (Impulse scrollable):', scrollable.className);
           setupBarObservers(bar, searchRoot, position);
@@ -233,7 +259,7 @@
       for (const selector of headerSelectors) {
         const headerEl = searchRoot.querySelector(selector);
         if (headerEl) {
-          headerEl.insertAdjacentElement('afterend', bar);
+          headerEl.insertAdjacentElement('afterend', injectElement);
           injectedContainers.add(searchRoot);
           debug('Injected bar after header container:', selector);
           setupBarObservers(bar, searchRoot, position);
@@ -268,7 +294,7 @@
           // Ensure proper block layout
           bar.style.width = 'calc(100% - 24px)';
           bar.style.margin = '0 auto 12px auto';
-          insertTarget.insertAdjacentElement('afterend', bar);
+          insertTarget.insertAdjacentElement('afterend', injectElement);
           injectedContainers.add(searchRoot);
           debug('Injected bar after cart heading (universal):', text);
           setupBarObservers(bar, searchRoot, position);
@@ -290,7 +316,7 @@
       if (currentPadding < 90) {
         container.style.paddingTop = '90px';
       }
-      container.insertBefore(bar, container.firstChild);
+      container.insertBefore(injectElement, container.firstChild);
       injectedContainers.add(container);
       debug('Injected bar (fallback absolute):', container.className || container.tagName);
     } else {
