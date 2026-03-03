@@ -1,6 +1,6 @@
 (function() {
   'use strict';
-  // v428 - fix MutationObserver error + drawer fade-in
+  // v429 - hide drawer bars BEFORE theme re-renders to prevent flash
 
   // Prevent double initialization
   if (window.__DIB_FD_INIT__) return;
@@ -69,6 +69,17 @@
 
   // Guard against re-entrant calls from MutationObserver
   let isUpdatingBar = false;
+
+  // Hide all drawer bars instantly (before theme re-renders destroys them)
+  function hideDrawerBars() {
+    document.querySelectorAll('.dib-fd-bar').forEach(bar => {
+      const inDrawer = bar.closest('cart-drawer, .cart-drawer, [data-cart-drawer], #CartDrawer, .drawer--right');
+      if (inDrawer) {
+        bar.style.opacity = '0';
+        debug('Pre-hiding drawer bar before re-render');
+      }
+    });
+  }
 
   // Inject CSS to hide bar when cart is empty (multiple theme patterns)
   function injectEmptyCartCSS() {
@@ -805,8 +816,12 @@
     // Intercept fetch for AJAX add to cart (Dawn uses fetch)
     const originalFetch = window.fetch;
     window.fetch = function(...args) {
-      const result = originalFetch.apply(this, args);
       const url = args[0];
+      // Hide drawer bars BEFORE request - prevents flash when theme re-renders
+      if (typeof url === 'string' && url.includes('/cart/change')) {
+        hideDrawerBars();
+      }
+      const result = originalFetch.apply(this, args);
       if (typeof url === 'string' && (url.includes('/cart/add') || url.includes('/cart/change'))) {
         debug('Fetch to cart detected:', url);
         result.then(() => {
@@ -829,6 +844,10 @@
 
     XMLHttpRequest.prototype.send = function(...args) {
       if (this._dibUrl && (this._dibUrl.includes('/cart/add') || this._dibUrl.includes('/cart/change'))) {
+        // Hide drawer bars BEFORE request - prevents flash when theme re-renders
+        if (this._dibUrl.includes('/cart/change')) {
+          hideDrawerBars();
+        }
         this.addEventListener('load', function() {
           debug('XHR to cart detected:', this._dibUrl);
           // Use debounced update to avoid early stale updates blocking correct ones
