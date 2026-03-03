@@ -483,7 +483,8 @@
 
     for (const selector of CART_PAGE_SELECTORS) {
       const container = document.querySelector(selector);
-      if (container) {
+      // Skip if inside a drawer - we want the actual cart page, not drawer form
+      if (container && !container.closest('cart-drawer, .cart-drawer, [data-cart-drawer]')) {
         debug('Found cart page container:', selector);
         return container;
       }
