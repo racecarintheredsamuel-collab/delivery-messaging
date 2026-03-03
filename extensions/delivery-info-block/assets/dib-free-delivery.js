@@ -1,6 +1,6 @@
 (function() {
   'use strict';
-  // v427 - added Prestige theme support
+  // v428 - fix MutationObserver error + drawer fade-in
 
   // Prevent double initialization
   if (window.__DIB_FD_INIT__) return;
@@ -133,6 +133,7 @@
       z-index: 10;
       width: 100%;
       box-sizing: border-box;
+      transition: opacity 150ms ease-in;
     `.replace(/\s+/g, ' ');
 
     const message = document.createElement('div');
@@ -187,8 +188,9 @@
     const checkContainer = drawerRoot || container;
     if (checkContainer.querySelector('.dib-fd-bar')) return false;
 
-    // Create bar element
+    // Create bar element - start invisible for fade-in
     const bar = createBarElement(config, initialContent);
+    bar.style.opacity = '0';
 
     // For cart drawers, try theme-specific positioning first
     const isInDrawer = drawerRoot || container.matches('cart-drawer, .cart-drawer, [data-cart-drawer], #CartDrawer, .drawer--right');
@@ -215,6 +217,7 @@
           debug('Injected bar (Impulse scrollable):', scrollable.className);
           setupBarObservers(bar, searchRoot, position);
           triggerUpdate();
+          requestAnimationFrame(() => { bar.style.opacity = '1'; });
           return true;
         }
       }
@@ -238,6 +241,7 @@
           debug('Injected bar after header container:', selector);
           setupBarObservers(bar, searchRoot, position);
           triggerUpdate();
+          requestAnimationFrame(() => { bar.style.opacity = '1'; });
           return true;
         }
       }
@@ -273,6 +277,7 @@
           debug('Injected bar after cart heading (universal):', text);
           setupBarObservers(bar, searchRoot, position);
           triggerUpdate();
+          requestAnimationFrame(() => { bar.style.opacity = '1'; });
           return true;
         }
       }
@@ -307,11 +312,17 @@
 
     setupBarObservers(bar, container, position);
     triggerUpdate();
+    requestAnimationFrame(() => { bar.style.opacity = '1'; });
     return true;
   }
 
   // Set up observers for bar removal and drawer state
   function setupBarObservers(bar, container, position) {
+    // Guard against invalid container (prevents MutationObserver error)
+    if (!container || !container.nodeType) {
+      debug('setupBarObservers: invalid container, skipping');
+      return;
+    }
 
     // Watch for the bar being removed (theme re-renders) and re-inject
     const barObserver = new MutationObserver((mutations) => {
