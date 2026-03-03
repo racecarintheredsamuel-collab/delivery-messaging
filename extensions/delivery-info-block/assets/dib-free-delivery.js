@@ -209,6 +209,13 @@
 
       const searchRoot = drawerRoot || container;
 
+      // Prestige theme uses DOM diffing that removes injected elements - skip drawer injection
+      const isPrestigeDrawer = searchRoot.querySelector('[slot="header"], [slot="footer"]');
+      if (isPrestigeDrawer) {
+        debug('Prestige drawer detected, skipping injection (DOM diffing incompatible)');
+        return false;
+      }
+
       // Impulse-specific: prepend inside .drawer__scrollable
       if (searchRoot.id === 'CartDrawer' || searchRoot.closest('#CartDrawer')) {
         const scrollable = searchRoot.querySelector('.drawer__scrollable');
