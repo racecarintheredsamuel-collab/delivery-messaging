@@ -206,13 +206,27 @@
 
       const searchRoot = drawerRoot || container;
 
-      // Prestige theme: inject at TOP of footer slot (survives DOM diff)
+      // Prestige theme: inject inside footer form (stable), position visually at top
       const footerSlot = searchRoot.querySelector('[slot="footer"]');
       if (footerSlot) {
-        bar.style.margin = '0 auto 12px auto';
-        footerSlot.insertBefore(bar, footerSlot.firstChild);
+        const form = footerSlot.querySelector('form') || footerSlot;
+
+        // Ensure drawer has position:relative for absolute positioning
+        const drawer = searchRoot.closest('cart-drawer') || searchRoot;
+        drawer.style.position = 'relative';
+
+        // Position bar visually at top of drawer content (below header)
+        bar.style.position = 'absolute';
+        bar.style.top = '70px';
+        bar.style.left = '12px';
+        bar.style.right = '12px';
+        bar.style.width = 'auto';
+        bar.style.margin = '0';
+        bar.style.zIndex = '10';
+
+        form.insertBefore(bar, form.firstChild);
         injectedContainers.add(searchRoot);
-        debug('Injected bar into Prestige footer slot');
+        debug('Injected bar into Prestige form with absolute positioning');
         setupBarObservers(bar, searchRoot, position);
         triggerUpdate();
         return true;
