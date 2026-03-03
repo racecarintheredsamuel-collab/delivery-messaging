@@ -1,6 +1,6 @@
 (function() {
   'use strict';
-  // v430 - Prestige: inject in footer slot to survive DOM diff
+  // v434 - Add morph preservation attributes (im-preserve, id, data-morph-preserve)
 
   // Prevent double initialization
   if (window.__DIB_FD_INIT__) return;
@@ -115,6 +115,9 @@
   function createBarElement(config, initialContent) {
     const bar = document.createElement('div');
     bar.className = 'dib-fd-bar';
+    bar.id = 'dib-fd-bar';  // Stable ID for DOM morphers
+    bar.setAttribute('im-preserve', 'true');  // idiomorph preservation
+    bar.setAttribute('data-morph-preserve', 'true');  // general morph preservation
     bar.setAttribute('data-dm-target', '');
     bar.setAttribute('data-dm-state', 'init');
     bar.setAttribute('data-dm-celebrated', '');
