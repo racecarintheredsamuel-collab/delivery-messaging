@@ -1,6 +1,6 @@
 (function() {
   'use strict';
-  // v429 - hide drawer bars BEFORE theme re-renders to prevent flash
+  // v430 - Prestige: inject in footer slot to survive DOM diff
 
   // Prevent double initialization
   if (window.__DIB_FD_INIT__) return;
@@ -70,17 +70,6 @@
   // Guard against re-entrant calls from MutationObserver
   let isUpdatingBar = false;
 
-  // Hide all drawer bars instantly (before theme re-renders destroys them)
-  function hideDrawerBars() {
-    document.querySelectorAll('.dib-fd-bar').forEach(bar => {
-      const inDrawer = bar.closest('cart-drawer, .cart-drawer, [data-cart-drawer], #CartDrawer, .drawer--right');
-      if (inDrawer) {
-        bar.style.opacity = '0';
-        debug('Pre-hiding drawer bar before re-render');
-      }
-    });
-  }
-
   // Inject CSS to hide bar when cart is empty (multiple theme patterns)
   function injectEmptyCartCSS() {
     if (document.getElementById('dib-fd-empty-css')) return;
@@ -144,7 +133,6 @@
       z-index: 10;
       width: 100%;
       box-sizing: border-box;
-      transition: opacity 150ms ease-in;
     `.replace(/\s+/g, ' ');
 
     const message = document.createElement('div');
@@ -199,9 +187,8 @@
     const checkContainer = drawerRoot || container;
     if (checkContainer.querySelector('.dib-fd-bar')) return false;
 
-    // Create bar element - start invisible for fade-in
+    // Create bar element
     const bar = createBarElement(config, initialContent);
-    bar.style.opacity = '0';
 
     // For cart drawers, try theme-specific positioning first
     const isInDrawer = drawerRoot || container.matches('cart-drawer, .cart-drawer, [data-cart-drawer], #CartDrawer, .drawer--right');
@@ -219,6 +206,18 @@
 
       const searchRoot = drawerRoot || container;
 
+      // Prestige theme: inject at TOP of footer slot (survives DOM diff)
+      const footerSlot = searchRoot.querySelector('[slot="footer"]');
+      if (footerSlot) {
+        bar.style.margin = '0 auto 12px auto';
+        footerSlot.insertBefore(bar, footerSlot.firstChild);
+        injectedContainers.add(searchRoot);
+        debug('Injected bar into Prestige footer slot');
+        setupBarObservers(bar, searchRoot, position);
+        triggerUpdate();
+        return true;
+      }
+
       // Impulse-specific: prepend inside .drawer__scrollable
       if (searchRoot.id === 'CartDrawer' || searchRoot.closest('#CartDrawer')) {
         const scrollable = searchRoot.querySelector('.drawer__scrollable');
@@ -228,7 +227,6 @@
           debug('Injected bar (Impulse scrollable):', scrollable.className);
           setupBarObservers(bar, searchRoot, position);
           triggerUpdate();
-          requestAnimationFrame(() => { bar.style.opacity = '1'; });
           return true;
         }
       }
@@ -252,7 +250,6 @@
           debug('Injected bar after header container:', selector);
           setupBarObservers(bar, searchRoot, position);
           triggerUpdate();
-          requestAnimationFrame(() => { bar.style.opacity = '1'; });
           return true;
         }
       }
@@ -288,7 +285,6 @@
           debug('Injected bar after cart heading (universal):', text);
           setupBarObservers(bar, searchRoot, position);
           triggerUpdate();
-          requestAnimationFrame(() => { bar.style.opacity = '1'; });
           return true;
         }
       }
@@ -323,7 +319,6 @@
 
     setupBarObservers(bar, container, position);
     triggerUpdate();
-    requestAnimationFrame(() => { bar.style.opacity = '1'; });
     return true;
   }
 
@@ -816,12 +811,8 @@
     // Intercept fetch for AJAX add to cart (Dawn uses fetch)
     const originalFetch = window.fetch;
     window.fetch = function(...args) {
-      const url = args[0];
-      // Hide drawer bars BEFORE request - prevents flash when theme re-renders
-      if (typeof url === 'string' && url.includes('/cart/change')) {
-        hideDrawerBars();
-      }
       const result = originalFetch.apply(this, args);
+      const url = args[0];
       if (typeof url === 'string' && (url.includes('/cart/add') || url.includes('/cart/change'))) {
         debug('Fetch to cart detected:', url);
         result.then(() => {
@@ -844,10 +835,6 @@
 
     XMLHttpRequest.prototype.send = function(...args) {
       if (this._dibUrl && (this._dibUrl.includes('/cart/add') || this._dibUrl.includes('/cart/change'))) {
-        // Hide drawer bars BEFORE request - prevents flash when theme re-renders
-        if (this._dibUrl.includes('/cart/change')) {
-          hideDrawerBars();
-        }
         this.addEventListener('load', function() {
           debug('XHR to cart detected:', this._dibUrl);
           // Use debounced update to avoid early stale updates blocking correct ones
