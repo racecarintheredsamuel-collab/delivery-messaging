@@ -206,18 +206,6 @@
 
       const searchRoot = drawerRoot || container;
 
-      // Prestige theme: inject at TOP of footer slot (survives DOM diff)
-      const footerSlot = searchRoot.querySelector('[slot="footer"]');
-      if (footerSlot) {
-        bar.style.margin = '0 auto 12px auto';
-        footerSlot.insertBefore(bar, footerSlot.firstChild);
-        injectedContainers.add(searchRoot);
-        debug('Injected bar into Prestige footer slot');
-        setupBarObservers(bar, searchRoot, position);
-        triggerUpdate();
-        return true;
-      }
-
       // Impulse-specific: prepend inside .drawer__scrollable
       if (searchRoot.id === 'CartDrawer' || searchRoot.closest('#CartDrawer')) {
         const scrollable = searchRoot.querySelector('.drawer__scrollable');
