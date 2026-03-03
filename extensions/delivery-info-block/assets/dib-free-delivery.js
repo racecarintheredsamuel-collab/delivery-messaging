@@ -1,6 +1,6 @@
 (function() {
   'use strict';
-  // v426 - simplified: drawer=instant, others=fade, all=celebration
+  // v427 - added Prestige theme support
 
   // Prevent double initialization
   if (window.__DIB_FD_INIT__) return;
@@ -20,6 +20,7 @@
     // Generic cart page form (excludes drawer forms)
     'form[action="/cart"]:not(.cart-drawer__form):not(#CartDrawer-Form)',
     // Theme-specific containers
+    '.cart-page',  // Prestige theme
     '.cart__items',
     '.cart-items',
     'cart-items',
@@ -222,6 +223,7 @@
       const headerSelectors = [
         '.drawer__header',
         '.cart-drawer__header',
+        '[slot="header"]',  // Prestige theme
         '[class*="cart-drawer"] > header',
         '.cart-drawer header',
         '[class*="drawer"] > header',
@@ -242,7 +244,7 @@
 
       // Fallback: find heading by common cart text
       const cartHeadingTexts = ['your cart', 'cart', 'shopping cart', 'your bag', 'bag'];
-      const headingTags = searchRoot.querySelectorAll('h1, h2, h3, h4, h5, h6, [class*="heading"], [class*="title"], .drawer__heading, .cart-drawer__heading');
+      const headingTags = searchRoot.querySelectorAll('h1, h2, h3, h4, h5, h6, .h1, .h2, .h3, .h4, .h5, .h6, [class*="heading"], [class*="title"], .drawer__heading, .cart-drawer__heading');
       for (const el of headingTags) {
         const text = el.textContent?.trim().toLowerCase();
         if (text && cartHeadingTexts.some(t => text === t || text.startsWith(t))) {
