@@ -1,6 +1,6 @@
 (function() {
   'use strict';
-  // v432 - Prestige: unique ID + custom element to survive DOM diff
+  // v433 - Prestige: content INSIDE shadow DOM (not slotted) to survive DOM diff
 
   // Prevent double initialization
   if (window.__DIB_FD_INIT__) return;
@@ -71,21 +71,15 @@
   let isUpdatingBar = false;
 
   // Define custom element to protect bar from DOM diffing (Prestige theme)
-  // Custom elements with unique IDs are preserved by DOM morphers (morphdom, idiomorph, etc.)
+  // Content lives INSIDE shadow DOM where morphing can't reach it
   if (!customElements.get('dib-delivery-bar')) {
     customElements.define('dib-delivery-bar', class extends HTMLElement {
       constructor() {
         super();
-        // Use open shadow DOM so content is isolated from morphing
+        // Open shadow DOM - content inside is protected from page morphing
         this.attachShadow({ mode: 'open' });
       }
-      connectedCallback() {
-        // Slot allows light DOM content to be projected into shadow DOM
-        // This keeps the bar isolated while still accessible for updates
-        if (!this.shadowRoot.querySelector('slot')) {
-          this.shadowRoot.innerHTML = '<style>:host{display:block;width:100%;}</style><slot></slot>';
-        }
-      }
+      // No connectedCallback needed - bar content appended directly to shadowRoot
     });
   }
 
@@ -226,11 +220,11 @@
       const searchRoot = drawerRoot || container;
 
       // Wrap bar in custom element with unique ID to protect from DOM diffing
-      // DOM morphers (morphdom, idiomorph) preserve elements with stable IDs
+      // Content lives INSIDE shadow DOM where morphing can't reach it
       const wrapper = document.createElement('dib-delivery-bar');
       wrapper.id = 'dib-fd-bar-drawer';
-      wrapper.appendChild(bar);
-      const injectElement = wrapper;  // Inject wrapper instead of bar
+      wrapper.shadowRoot.appendChild(bar);  // Put bar INSIDE shadow DOM
+      const injectElement = wrapper;
 
       // Impulse-specific: prepend inside .drawer__scrollable
       if (searchRoot.id === 'CartDrawer' || searchRoot.closest('#CartDrawer')) {
