@@ -481,6 +481,12 @@
     // Only on /cart page
     if (!window.location.pathname.includes('/cart')) return null;
 
+    // Prestige theme uses DOM diffing that causes flash - skip cart page injection
+    if (document.querySelector('cart-drawer [slot="header"], cart-drawer [slot="footer"]')) {
+      debug('Prestige theme detected, skipping cart page injection (DOM diffing incompatible)');
+      return null;
+    }
+
     for (const selector of CART_PAGE_SELECTORS) {
       const container = document.querySelector(selector);
       // Skip if inside a drawer - we want the actual cart page, not drawer form
