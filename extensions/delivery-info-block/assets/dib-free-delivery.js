@@ -317,30 +317,23 @@
       injectedContainers.add(container);
       debug('Injected bar (fallback absolute):', container.className || container.tagName);
     } else {
-      // Cart page - absolute positioning to prevent layout shift
-      // Bar is taken out of document flow, padding reserves space
+      // Cart page - fixed positioning to prevent layout shift
+      // Bar floats on viewport, no container modifications needed
       bar.classList.add('dib-fd-cart-page');
-      bar.style.position = 'absolute';
-      bar.style.top = '0';
-      bar.style.left = '0';
-      bar.style.right = '0';
-      bar.style.zIndex = '10';
+      bar.style.position = 'fixed';
+      bar.style.top = '120px';
+      bar.style.left = '50%';
+      bar.style.transform = 'translateX(-50%)';
+      bar.style.zIndex = '999';
+      bar.style.width = 'calc(100% - 40px)';
+      bar.style.maxWidth = '600px';
       bar.style.opacity = '0';
       bar.style.transition = 'opacity 400ms ease-in';
 
-      // Add padding to container to reserve space for bar
-      const containerStyle = window.getComputedStyle(container);
-      if (containerStyle.position === 'static') {
-        container.style.position = 'relative';
-      }
-      const currentPadding = parseInt(containerStyle.paddingTop) || 0;
-      if (currentPadding < 80) {
-        container.style.paddingTop = '80px';
-      }
-
-      container.insertBefore(bar, container.firstChild);
+      // Append to body - completely independent of cart container
+      document.body.appendChild(bar);
       injectedContainers.add(container);
-      debug('Injected bar into cart page (absolute):', container.className || container.tagName);
+      debug('Injected bar into cart page (fixed):', container.className || container.tagName);
     }
 
     setupBarObservers(bar, container, position);
