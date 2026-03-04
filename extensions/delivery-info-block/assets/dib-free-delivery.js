@@ -320,7 +320,7 @@
       // Cart page - whole bar fades in, wrapper reserves space to prevent layout jump
       const wrapper = document.createElement('div');
       wrapper.className = 'dib-fd-cart-wrapper';
-      wrapper.style.minHeight = '60px';
+      wrapper.style.minHeight = '80px';  // Bar is ~60px + extra for safety
       wrapper.style.margin = '12px 0';
 
       bar.classList.add('dib-fd-cart-page');
