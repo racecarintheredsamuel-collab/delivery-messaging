@@ -317,33 +317,30 @@
       injectedContainers.add(container);
       debug('Injected bar (fallback absolute):', container.className || container.tagName);
     } else {
-      // Cart page - whole bar fades in, wrapper reserves space to prevent layout jump
-      // Skip if already injecting (prevents multiple injections during initial load)
-      if (window.__DIB_CART_PAGE_INJECTING__) {
-        debug('Cart page injection already in progress, skipping');
-        return false;
-      }
-      window.__DIB_CART_PAGE_INJECTING__ = true;
-      setTimeout(function() { window.__DIB_CART_PAGE_INJECTING__ = false; }, 1000);
-
-      const wrapper = document.createElement('div');
-      wrapper.className = 'dib-fd-cart-wrapper';
-      wrapper.style.minHeight = '80px';  // Bar is ~62px + extra for safety
-      wrapper.style.margin = '12px 0';
-
+      // Cart page - absolute positioning to prevent layout shift
+      // Bar is taken out of document flow, padding reserves space
       bar.classList.add('dib-fd-cart-page');
+      bar.style.position = 'absolute';
+      bar.style.top = '0';
+      bar.style.left = '0';
+      bar.style.right = '0';
+      bar.style.zIndex = '10';
       bar.style.opacity = '0';
       bar.style.transition = 'opacity 400ms ease-in';
-      bar.style.margin = '0';
 
-      wrapper.appendChild(bar);
-      if (position === 'prepend') {
-        container.insertBefore(wrapper, container.firstChild);
-      } else {
-        container.appendChild(wrapper);
+      // Add padding to container to reserve space for bar
+      const containerStyle = window.getComputedStyle(container);
+      if (containerStyle.position === 'static') {
+        container.style.position = 'relative';
       }
+      const currentPadding = parseInt(containerStyle.paddingTop) || 0;
+      if (currentPadding < 80) {
+        container.style.paddingTop = '80px';
+      }
+
+      container.insertBefore(bar, container.firstChild);
       injectedContainers.add(container);
-      debug('Injected bar into cart page with wrapper:', container.className || container.tagName);
+      debug('Injected bar into cart page (absolute):', container.className || container.tagName);
     }
 
     setupBarObservers(bar, container, position);
