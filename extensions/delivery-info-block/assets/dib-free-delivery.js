@@ -317,11 +317,8 @@
       injectedContainers.add(container);
       debug('Injected bar (fallback absolute):', container.className || container.tagName);
     } else {
-      // Cart page - simple injection, no fade/positioning tricks
-      bar.classList.add('dib-fd-cart-page');
-      bar.style.width = 'calc(100% - 24px)';
-      bar.style.margin = '12px auto';
-
+      // Cart page - use normal flow with margin
+      bar.style.margin = '12px 0';
       if (position === 'prepend') {
         container.insertBefore(bar, container.firstChild);
       } else {
