@@ -318,9 +318,17 @@
       debug('Injected bar (fallback absolute):', container.className || container.tagName);
     } else {
       // Cart page - whole bar fades in, wrapper reserves space to prevent layout jump
+      // Skip if already injecting (prevents multiple injections during initial load)
+      if (window.__DIB_CART_PAGE_INJECTING__) {
+        debug('Cart page injection already in progress, skipping');
+        return false;
+      }
+      window.__DIB_CART_PAGE_INJECTING__ = true;
+      setTimeout(function() { window.__DIB_CART_PAGE_INJECTING__ = false; }, 1000);
+
       const wrapper = document.createElement('div');
       wrapper.className = 'dib-fd-cart-wrapper';
-      wrapper.style.minHeight = '80px';  // Bar is ~60px + extra for safety
+      wrapper.style.minHeight = '80px';  // Bar is ~62px + extra for safety
       wrapper.style.margin = '12px 0';
 
       bar.classList.add('dib-fd-cart-page');
