@@ -1,6 +1,6 @@
 (function() {
   'use strict';
-  // v434 - Add morph preservation attributes (im-preserve, id, data-morph-preserve)
+  // v450 - Disable Maestrooo themes (Prestige + Warehouse) - DOM diffing incompatible
 
   // Prevent double initialization
   if (window.__DIB_FD_INIT__) return;
@@ -91,6 +91,19 @@
     `;
     document.head.appendChild(style);
     debug('Injected empty cart CSS');
+  }
+
+  // Detect Maestrooo themes (Prestige, Warehouse) - they use aggressive DOM diffing
+  function isMaestroooTheme() {
+    // Prestige: uses slot attributes in cart-drawer
+    if (document.querySelector('cart-drawer [slot="header"], cart-drawer [slot="footer"]')) {
+      return 'prestige';
+    }
+    // Warehouse: body class contains warehouse--
+    if (document.body.className.includes('warehouse--')) {
+      return 'warehouse';
+    }
+    return false;
   }
 
   // Get config from the embed
@@ -209,10 +222,10 @@
 
       const searchRoot = drawerRoot || container;
 
-      // Prestige theme uses DOM diffing that removes injected elements - skip drawer injection
-      const isPrestigeDrawer = searchRoot.querySelector('[slot="header"], [slot="footer"]');
-      if (isPrestigeDrawer) {
-        debug('Prestige drawer detected, skipping injection (DOM diffing incompatible)');
+      // Maestrooo themes (Prestige, Warehouse) use DOM diffing - skip drawer injection
+      const maestroooTheme = isMaestroooTheme();
+      if (maestroooTheme) {
+        debug(maestroooTheme + ' theme detected, skipping drawer injection (DOM diffing incompatible)');
         return false;
       }
 
@@ -481,9 +494,10 @@
     // Only on /cart page
     if (!window.location.pathname.includes('/cart')) return null;
 
-    // Prestige theme uses DOM diffing that causes flash - skip cart page injection
-    if (document.querySelector('cart-drawer [slot="header"], cart-drawer [slot="footer"]')) {
-      debug('Prestige theme detected, skipping cart page injection (DOM diffing incompatible)');
+    // Maestrooo themes (Prestige, Warehouse) use DOM diffing - skip cart page injection
+    const maestroooTheme = isMaestroooTheme();
+    if (maestroooTheme) {
+      debug(maestroooTheme + ' theme detected, skipping cart page injection (DOM diffing incompatible)');
       return null;
     }
 
