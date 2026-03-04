@@ -1,6 +1,6 @@
 (function() {
   'use strict';
-  // v451 - Fix Maestrooo check to catch mini-cart (move check to top of injectIntoContainer)
+  // v452 - Cart page bar smooth fade-in (opacity transition like product page blocks)
 
   // Prevent double initialization
   if (window.__DIB_FD_INIT__) return;
@@ -317,8 +317,11 @@
       injectedContainers.add(container);
       debug('Injected bar (fallback absolute):', container.className || container.tagName);
     } else {
-      // Cart page - use normal flow with margin
+      // Cart page - use normal flow with margin + smooth fade-in
       bar.style.margin = '12px 0';
+      bar.classList.add('dib-fd-cart-page');
+      bar.style.opacity = '0';
+      bar.style.transition = 'opacity 400ms ease-in';
       if (position === 'prepend') {
         container.insertBefore(bar, container.firstChild);
       } else {
@@ -469,6 +472,13 @@
         setTimeout(function() {
           if (window.DeliveryMessaging && window.DeliveryMessaging.forceUpdate) {
             window.DeliveryMessaging.forceUpdate();
+          }
+          // After last update, fade in cart page bars
+          if (delay === 700) {
+            document.querySelectorAll('.dib-fd-bar.dib-fd-cart-page:not(.is-ready)').forEach(function(b) {
+              b.classList.add('is-ready');
+              b.style.opacity = '1';
+            });
           }
         }, delay);
       });
