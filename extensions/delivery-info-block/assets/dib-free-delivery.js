@@ -1,6 +1,6 @@
 (function() {
   'use strict';
-  // v453 - Cart page: shell visible immediately, message fades (no jerky layout)
+  // v454 - Cart page: wrapper reserves space, whole bar fades in (no layout jump)
 
   // Prevent double initialization
   if (window.__DIB_FD_INIT__) return;
@@ -317,16 +317,25 @@
       injectedContainers.add(container);
       debug('Injected bar (fallback absolute):', container.className || container.tagName);
     } else {
-      // Cart page - shell visible immediately, message fades via delivery-messaging.js
-      bar.style.margin = '12px 0';
+      // Cart page - whole bar fades in, wrapper reserves space to prevent layout jump
+      const wrapper = document.createElement('div');
+      wrapper.className = 'dib-fd-cart-wrapper';
+      wrapper.style.minHeight = '60px';
+      wrapper.style.margin = '12px 0';
+
       bar.classList.add('dib-fd-cart-page');
+      bar.style.opacity = '0';
+      bar.style.transition = 'opacity 400ms ease-in';
+      bar.style.margin = '0';
+
+      wrapper.appendChild(bar);
       if (position === 'prepend') {
-        container.insertBefore(bar, container.firstChild);
+        container.insertBefore(wrapper, container.firstChild);
       } else {
-        container.appendChild(bar);
+        container.appendChild(wrapper);
       }
       injectedContainers.add(container);
-      debug('Injected bar into cart page:', container.className || container.tagName);
+      debug('Injected bar into cart page with wrapper:', container.className || container.tagName);
     }
 
     setupBarObservers(bar, container, position);
@@ -470,6 +479,13 @@
         setTimeout(function() {
           if (window.DeliveryMessaging && window.DeliveryMessaging.forceUpdate) {
             window.DeliveryMessaging.forceUpdate();
+          }
+          // After last update, fade in cart page bars
+          if (delay === 700) {
+            document.querySelectorAll('.dib-fd-bar.dib-fd-cart-page:not(.is-ready)').forEach(function(b) {
+              b.classList.add('is-ready');
+              b.style.opacity = '1';
+            });
           }
         }, delay);
       });
