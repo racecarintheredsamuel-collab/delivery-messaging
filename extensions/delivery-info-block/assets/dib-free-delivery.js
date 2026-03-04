@@ -1,6 +1,6 @@
 (function() {
   'use strict';
-  // v450 - Disable Maestrooo themes (Prestige + Warehouse) - DOM diffing incompatible
+  // v451 - Fix Maestrooo check to catch mini-cart (move check to top of injectIntoContainer)
 
   // Prevent double initialization
   if (window.__DIB_FD_INIT__) return;
@@ -198,6 +198,13 @@
     const config = getConfig();
     if (!config) return false;
 
+    // Maestrooo themes (Prestige, Warehouse) use DOM diffing - skip ALL injection
+    const maestroooTheme = isMaestroooTheme();
+    if (maestroooTheme) {
+      debug(maestroooTheme + ' theme detected, skipping injection (DOM diffing incompatible)');
+      return false;
+    }
+
     // For drawers, check if bar already exists anywhere in the drawer
     const drawerRoot = container.closest('cart-drawer') || (container.matches && container.matches('cart-drawer') ? container : null);
     const checkContainer = drawerRoot || container;
@@ -221,13 +228,6 @@
       bar.style.margin = '0 auto 12px auto';
 
       const searchRoot = drawerRoot || container;
-
-      // Maestrooo themes (Prestige, Warehouse) use DOM diffing - skip drawer injection
-      const maestroooTheme = isMaestroooTheme();
-      if (maestroooTheme) {
-        debug(maestroooTheme + ' theme detected, skipping drawer injection (DOM diffing incompatible)');
-        return false;
-      }
 
       // Impulse-specific: prepend inside .drawer__scrollable
       if (searchRoot.id === 'CartDrawer' || searchRoot.closest('#CartDrawer')) {
