@@ -317,23 +317,18 @@
       injectedContainers.add(container);
       debug('Injected bar (fallback absolute):', container.className || container.tagName);
     } else {
-      // Cart page - fixed positioning to prevent layout shift
-      // Bar floats on viewport, no container modifications needed
+      // Cart page - simple injection, no fade/positioning tricks
       bar.classList.add('dib-fd-cart-page');
-      bar.style.position = 'fixed';
-      bar.style.top = '120px';
-      bar.style.left = '50%';
-      bar.style.transform = 'translateX(-50%)';
-      bar.style.zIndex = '999';
-      bar.style.width = 'calc(100% - 40px)';
-      bar.style.maxWidth = '600px';
-      bar.style.opacity = '0';
-      bar.style.transition = 'opacity 400ms ease-in';
+      bar.style.width = 'calc(100% - 24px)';
+      bar.style.margin = '12px auto';
 
-      // Append to body - completely independent of cart container
-      document.body.appendChild(bar);
+      if (position === 'prepend') {
+        container.insertBefore(bar, container.firstChild);
+      } else {
+        container.appendChild(bar);
+      }
       injectedContainers.add(container);
-      debug('Injected bar into cart page (fixed):', container.className || container.tagName);
+      debug('Injected bar into cart page:', container.className || container.tagName);
     }
 
     setupBarObservers(bar, container, position);
