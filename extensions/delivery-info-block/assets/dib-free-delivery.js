@@ -646,10 +646,17 @@
     const config = getConfig();
     if (!config) return;
 
-    // Cart page
-    const cartPage = findCartPageContainer();
-    if (cartPage) {
-      injectIntoContainer(cartPage, 'prepend');
+    // Check for Liquid-rendered cart block first (server-rendered, no injection needed)
+    const liquidCartBlock = document.querySelector('.dib-fd-bar[data-dib-liquid-block]');
+    if (liquidCartBlock) {
+      debug('Found Liquid cart block, skipping JS injection');
+      // Just trigger update to hydrate content - bar already exists in DOM
+      triggerUpdate();
+    } else {
+      // Cart page - JS injection fallback
+      const cartPage = findCartPageContainer();
+      if (cartPage) {
+        injectIntoContainer(cartPage, 'prepend');
 
       // Restore state from previous bar if available (for celebration continuity)
       if (window.__DIB_CART_PAGE_BAR_STATE__) {
@@ -676,6 +683,7 @@
           }
         }
         window.__DIB_CART_PAGE_BAR_STATE__ = null;
+      }
       }
     }
 
