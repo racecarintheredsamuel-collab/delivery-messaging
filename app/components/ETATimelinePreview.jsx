@@ -307,21 +307,21 @@ export function ETATimelinePreview({ rule, globalSettings }) {
       ? `${formatDate(deliveryMinDate)}-${deliveryMaxDate.getDate()}`
       : `${formatDate(deliveryMinDate)}-${formatDate(deliveryMaxDate)}`;
 
-  const Connector = () => {
+  const Connector = ({ marginLeft = 0 }) => {
     // When alignment is "icon", apply margin-top to center connector with icons
     const mtLine = connectorAlignment === "icon" ? iconPx / 2 - 1 : 0;
     const mtBigArrow = connectorAlignment === "icon" ? iconPx / 2 - connectorSize / 2 : 0;
     if (connectorStyle === "line") {
       const lineWidth = connectorSize + 16;
       return (
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", flex: `0 1 ${lineWidth}px`, minWidth: 0, marginTop: mtLine }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", flex: `0 1 ${lineWidth}px`, minWidth: 0, marginTop: mtLine, marginLeft: marginLeft }}>
           <span style={{ display: "block", width: lineWidth, maxWidth: "100%", borderTop: `1.5px solid ${connectorColor}` }} />
         </div>
       );
     }
     if (connectorStyle === "big-arrow") {
       return (
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", flex: `0 1 ${connectorSize + 4}px`, minWidth: 0, color: connectorColor, marginTop: mtBigArrow }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", flex: `0 1 ${connectorSize + 4}px`, minWidth: 0, color: connectorColor, marginTop: mtBigArrow, marginLeft: marginLeft }}>
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" style={{ width: connectorSize, height: connectorSize, maxWidth: "100%", maxHeight: "100%" }}>
             <path fillRule="evenodd" d="M16.72 7.72a.75.75 0 0 1 1.06 0l3.75 3.75a.75.75 0 0 1 0 1.06l-3.75 3.75a.75.75 0 1 1-1.06-1.06l2.47-2.47H3a.75.75 0 0 1 0-1.5h16.19l-2.47-2.47a.75.75 0 0 1 0-1.06Z" clipRule="evenodd" />
           </svg>
@@ -330,7 +330,7 @@ export function ETATimelinePreview({ rule, globalSettings }) {
     }
     if (connectorStyle === "double-chevron") {
       return (
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", flex: `0 1 ${connectorSize + 4}px`, minWidth: 0, color: connectorColor, marginTop: mtBigArrow }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", flex: `0 1 ${connectorSize + 4}px`, minWidth: 0, color: connectorColor, marginTop: mtBigArrow, marginLeft: marginLeft }}>
           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" style={{ width: connectorSize, height: connectorSize, maxWidth: "100%", maxHeight: "100%" }}>
             <path strokeLinecap="round" strokeLinejoin="round" d="m5.25 4.5 7.5 7.5-7.5 7.5m6-15 7.5 7.5-7.5 7.5" />
           </svg>
@@ -339,7 +339,7 @@ export function ETATimelinePreview({ rule, globalSettings }) {
     }
     if (connectorStyle === "arrow-dot") {
       return (
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", flex: `0 1 ${connectorSize + 4}px`, minWidth: 0, color: connectorColor, marginTop: mtBigArrow }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", flex: `0 1 ${connectorSize + 4}px`, minWidth: 0, color: connectorColor, marginTop: mtBigArrow, marginLeft: marginLeft }}>
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" fill="currentColor" style={{ width: connectorSize, height: connectorSize, maxWidth: "100%", maxHeight: "100%" }}>
             <path d="M780-380q-31 0-56-17t-36-43H80v-80h608q11-26 36-43t56-17q42 0 71 29t29 71q0 42-29 71t-71 29Z" />
           </svg>
@@ -349,7 +349,7 @@ export function ETATimelinePreview({ rule, globalSettings }) {
     if (connectorStyle === "custom" && globalSettings?.custom_connector_svg) {
       const mtCustom = connectorAlignment === "icon" ? iconPx / 2 - connectorSize / 2 : 0;
       return (
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", flex: `0 1 ${connectorSize}px`, minWidth: 0, color: connectorColor, marginTop: mtCustom }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", flex: `0 1 ${connectorSize}px`, minWidth: 0, color: connectorColor, marginTop: mtCustom, marginLeft: marginLeft }}>
           <span
             style={{ width: connectorSize, height: connectorSize, maxWidth: "100%", maxHeight: "100%", display: "block" }}
             dangerouslySetInnerHTML={{ __html: globalSettings.custom_connector_svg }}
@@ -359,7 +359,7 @@ export function ETATimelinePreview({ rule, globalSettings }) {
     }
     // Default: double-chevron
     return (
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", flex: `0 1 ${connectorSize + 4}px`, minWidth: 0, color: connectorColor, marginTop: mtBigArrow }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", flex: `0 1 ${connectorSize + 4}px`, minWidth: 0, color: connectorColor, marginTop: mtBigArrow, marginLeft: marginLeft }}>
         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" style={{ width: connectorSize, height: connectorSize, maxWidth: "100%", maxHeight: "100%" }}>
           <path strokeLinecap="round" strokeLinejoin="round" d="m5.25 4.5 7.5 7.5-7.5 7.5m6-15 7.5 7.5-7.5 7.5" />
         </svg>
@@ -395,7 +395,7 @@ export function ETATimelinePreview({ rule, globalSettings }) {
     return "solid";
   };
 
-  const Stage = ({ label, date, icon, extraMarginRight = 0 }) => {
+  const Stage = ({ label, date, icon, extraMarginRight = 0, marginLeft = 0 }) => {
     const iconName = getStageIconName(icon);
     const iconStyle = getStageIconStyle(icon);
 
@@ -424,7 +424,7 @@ export function ETATimelinePreview({ rule, globalSettings }) {
     }
 
     return (
-      <div style={{ flex: 1, minWidth: 0, marginRight: extraMarginRight, display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center" }}>
+      <div style={{ flex: 1, minWidth: 0, marginLeft: marginLeft, marginRight: extraMarginRight, display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center" }}>
         <div style={{ width: iconPx, height: iconPx, marginBottom: gapIconLabel, color: iconColor }}>
           {isCustomIcon ? (
             customIconContent
@@ -441,7 +441,7 @@ export function ETATimelinePreview({ rule, globalSettings }) {
   };
 
   // Horizontal gap between stages (from global settings, max 20)
-  const horizontalGap = Math.min(globalSettings?.eta_horizontal_gap ?? 12, 20);
+  const horizontalGap = globalSettings?.eta_horizontal_gap ?? 12;
   const paddingHorizontal = globalSettings?.eta_padding_horizontal ?? 8;
   const paddingVertical = globalSettings?.eta_padding_vertical ?? 8;
 
@@ -459,7 +459,7 @@ export function ETATimelinePreview({ rule, globalSettings }) {
           display: "flex",
           alignItems: connectorAlignment === "icon" ? "flex-start" : "center",
           justifySelf: "start",
-          gap: horizontalGap,
+          
           maxWidth: "100%",
           minWidth: 0,
           padding: `${paddingVertical}px ${paddingHorizontal}px`,
@@ -471,13 +471,14 @@ export function ETATimelinePreview({ rule, globalSettings }) {
         }}
       >
         <Stage label={rule.settings?.eta_label_order || "Ordered"} date={formatDate(today)} icon="order" />
-        <Connector />
-        <Stage label={rule.settings?.eta_label_shipping || "Shipped"} date={formatDate(shippingDate)} icon="shipping" />
-        <Connector />
+        <Connector marginLeft={horizontalGap} />
+        <Stage label={rule.settings?.eta_label_shipping || "Shipped"} date={formatDate(shippingDate)} icon="shipping" marginLeft={horizontalGap} />
+        <Connector marginLeft={horizontalGap} />
         <Stage
           label={rule.settings?.eta_label_delivery || "Delivered"}
           date={deliveryDateStr}
           icon="delivery"
+          marginLeft={horizontalGap}
           extraMarginRight={minDays !== maxDays && deliveryMinDate.getMonth() !== deliveryMaxDate.getMonth() ? 8 : 0}
         />
       </div>
