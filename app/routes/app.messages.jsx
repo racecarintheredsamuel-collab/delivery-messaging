@@ -5857,160 +5857,6 @@ export default function Index() {
                   {/* Collapsible content */}
                   {!collapsedPanels.shipping_prices && (
                   <div style={{ padding: 16, display: "flex", flexDirection: "column", gap: 16 }}>
-                    {/* Styling */}
-                    <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                      <s-text variant="headingSm">Styling</s-text>
-                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-                        <label>
-                          <s-text size="small">Divider</s-text>
-                          <select
-                            value={rule.settings?.shipping_prices_divider || "|"}
-                            onChange={(e) => {
-                              const next = [...rules];
-                              next[safeSelectedIndex] = { ...rule, settings: { ...rule.settings, shipping_prices_divider: e.target.value } };
-                              setRules(next);
-                            }}
-                            style={{ width: "100%" }}
-                          >
-                            <option value="|">Pipe |</option>
-                            <option value="•">Bullet •</option>
-                            <option value="/">Slash /</option>
-                            <option value="—">Dash —</option>
-                            <option value=" ">None (space)</option>
-                          </select>
-                        </label>
-                        <label>
-                          <s-text size="small">Alignment</s-text>
-                          <select
-                            value={rule.settings?.shipping_prices_alignment || "center"}
-                            onChange={(e) => {
-                              const next = [...rules];
-                              next[safeSelectedIndex] = { ...rule, settings: { ...rule.settings, shipping_prices_alignment: e.target.value } };
-                              setRules(next);
-                            }}
-                            style={{ width: "100%" }}
-                          >
-                            <option value="left">Left</option>
-                            <option value="center">Center</option>
-                            <option value="right">Right</option>
-                          </select>
-                        </label>
-                      </div>
-                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-                        <label>
-                          <s-text size="small">Background Color</s-text>
-                          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                            <input
-                              type="color"
-                              value={rule.settings?.shipping_prices_bg_color || "#ffffff"}
-                              onChange={(e) => {
-                                const next = [...rules];
-                                next[safeSelectedIndex] = { ...rule, settings: { ...rule.settings, shipping_prices_bg_color: e.target.value } };
-                                setRules(next);
-                              }}
-                              style={{ width: 32, height: 32, padding: 0, border: "1px solid #ccc", borderRadius: 4 }}
-                            />
-                            <input
-                              type="text"
-                              value={rule.settings?.shipping_prices_bg_color || ""}
-                              placeholder="transparent"
-                              onChange={(e) => {
-                                const next = [...rules];
-                                next[safeSelectedIndex] = { ...rule, settings: { ...rule.settings, shipping_prices_bg_color: e.target.value } };
-                                setRules(next);
-                              }}
-                              style={{ flex: 1 }}
-                            />
-                          </div>
-                        </label>
-                        <label>
-                          <s-text size="small">Text Color</s-text>
-                          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                            <input
-                              type="color"
-                              value={rule.settings?.shipping_prices_text_color || "#374151"}
-                              onChange={(e) => {
-                                const next = [...rules];
-                                next[safeSelectedIndex] = { ...rule, settings: { ...rule.settings, shipping_prices_text_color: e.target.value } };
-                                setRules(next);
-                              }}
-                              style={{ width: 32, height: 32, padding: 0, border: "1px solid #ccc", borderRadius: 4 }}
-                            />
-                            <input
-                              type="text"
-                              value={rule.settings?.shipping_prices_text_color || "#374151"}
-                              onChange={(e) => {
-                                const next = [...rules];
-                                next[safeSelectedIndex] = { ...rule, settings: { ...rule.settings, shipping_prices_text_color: e.target.value } };
-                                setRules(next);
-                              }}
-                              style={{ flex: 1 }}
-                            />
-                          </div>
-                        </label>
-                      </div>
-                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
-                        <label>
-                          <s-text size="small">Border Width</s-text>
-                          <input
-                            type="number"
-                            min="0"
-                            max="10"
-                            value={rule.settings?.shipping_prices_border_width ?? 0}
-                            onChange={(e) => {
-                              const next = [...rules];
-                              next[safeSelectedIndex] = { ...rule, settings: { ...rule.settings, shipping_prices_border_width: parseInt(e.target.value) || 0 } };
-                              setRules(next);
-                            }}
-                            style={{ width: "100%" }}
-                          />
-                        </label>
-                        <label>
-                          <s-text size="small">Border Radius</s-text>
-                          <input
-                            type="number"
-                            min="0"
-                            max="50"
-                            value={rule.settings?.shipping_prices_border_radius ?? 8}
-                            onChange={(e) => {
-                              const next = [...rules];
-                              next[safeSelectedIndex] = { ...rule, settings: { ...rule.settings, shipping_prices_border_radius: parseInt(e.target.value) || 0 } };
-                              setRules(next);
-                            }}
-                            style={{ width: "100%" }}
-                          />
-                        </label>
-                        <label>
-                          <s-text size="small">Border Color</s-text>
-                          <input
-                            type="color"
-                            value={rule.settings?.shipping_prices_border_color || "#e5e7eb"}
-                            onChange={(e) => {
-                              const next = [...rules];
-                              next[safeSelectedIndex] = { ...rule, settings: { ...rule.settings, shipping_prices_border_color: e.target.value } };
-                              setRules(next);
-                            }}
-                            style={{ width: "100%", height: 32, padding: 0, border: "1px solid #ccc", borderRadius: 4 }}
-                          />
-                        </label>
-                      </div>
-                      <label>
-                        <s-text size="small">Icon Size (px)</s-text>
-                        <input
-                          type="number"
-                          min="12"
-                          max="32"
-                          value={rule.settings?.shipping_prices_icon_size ?? 16}
-                          onChange={(e) => {
-                            const next = [...rules];
-                            next[safeSelectedIndex] = { ...rule, settings: { ...rule.settings, shipping_prices_icon_size: parseInt(e.target.value) || 16 } };
-                            setRules(next);
-                          }}
-                          style={{ width: "100px" }}
-                        />
-                      </label>
-                    </div>
-
                     {/* Option 1: Standard */}
                     <div style={{ display: "flex", flexDirection: "column", gap: 8, padding: 12, border: "1px solid var(--p-color-border, #e5e7eb)", borderRadius: 8 }}>
                       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
@@ -6292,6 +6138,147 @@ export default function Index() {
                           </select>
                         </label>
                       </div>
+                    </div>
+
+                    {/* Styling */}
+                    <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                      <s-text variant="headingSm">Styling</s-text>
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                        <label>
+                          <s-text size="small">Divider</s-text>
+                          <select
+                            value={rule.settings?.shipping_prices_divider || "|"}
+                            onChange={(e) => {
+                              const next = [...rules];
+                              next[safeSelectedIndex] = { ...rule, settings: { ...rule.settings, shipping_prices_divider: e.target.value } };
+                              setRules(next);
+                            }}
+                            style={{ width: "100%" }}
+                          >
+                            <option value="|">Pipe |</option>
+                            <option value="•">Bullet •</option>
+                            <option value="/">Slash /</option>
+                            <option value="—">Dash —</option>
+                            <option value=" ">None (space)</option>
+                          </select>
+                        </label>
+                        <label>
+                          <s-text size="small">Alignment</s-text>
+                          <select
+                            value={rule.settings?.shipping_prices_alignment || "center"}
+                            onChange={(e) => {
+                              const next = [...rules];
+                              next[safeSelectedIndex] = { ...rule, settings: { ...rule.settings, shipping_prices_alignment: e.target.value } };
+                              setRules(next);
+                            }}
+                            style={{ width: "100%" }}
+                          >
+                            <option value="left">Left</option>
+                            <option value="center">Center</option>
+                            <option value="right">Right</option>
+                          </select>
+                        </label>
+                      </div>
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                        <div>
+                          <s-text size="small">Background Color</s-text>
+                          <s-color-field
+                            label=""
+                            value={rule.settings?.shipping_prices_bg_color || ""}
+                            onInput={(e) => {
+                              const next = [...rules];
+                              next[safeSelectedIndex] = { ...rule, settings: { ...rule.settings, shipping_prices_bg_color: e.detail?.value ?? e.target?.value ?? "" } };
+                              setRules(next);
+                            }}
+                            onChange={(e) => {
+                              const next = [...rules];
+                              next[safeSelectedIndex] = { ...rule, settings: { ...rule.settings, shipping_prices_bg_color: e.detail?.value ?? e.target?.value ?? "" } };
+                              setRules(next);
+                            }}
+                          />
+                        </div>
+                        <div>
+                          <s-text size="small">Text Color</s-text>
+                          <s-color-field
+                            label=""
+                            value={rule.settings?.shipping_prices_text_color || "#374151"}
+                            onInput={(e) => {
+                              const next = [...rules];
+                              next[safeSelectedIndex] = { ...rule, settings: { ...rule.settings, shipping_prices_text_color: e.detail?.value ?? e.target?.value ?? "#374151" } };
+                              setRules(next);
+                            }}
+                            onChange={(e) => {
+                              const next = [...rules];
+                              next[safeSelectedIndex] = { ...rule, settings: { ...rule.settings, shipping_prices_text_color: e.detail?.value ?? e.target?.value ?? "#374151" } };
+                              setRules(next);
+                            }}
+                          />
+                        </div>
+                      </div>
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
+                        <label>
+                          <s-text size="small">Border Width</s-text>
+                          <input
+                            type="number"
+                            min="0"
+                            max="10"
+                            value={rule.settings?.shipping_prices_border_width ?? 0}
+                            onChange={(e) => {
+                              const next = [...rules];
+                              next[safeSelectedIndex] = { ...rule, settings: { ...rule.settings, shipping_prices_border_width: parseInt(e.target.value) || 0 } };
+                              setRules(next);
+                            }}
+                            style={{ width: "100%" }}
+                          />
+                        </label>
+                        <label>
+                          <s-text size="small">Border Radius</s-text>
+                          <input
+                            type="number"
+                            min="0"
+                            max="50"
+                            value={rule.settings?.shipping_prices_border_radius ?? 8}
+                            onChange={(e) => {
+                              const next = [...rules];
+                              next[safeSelectedIndex] = { ...rule, settings: { ...rule.settings, shipping_prices_border_radius: parseInt(e.target.value) || 0 } };
+                              setRules(next);
+                            }}
+                            style={{ width: "100%" }}
+                          />
+                        </label>
+                        <div>
+                          <s-text size="small">Border Color</s-text>
+                          <s-color-field
+                            label=""
+                            value={rule.settings?.shipping_prices_border_color || "#e5e7eb"}
+                            onInput={(e) => {
+                              const next = [...rules];
+                              next[safeSelectedIndex] = { ...rule, settings: { ...rule.settings, shipping_prices_border_color: e.detail?.value ?? e.target?.value ?? "#e5e7eb" } };
+                              setRules(next);
+                            }}
+                            onChange={(e) => {
+                              const next = [...rules];
+                              next[safeSelectedIndex] = { ...rule, settings: { ...rule.settings, shipping_prices_border_color: e.detail?.value ?? e.target?.value ?? "#e5e7eb" } };
+                              setRules(next);
+                            }}
+                          />
+                        </div>
+                      </div>
+                      <label>
+                        <s-text size="small">Icon Size (px)</s-text>
+                        <input
+                          type="number"
+                          min="12"
+                          max="32"
+                          value={rule.settings?.shipping_prices_icon_size ?? 16}
+                          onChange={(e) => {
+                            const next = [...rules];
+                            next[safeSelectedIndex] = { ...rule, settings: { ...rule.settings, shipping_prices_icon_size: parseInt(e.target.value) || 16 } };
+                            setRules(next);
+                          }}
+                          style={{ width: "100px" }}
+                        />
+                      </label>
                     </div>
                   </div>
                   )}
