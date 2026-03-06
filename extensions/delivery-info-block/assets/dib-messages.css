@@ -207,3 +207,16 @@
 .dib-special-delivery-block .dib-container.is-ready {
   opacity: 1 !important;
 }
+
+/* ===========================================
+   Shipping Prices Block
+   =========================================== */
+
+.dib-shipping-prices-block .dib-shipping-prices {
+  opacity: 0;
+  transition: opacity 400ms ease-in;
+}
+
+.dib-shipping-prices-block .dib-shipping-prices.is-ready {
+  opacity: 1 !important;
+}
