@@ -2511,10 +2511,10 @@ export default function Index() {
                       <s-text size="small">Gap: between stages</s-text>
                       <input
                         type="number"
-                        min="0"
+                        min="-20"
                         max="20"
                         value={globalSettings?.eta_horizontal_gap ?? 12}
-                        onChange={(e) => setGlobalSettings({ ...globalSettings, eta_horizontal_gap: safeParseNumber(e.target.value, 12, 0, 20) })}
+                        onChange={(e) => setGlobalSettings({ ...globalSettings, eta_horizontal_gap: safeParseNumber(e.target.value, 12, -20, 20) })}
                         style={{ width: "100%" }}
                       />
                     </div>
