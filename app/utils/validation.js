@@ -151,16 +151,7 @@ export const settingsSchema = z.object({
   // Custom connector SVG for ETA Timeline
   custom_connector_svg: z.string().optional(),
   // Free Delivery Threshold
-  fd_enabled: z.boolean().optional(),
   fd_threshold: z.number().min(0).optional(),
-  fd_message_progress: z.string().optional(),
-  fd_message_unlocked: z.string().optional(),
-  fd_message_empty: z.string().optional(),
-  fd_show_progress_bar: z.boolean().optional(),
-  fd_progress_bar_color: z.string().optional(),
-  fd_progress_bar_bg: z.string().optional(),
-  fd_bar_text_color: z.string().optional(),
-  fd_message_excluded: z.string().optional(),
   fd_show_announcement_bar: z.boolean().optional(),
   fd_announcement_progress_message: z.string().optional(),
   fd_announcement_unlocked_message: z.string().optional(),
