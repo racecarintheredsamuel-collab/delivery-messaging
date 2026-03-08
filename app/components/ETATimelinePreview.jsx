@@ -53,12 +53,20 @@ export function ETATimelinePreview({ rule, globalSettings }) {
   const minDays = rule.settings?.eta_delivery_days_min ?? 3;
   const maxDays = rule.settings?.eta_delivery_days_max ?? 5;
 
-  // ETA timeline always uses its own border settings
-  // Border shows when thickness > 0
-  const borderWidth = rule.settings?.eta_border_width ?? 0;
-  const borderColor = rule.settings?.eta_border_color || "#e5e7eb";
-  const borderRadius = rule.settings?.eta_border_radius ?? 8;
-  const backgroundColor = rule.settings?.eta_background_color || "";
+  // Border styling: use custom if flag set, else global
+  const useCustomBorder = rule.settings?.eta_use_custom_border;
+  const borderWidth = useCustomBorder
+    ? (rule.settings?.eta_border_width ?? 0)
+    : (globalSettings?.global_border_thickness ?? 0);
+  const borderColor = useCustomBorder
+    ? (rule.settings?.eta_border_color || "#e5e7eb")
+    : (globalSettings?.global_border_color || "#e5e7eb");
+  const borderRadius = useCustomBorder
+    ? (rule.settings?.eta_border_radius ?? 8)
+    : (globalSettings?.global_border_radius ?? 8);
+  const backgroundColor = useCustomBorder
+    ? (rule.settings?.eta_background_color || "")
+    : (globalSettings?.global_background_color || "");
 
   // Vertical spacing between elements (from global settings)
   const gapIconLabel = globalSettings?.eta_gap_icon_label ?? 2;

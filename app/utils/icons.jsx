@@ -105,12 +105,9 @@ export function getIconSvg(name, style = "solid") {
     }
     return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" style="display: block;"><path d="m15.37 3.44l3.212 5.562h3.423v2h-1.167l-.757 9.083a1 1 0 0 1-.996.917H4.925a1 1 0 0 1-.997-.917l-.757-9.083H2.005v-2h3.422L8.639 3.44l1.732 1l-2.634 4.562h8.535L13.639 4.44zm-2.365 9.562h-2v4h2zm-4 0h-2v4h2zm8 0h-2v4h2z"/></svg>`;
   }
-  // Truck v2 (Material Symbols)
+  // Truck v2 (Mage Icons)
   if (name === "truck-v2") {
-    if (isOutline) {
-      return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" style="display: block;"><path d="M7.5 19q-1.038 0-1.77-.73T5 16.5H2.77l.218-1h2.268q.271-.667.875-1.084Q6.735 14 7.5 14t1.37.416q.603.417.874 1.084h4.618L16.558 6H5.608l.023-.098q.073-.392.38-.647T6.735 5h11.073l-.81 3.5h2.079l2.712 3.616l-.866 4.384h-1.154q0 1.039-.73 1.77t-1.77.73t-1.769-.73t-.73-1.77H10q0 1.039-.73 1.77T7.5 19m8.387-5.75h4.651l.177-.89l-2.138-2.86h-1.818zm.428-6.248L16.559 6l-2.197 9.5l.243-1.002l.792-3.496zM1.674 12.998l.25-1h4.48l-.25 1zm2-3.496l.25-1h5.48l-.25 1zM7.5 18q.617 0 1.059-.441Q9 17.117 9 16.5t-.441-1.059T7.5 15t-1.059.441Q6 15.883 6 16.5t.441 1.059Q6.883 18 7.5 18m9.77 0q.617 0 1.058-.441q.441-.442.441-1.059t-.441-1.059T17.269 15t-1.058.441q-.442.442-.442 1.059t.441 1.059q.442.441 1.06.441"/></svg>`;
-    }
-    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" style="display: block;"><path d="m1.673 12.998l.25-1h4.48l-.25 1zM7.5 19q-1.038 0-1.77-.73T5 16.5H2.77l.5-2.002h4.059l.861-3.496h2.139l1-4H5.327l.304-1.1q.092-.393.39-.647Q6.316 5 6.734 5h11.073l-.81 3.5h2.079l2.712 3.616l-.866 4.384h-1.154q0 1.039-.73 1.77t-1.77.73t-1.769-.73t-.73-1.77H10q0 1.039-.73 1.77T7.5 19M3.673 9.502l.25-1h5.48l-.25 1zM7.5 18q.617 0 1.059-.441Q9 17.117 9 16.5t-.441-1.059T7.5 15t-1.059.441Q6 15.883 6 16.5t.441 1.059Q6.883 18 7.5 18m9.77 0q.617 0 1.058-.441q.441-.442.441-1.059t-.441-1.059T17.269 15t-1.058.441q-.442.442-.442 1.059t.441 1.059q.442.441 1.06.441m-1.384-4.75h4.653l.176-.89l-2.138-2.86h-1.818z"/></svg>`;
+    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" style="display: block;"><path d="m22.031 10.875l-2.136-3.543a1.76 1.76 0 0 0-1.497-.846h-1.677v-.249a2.73 2.73 0 0 0-.804-1.935a2.75 2.75 0 0 0-1.94-.802H3.994a2.73 2.73 0 0 0-2.541 1.687a2.7 2.7 0 0 0-.204 1.05v8.958a1.74 1.74 0 0 0 1.507 1.722q-.007.135 0 .269a3.15 3.15 0 0 0 .948 2.279A3.24 3.24 0 0 0 6 20.46a3.28 3.28 0 0 0 2.285-.956a3.26 3.26 0 0 0 .96-2.279a2 2 0 0 0 0-.248h5.509a2 2 0 0 0 0 .248a3.15 3.15 0 0 0 .948 2.28A3.24 3.24 0 0 0 18 20.5a3.28 3.28 0 0 0 2.285-.956a3.26 3.26 0 0 0 .959-2.279a2 2 0 0 0 0-.249H22a.76.76 0 0 0 .749-.746v-2.876c0-.89-.25-1.762-.719-2.519m-14.293 6.31a1.7 1.7 0 0 1-.519 1.225a1.79 1.79 0 0 1-2.466 0a1.73 1.73 0 0 1-.508-1.234a1.6 1.6 0 0 1 .14-.687c.132-.313.359-.577.648-.757a1.74 1.74 0 0 1 .998-.288c.338 0 .668.1.948.288c.287.183.513.446.65.757c.098.215.15.45.149.687zm3.244-4.976h-4.99a1 1 0 0 1-.999-.995a.994.994 0 0 1 .998-.996h4.991a1 1 0 0 1 .998.996a.994.994 0 0 1-.998.995m0-3.424h-4.99a1 1 0 0 1-.999-.995a.994.994 0 0 1 .998-.995h4.991a1 1 0 0 1 .998.995a.994.994 0 0 1-.998.995m8.734 8.4a1.7 1.7 0 0 1-.52 1.225a1.79 1.79 0 0 1-2.465 0a1.73 1.73 0 0 1-.509-1.234a1.64 1.64 0 0 1 .33-1.006c.246-.327.599-.56.998-.657h.25a.3.3 0 0 1 .139 0h.2c.303.035.592.148.838.329c.247.181.44.425.559.707c.099.215.15.45.15.686z"/><path d="M17.96 15.434a.3.3 0 0 0-.14 0z"/></svg>`;
   }
   // Clipboard v2 (Solar)
   if (name === "clipboard-v2") {
@@ -130,6 +127,19 @@ export function getIconSvg(name, style = "solid") {
   // Connector: Arrow with dot (line with circle at end)
   if (name === "connector-arrow-dot") {
     return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" fill="currentColor" style="display: block;"><path d="M780-380q-31 0-56-17t-36-43H80v-80h608q11-26 36-43t56-17q42 0 71 29t29 71q0 42-29 71t-71 29Z"/></svg>`;
+  }
+  // Utility icons for announcement bar
+  if (name === "phone") {
+    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" style="display: block;"><path d="M19.95 21q-3.125 0-6.175-1.362t-5.55-3.863t-3.862-5.55T3 4.05q0-.45.3-.75t.75-.3H8.1q.35 0 .625.238t.325.562l.65 3.5q.05.4-.025.675T9.4 8.45L6.975 10.9q.5.925 1.187 1.787t1.513 1.663q.775.775 1.625 1.438T13.1 17l2.35-2.35q.225-.225.588-.337t.712-.063l3.45.7q.35.1.575.363T21 15.9v4.05q0 .45-.3.75t-.75.3"/></svg>`;
+  }
+  if (name === "envelope") {
+    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" style="display: block;"><path d="M4 20q-.825 0-1.412-.587T2 18V6q0-.825.588-1.412T4 4h16q.825 0 1.413.588T22 6v12q0 .825-.587 1.413T20 20zm8-7l8-5V6l-8 5l-8-5v2z"/></svg>`;
+  }
+  if (name === "package-box") {
+    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" style="display: block;"><path d="M5 21q-.825 0-1.412-.587T3 19V6.5q0-.375.125-.675t.325-.575l1.4-1.7q.2-.275.5-.413T6 3h12q.35 0 .65.137t.5.413l1.4 1.7q.2.275.325.575T21 6.5V19q0 .825-.587 1.413T19 21zm.4-15h13.2l-.85-1H6.25zm6.6 7l4-4l-1.4-1.4l-1.6 1.6V6h-2v3.2L9.4 7.6L8 9z"/></svg>`;
+  }
+  if (name === "chat") {
+    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" style="display: block;"><path d="M6 14h8v-2H6zm0-3h12V9H6zm0-3h12V6H6zM2 22V4q0-.825.588-1.412T4 2h16q.825 0 1.413.588T22 4v12q0 .825-.587 1.413T20 18H6z"/></svg>`;
   }
   return null;
 }
@@ -321,15 +331,13 @@ export function getEtaIconPaths(name, style = "solid") {
       </>
     );
   }
-  // Truck v2
+  // Truck v2 (Mage Icons)
   if (name === "truck-v2") {
-    if (isOutline) {
-      return (
-        <path d="M7.5 19q-1.038 0-1.77-.73T5 16.5H2.77l.218-1h2.268q.271-.667.875-1.084Q6.735 14 7.5 14t1.37.416q.603.417.874 1.084h4.618L16.558 6H5.608l.023-.098q.073-.392.38-.647T6.735 5h11.073l-.81 3.5h2.079l2.712 3.616l-.866 4.384h-1.154q0 1.039-.73 1.77t-1.77.73t-1.769-.73t-.73-1.77H10q0 1.039-.73 1.77T7.5 19m8.387-5.75h4.651l.177-.89l-2.138-2.86h-1.818zm.428-6.248L16.559 6l-2.197 9.5l.243-1.002l.792-3.496zM1.674 12.998l.25-1h4.48l-.25 1zm2-3.496l.25-1h5.48l-.25 1zM7.5 18q.617 0 1.059-.441Q9 17.117 9 16.5t-.441-1.059T7.5 15t-1.059.441Q6 15.883 6 16.5t.441 1.059Q6.883 18 7.5 18m9.77 0q.617 0 1.058-.441q.441-.442.441-1.059t-.441-1.059T17.269 15t-1.058.441q-.442.442-.442 1.059t.441 1.059q.442.441 1.06.441" />
-      );
-    }
     return (
-      <path d="m1.673 12.998l.25-1h4.48l-.25 1zM7.5 19q-1.038 0-1.77-.73T5 16.5H2.77l.5-2.002h4.059l.861-3.496h2.139l1-4H5.327l.304-1.1q.092-.393.39-.647Q6.316 5 6.734 5h11.073l-.81 3.5h2.079l2.712 3.616l-.866 4.384h-1.154q0 1.039-.73 1.77t-1.77.73t-1.769-.73t-.73-1.77H10q0 1.039-.73 1.77T7.5 19M3.673 9.502l.25-1h5.48l-.25 1zM7.5 18q.617 0 1.059-.441Q9 17.117 9 16.5t-.441-1.059T7.5 15t-1.059.441Q6 15.883 6 16.5t.441 1.059Q6.883 18 7.5 18m9.77 0q.617 0 1.058-.441q.441-.442.441-1.059t-.441-1.059T17.269 15t-1.058.441q-.442.442-.442 1.059t.441 1.059q.442.441 1.06.441m-1.384-4.75h4.653l.176-.89l-2.138-2.86h-1.818z" />
+      <>
+        <path d="m22.031 10.875l-2.136-3.543a1.76 1.76 0 0 0-1.497-.846h-1.677v-.249a2.73 2.73 0 0 0-.804-1.935a2.75 2.75 0 0 0-1.94-.802H3.994a2.73 2.73 0 0 0-2.541 1.687a2.7 2.7 0 0 0-.204 1.05v8.958a1.74 1.74 0 0 0 1.507 1.722q-.007.135 0 .269a3.15 3.15 0 0 0 .948 2.279A3.24 3.24 0 0 0 6 20.46a3.28 3.28 0 0 0 2.285-.956a3.26 3.26 0 0 0 .96-2.279a2 2 0 0 0 0-.248h5.509a2 2 0 0 0 0 .248a3.15 3.15 0 0 0 .948 2.28A3.24 3.24 0 0 0 18 20.5a3.28 3.28 0 0 0 2.285-.956a3.26 3.26 0 0 0 .959-2.279a2 2 0 0 0 0-.249H22a.76.76 0 0 0 .749-.746v-2.876c0-.89-.25-1.762-.719-2.519m-14.293 6.31a1.7 1.7 0 0 1-.519 1.225a1.79 1.79 0 0 1-2.466 0a1.73 1.73 0 0 1-.508-1.234a1.6 1.6 0 0 1 .14-.687c.132-.313.359-.577.648-.757a1.74 1.74 0 0 1 .998-.288c.338 0 .668.1.948.288c.287.183.513.446.65.757c.098.215.15.45.149.687zm3.244-4.976h-4.99a1 1 0 0 1-.999-.995a.994.994 0 0 1 .998-.996h4.991a1 1 0 0 1 .998.996a.994.994 0 0 1-.998.995m0-3.424h-4.99a1 1 0 0 1-.999-.995a.994.994 0 0 1 .998-.995h4.991a1 1 0 0 1 .998.995a.994.994 0 0 1-.998.995m8.734 8.4a1.7 1.7 0 0 1-.52 1.225a1.79 1.79 0 0 1-2.465 0a1.73 1.73 0 0 1-.509-1.234a1.64 1.64 0 0 1 .33-1.006c.246-.327.599-.56.998-.657h.25a.3.3 0 0 1 .139 0h.2c.303.035.592.148.838.329c.247.181.44.425.559.707c.099.215.15.45.15.686z" />
+        <path d="M17.96 15.434a.3.3 0 0 0-.14 0z" />
+      </>
     );
   }
   // Clipboard v2 (Solar)
@@ -381,6 +389,16 @@ export const CONNECTOR_ICONS = [
 ];
 
 /**
+ * Utility icons for announcement bar links (not user-selectable in icon picker)
+ */
+export const UTILITY_ICONS = [
+  { value: "phone" },
+  { value: "envelope" },
+  { value: "package-box" },
+  { value: "chat" },
+];
+
+/**
  * Get list of configured custom icons for dropdown options
  * Only returns icons that have either SVG or URL content
  * @param {Object} globalSettings - Global settings containing custom_icons array
@@ -399,6 +417,36 @@ export function getConfiguredCustomIcons(globalSettings) {
 }
 
 /**
+ * Get list of configured utility icons for dropdown options
+ * Only returns icons that have SVG content
+ * @param {Object} globalSettings - Global settings containing utility_icons array
+ * @returns {Array<{value: string, label: string, svg: string}>}
+ */
+export function getConfiguredUtilityIcons(globalSettings) {
+  const utilityIcons = globalSettings?.utility_icons || [];
+  return utilityIcons
+    .map((icon, index) => ({
+      value: `utility-${index + 1}`,
+      label: icon?.name || `Utility ${index + 1}`,
+      svg: icon?.svg || "",
+    }))
+    .filter(icon => icon.svg); // Only return configured icons
+}
+
+/**
+ * Get utility icon SVG by value (e.g., "utility-1")
+ * @param {string} value - Icon value like "utility-1" or "utility-2"
+ * @param {Object} globalSettings - Global settings containing utility_icons array
+ * @returns {string|null} - SVG code or null if not found
+ */
+export function getUtilityIconSvg(value, globalSettings) {
+  if (!value || !value.startsWith('utility-')) return null;
+  const index = parseInt(value.replace('utility-', ''), 10) - 1;
+  const utilityIcons = globalSettings?.utility_icons || [];
+  return utilityIcons[index]?.svg || null;
+}
+
+/**
  * Generate icons object for metafield storage
  * Creates a flat object with all preset icons in both solid and outline styles
  * @returns {Object} - Object with keys like "truck-solid", "truck-outline" and SVG values
@@ -414,6 +462,11 @@ export function generateIconsMetafield() {
   }
   // Add connector icons (solid only)
   for (const { value } of CONNECTOR_ICONS) {
+    const solidSvg = getIconSvg(value, "solid");
+    if (solidSvg) icons[`${value}-solid`] = solidSvg;
+  }
+  // Add utility icons (solid only)
+  for (const { value } of UTILITY_ICONS) {
     const solidSvg = getIconSvg(value, "solid");
     if (solidSvg) icons[`${value}-solid`] = solidSvg;
   }

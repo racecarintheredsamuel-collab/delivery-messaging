@@ -10,9 +10,10 @@ import { getIconSvg } from "../utils/icons";
  * @param {Object} props
  * @param {Object} props.rule - The rule object containing settings
  * @param {Object} props.globalSettings - Global settings containing custom_icons
+ * @param {number} props.lineNumber - The line number (1-4) for per-line icon support
  * @param {React.ReactNode} props.children - The message content to display
  */
-export function PreviewLine({ rule, globalSettings, children }) {
+export function PreviewLine({ rule, globalSettings, lineNumber, children }) {
   const isSingleLayout = rule.settings?.icon_layout === "single";
   const showIcon = rule.settings?.show_icon !== false;
 
@@ -28,7 +29,23 @@ export function PreviewLine({ rule, globalSettings, children }) {
     return iconValue;
   };
 
-  const effectiveIcon = getEffectiveIcon(rule.settings?.icon);
+  // Check for per-line icon override, fall back to main icon
+  const perLineIconKey = `icon_line_${lineNumber}`;
+  const perLineIcon = rule.settings?.[perLineIconKey];
+  const mainIcon = rule.settings?.icon;
+  const effectiveIcon = getEffectiveIcon(perLineIcon || mainIcon);
+
+  // Check for per-line style override, fall back to main style
+  const perLineStyleKey = `icon_line_${lineNumber}_style`;
+  const perLineStyle = rule.settings?.[perLineStyleKey];
+  const mainStyle = rule.settings?.icon_style || "solid";
+  const effectiveStyle = perLineStyle || mainStyle;
+
+  // Check for per-line color override, fall back to main color
+  const perLineColorKey = `icon_line_${lineNumber}_color`;
+  const perLineColor = rule.settings?.[perLineColorKey];
+  const mainColor = rule.settings?.icon_color ?? "#111827";
+  const effectiveColor = perLineColor || mainColor;
 
   // Helper to render custom icon from global settings
   const renderCustomIcon = () => {
@@ -78,7 +95,7 @@ export function PreviewLine({ rule, globalSettings, children }) {
             display: "inline-flex",
             alignItems: "center",
             justifyContent: "center",
-            color: rule.settings?.icon_color ?? "#111827",
+            color: effectiveColor,
             flex: "0 0 auto",
             lineHeight: 1,
             overflow: "hidden",
@@ -89,9 +106,9 @@ export function PreviewLine({ rule, globalSettings, children }) {
           {effectiveIcon.startsWith("custom-") ? (
             renderCustomIcon()
           ) : (
-            getIconSvg(effectiveIcon, rule.settings?.icon_style || "solid") ? (
+            getIconSvg(effectiveIcon, effectiveStyle) ? (
               <span
-                dangerouslySetInnerHTML={{ __html: getIconSvg(effectiveIcon, rule.settings?.icon_style || "solid") }}
+                dangerouslySetInnerHTML={{ __html: getIconSvg(effectiveIcon, effectiveStyle) }}
                 style={{
                   width: "1.3em",
                   height: "1.3em",

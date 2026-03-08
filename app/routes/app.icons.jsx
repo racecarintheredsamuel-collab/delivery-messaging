@@ -35,6 +35,13 @@ function defaultCustomIcons() {
   ];
 }
 
+function defaultUtilityIcons() {
+  return [
+    { name: "Utility 1", svg: "" },
+    { name: "Utility 2", svg: "" },
+  ];
+}
+
 // ============================================================================
 // LOADER - Fetch settings from Shopify metafields
 // ============================================================================
@@ -145,10 +152,14 @@ export default function IconsPage() {
       if (!parsed.custom_icons || parsed.custom_icons.length < 8) {
         parsed.custom_icons = defaultCustomIcons();
       }
+      // Ensure utility_icons array exists with 2 slots
+      if (!parsed.utility_icons || parsed.utility_icons.length < 2) {
+        parsed.utility_icons = defaultUtilityIcons();
+      }
       return parsed;
     } catch (error) {
       safeLogError("Failed to parse settings", error);
-      return { custom_icons: defaultCustomIcons() };
+      return { custom_icons: defaultCustomIcons(), utility_icons: defaultUtilityIcons() };
     }
   });
 
@@ -255,7 +266,21 @@ export default function IconsPage() {
     setSettings({ ...settings, custom_connector_svg: "" });
   };
 
+  const updateUtilityIcon = (index, field, value) => {
+    const newIcons = [...(settings.utility_icons || defaultUtilityIcons())];
+    const processedValue = field === "svg" ? processSvgCode(value) : value;
+    newIcons[index] = { ...newIcons[index], [field]: processedValue };
+    setSettings({ ...settings, utility_icons: newIcons });
+  };
+
+  const resetUtilityIcon = (index) => {
+    const newIcons = [...(settings.utility_icons || defaultUtilityIcons())];
+    newIcons[index] = { name: `Utility ${index + 1}`, svg: "" };
+    setSettings({ ...settings, utility_icons: newIcons });
+  };
+
   const customIcons = settings.custom_icons || defaultCustomIcons();
+  const utilityIcons = settings.utility_icons || defaultUtilityIcons();
 
   return (
     <s-page heading="Icons">
@@ -447,13 +472,7 @@ export default function IconsPage() {
         </div>
 
         {/* Save Button */}
-        <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
-          <s-button variant="primary" onClick={() => {
-            if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
-            handleSave();
-          }}>
-            Save
-          </s-button>
+        <div style={{ display: "flex", gap: 8, alignItems: "center", justifyContent: "flex-end" }}>
           <svg
             xmlns="http://www.w3.org/2000/svg"
             viewBox="0 0 24 24"
@@ -466,6 +485,12 @@ export default function IconsPage() {
               <path d="M14 17h-4v-2h4z" />
             </g>
           </svg>
+          <s-button variant="primary" onClick={() => {
+            if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
+            handleSave();
+          }}>
+            Save
+          </s-button>
           {fetcher.data?.error && (
             <s-text style={{ color: "var(--p-color-text-critical, #dc2626)" }}>
               {fetcher.data.error}
@@ -805,14 +830,127 @@ export default function IconsPage() {
           </div>
         </div>
 
+        {/* Custom Utility Icons */}
+        <div
+          style={{
+            border: "1px solid var(--p-color-border, #e5e7eb)",
+            borderRadius: "8px",
+            padding: "16px",
+            display: "grid",
+            gap: 16,
+            background: "var(--p-color-bg-surface, #ffffff)",
+          }}
+        >
+          <div>
+            <s-heading>Custom Utility Icons</s-heading>
+            <s-text size="small" style={{ color: "var(--p-color-text-subdued, #6b7280)", marginTop: 4, display: "block" }}>
+              Custom SVG icons for announcement bar utility links. These will appear in the utility icon dropdowns.
+            </s-text>
+          </div>
+
+          {[0, 1].map((index) => (
+            <div
+              key={index}
+              style={{
+                border: "1px solid var(--p-color-border, #e5e7eb)",
+                borderRadius: 6,
+                padding: 12,
+                background: "var(--p-color-bg-surface-secondary, #f9fafb)",
+              }}
+            >
+              <div style={{ display: "grid", gap: 8 }}>
+                <div>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                    <s-text size="small">Name</s-text>
+                    <button
+                      type="button"
+                      onClick={() => resetUtilityIcon(index)}
+                      onMouseEnter={() => setHoverDeleteIdx(`utility-${index}`)}
+                      onMouseLeave={() => setHoverDeleteIdx(null)}
+                      title="Clear this icon"
+                      style={{
+                        background: "none",
+                        border: "none",
+                        padding: 4,
+                        cursor: "pointer",
+                        opacity: 0.6,
+                      }}
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke={hoverDeleteIdx === `utility-${index}` ? "var(--p-color-icon-critical, #dc2626)" : "currentColor"}
+                        strokeWidth="1.75"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        width="16"
+                        height="16"
+                        aria-hidden="true"
+                        style={{ transition: "stroke 120ms ease" }}
+                      >
+                        <path d="M3 6h18" />
+                        <path d="M8 6V4h8v2" />
+                        <path d="M19 6l-1 14H6L5 6" />
+                        <path d="M10 11v6" />
+                        <path d="M14 11v6" />
+                      </svg>
+                    </button>
+                  </div>
+                  <input
+                    type="text"
+                    value={utilityIcons[index]?.name || `Utility ${index + 1}`}
+                    onChange={(e) => updateUtilityIcon(index, "name", e.target.value)}
+                    placeholder={`Utility ${index + 1}`}
+                    style={{ width: "100%" }}
+                  />
+                </div>
+
+                <label>
+                  <s-text size="small">SVG Code</s-text>
+                  <textarea
+                    value={utilityIcons[index]?.svg || ""}
+                    onChange={(e) => updateUtilityIcon(index, "svg", e.target.value)}
+                    placeholder='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">...</svg>'
+                    style={{
+                      width: "100%",
+                      minHeight: 80,
+                      marginTop: 4,
+                      fontFamily: "monospace",
+                      fontSize: 12,
+                    }}
+                  />
+                </label>
+
+                {/* Preview */}
+                {utilityIcons[index]?.svg && (
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <s-text size="small">Preview:</s-text>
+                    <span
+                      style={{
+                        width: 24,
+                        height: 24,
+                        color: "#374151",
+                      }}
+                      dangerouslySetInnerHTML={{ __html: utilityIcons[index].svg }}
+                    />
+                    <span
+                      style={{
+                        width: 32,
+                        height: 32,
+                        color: "#374151",
+                      }}
+                      dangerouslySetInnerHTML={{ __html: utilityIcons[index].svg }}
+                    />
+                  </div>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+
         {/* Save Button (bottom) */}
-        <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
-          <s-button variant="primary" onClick={() => {
-            if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
-            handleSave();
-          }}>
-            Save
-          </s-button>
+        <div style={{ display: "flex", gap: 8, alignItems: "center", justifyContent: "flex-end" }}>
           <svg
             xmlns="http://www.w3.org/2000/svg"
             viewBox="0 0 24 24"
@@ -825,6 +963,12 @@ export default function IconsPage() {
               <path d="M14 17h-4v-2h4z" />
             </g>
           </svg>
+          <s-button variant="primary" onClick={() => {
+            if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
+            handleSave();
+          }}>
+            Save
+          </s-button>
         </div>
 
       </div>

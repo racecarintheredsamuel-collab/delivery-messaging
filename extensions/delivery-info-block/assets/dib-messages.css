@@ -207,3 +207,13 @@
 .dib-special-delivery-block .dib-container.is-ready {
   opacity: 1 !important;
 }
+
+/* Pricing display transition for cart updates */
+.dib-pricing {
+  transition: opacity 150ms ease-out;
+}
+
+/* Hide pricing with threshold message until JS determines correct content */
+.dib-pricing[data-threshold-message] {
+  opacity: 0;
+}

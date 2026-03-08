@@ -33,6 +33,8 @@
     const additional1Duration = parseInt(target.dataset.additional1Duration, 10) || 5;
     const additional2Message = target.dataset.additional2Message || '';
     const additional2Duration = parseInt(target.dataset.additional2Duration, 10) || 5;
+    const additional3Message = target.dataset.additional3Message || '';
+    const additional3Duration = parseInt(target.dataset.additional3Duration, 10) || 5;
 
     // State
     let currentIndex = 0;
@@ -46,14 +48,14 @@
     if (!messageEl) return;
 
     // Get chevrons
-    const prevBtn = target.querySelector('.dib-fd-prev');
-    const nextBtn = target.querySelector('.dib-fd-next');
+    const prevBtn = target.querySelector('.dfp');
+    const nextBtn = target.querySelector('.dfn');
 
     // Check if {countdown} placeholder would have a valid value
     function isCountdownActive(text) {
       if (!text || !text.includes('{countdown}')) return true; // No countdown = always active
 
-      const configEl = target.querySelector('.dib-cycling-config');
+      const configEl = target.querySelector('.dcc');
       if (!configEl || !window.DIBCountdown) return false;
 
       const now = new Date();
@@ -112,6 +114,9 @@
       if (additional2Message && isCountdownActive(additional2Message)) {
         newMessages.push({ text: additional2Message, duration: additional2Duration, type: 'additional2', isFD: false });
       }
+      if (additional3Message && isCountdownActive(additional3Message)) {
+        newMessages.push({ text: additional3Message, duration: additional3Duration, type: 'additional3', isFD: false });
+      }
 
       return newMessages;
     }
@@ -168,8 +173,8 @@
       if (!text) return text;
 
       // Inject link styles once
-      if (!document.getElementById('dib-fd-link-styles')) {
-        const configEl = target.querySelector('.dib-cycling-config');
+      if (!document.getElementById('dfl-s')) {
+        const configEl = target.querySelector('.dcc');
         const lc = configEl?.getAttribute('data-link-color') || '#ffffff';
         const ld = configEl?.getAttribute('data-link-decoration') || 'underline';
         const hc = configEl?.getAttribute('data-link-hover-color') || '#e5e7eb';
@@ -179,8 +184,8 @@
         const ht = configEl?.getAttribute('data-link-hover-thickness') || '2px';
 
         const s = document.createElement('style');
-        s.id = 'dib-fd-link-styles';
-        s.textContent = '.dib-fd-announcement .dib-fd-link{color:' + lc + ';text-decoration:' + ld + ';text-decoration-thickness:' + lt + ';transition:all .15s ease}.dib-fd-announcement .dib-fd-link:hover{color:' + hc + ';text-decoration:' + hd + ';text-decoration-thickness:' + ht + ';opacity:' + ho + '}';
+        s.id = 'dfl-s';
+        s.textContent = '.dfa .dfl{color:' + lc + ';text-decoration:' + ld + ';text-decoration-thickness:' + lt + ';transition:all .15s ease}.dfa .dfl:hover{color:' + hc + ';text-decoration:' + hd + ';text-decoration-thickness:' + ht + ';opacity:' + ho + '}';
         document.head.appendChild(s);
       }
 
@@ -190,13 +195,13 @@
       if (result.includes('**')) {
         result = result.split('**').map((part, i) => i % 2 === 1 ? '<strong>' + part + '</strong>' : part).join('');
       }
-      // 3. Process links: [text](url) → <a href="url" class="dib-fd-link">text</a>
+      // 3. Process links: [text](url) → <a href="url" class="dfl">text</a>
       if (result.includes('[')) {
         result = result.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (match, linkText, url) => {
           const decodedUrl = url.replace(/&amp;/g, '&');
           const finalUrl = normalizeUrl(decodedUrl);
           if (!finalUrl) return match;
-          return '<a href="' + finalUrl + '" target="_blank" rel="noopener" class="dib-fd-link">' + linkText + '</a>';
+          return '<a href="' + finalUrl + '" target="_blank" rel="noopener" class="dfl">' + linkText + '</a>';
         });
       }
       return result;
@@ -206,7 +211,7 @@
     function processCountdown(text) {
       if (!text || !text.includes('{countdown}')) return text;
 
-      const configEl = target.querySelector('.dib-cycling-config');
+      const configEl = target.querySelector('.dcc');
       if (!configEl || !window.DIBCountdown) {
         return text.replace('{countdown}', '');
       }
@@ -253,9 +258,9 @@
 
       // Update chevron visibility
       if (messages.length > 1) {
-        target.classList.add('dib-fd-has-multiple');
+        target.classList.add('dfhm');
       } else {
-        target.classList.remove('dib-fd-has-multiple');
+        target.classList.remove('dfhm');
       }
 
       if (messages.length === 0) return;
@@ -334,9 +339,9 @@
         // Parse old state - format is "total-isEmpty-excluded-unlocked"
         const wasUnlocked = lastCartState.endsWith('-true');
         if (state.unlocked && !wasUnlocked) {
-          target.classList.add('dib-fd-celebrate');
+          target.classList.add('dfcl');
           target.addEventListener('animationend', function handler() {
-            target.classList.remove('dib-fd-celebrate');
+            target.classList.remove('dfcl');
             target.removeEventListener('animationend', handler);
           }, { once: true });
         }

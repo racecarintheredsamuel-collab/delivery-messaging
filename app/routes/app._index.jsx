@@ -688,13 +688,13 @@ export default function DashboardPage() {
         single_icon_size: "medium",
         icon_vertical_align: "center",
 
-        // Border defaults - match ETA timeline
+        // Border defaults - use global settings
         show_border: ruleData.eta_border_width > 0,
         border_thickness: ruleData.eta_border_width,
         border_color: ruleData.eta_border_color,
         border_radius: ruleData.eta_border_radius,
         max_width: 600,
-        match_eta_border: true,
+        use_custom_border: false,
         match_eta_width: true,
 
         // Dispatch - use global settings

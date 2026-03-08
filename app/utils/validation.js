@@ -28,11 +28,26 @@ const ruleSettingsSchema = z.object({
   show_messages: z.boolean().optional(),
   message_line_1: z.string().optional(),
   message_line_2: z.string().optional(),
+  message_line_3: z.string().optional(),
+  message_line_4: z.string().optional(),
   // Icon settings
   show_icon: z.boolean().optional(),
   icon: z.string().optional(),
   icon_style: z.string().optional(),
   icon_color: z.string().optional(),
+  // Per-line icons (for "icon on each line" layout)
+  icon_line_1: z.string().optional(),
+  icon_line_1_style: z.string().optional(),
+  icon_line_1_color: z.string().optional(),
+  icon_line_2: z.string().optional(),
+  icon_line_2_style: z.string().optional(),
+  icon_line_2_color: z.string().optional(),
+  icon_line_3: z.string().optional(),
+  icon_line_3_style: z.string().optional(),
+  icon_line_3_color: z.string().optional(),
+  icon_line_4: z.string().optional(),
+  icon_line_4_style: z.string().optional(),
+  icon_line_4_color: z.string().optional(),
   // Countdown
   show_countdown: z.boolean().optional(),
   // Dispatch settings overrides (separate flags for each setting type)
@@ -52,6 +67,10 @@ const ruleSettingsSchema = z.object({
   eta_delivery_days_max: z.number().optional(),
   // Special Delivery
   special_delivery_text_alignment: z.enum(["left", "center", "right"]).optional(),
+  // Border custom flags (per-rule)
+  use_custom_border: z.boolean().optional(),
+  eta_use_custom_border: z.boolean().optional(),
+  special_delivery_use_custom_border: z.boolean().optional(),
 }).passthrough();
 
 // Single rule schema
@@ -99,6 +118,12 @@ const customIconSchema = z.object({
   url: z.string().optional(),
 });
 
+// Utility icon schema (for announcement bar utility links)
+const utilityIconSchema = z.object({
+  name: z.string().optional(),
+  svg: z.string().optional(),
+});
+
 // Free delivery exclusion rule schema
 const fdExclusionRuleSchema = z.object({
   id: z.string(),
@@ -107,6 +132,44 @@ const fdExclusionRuleSchema = z.object({
   cart_message: z.string().optional(),
   announcement_message: z.string().optional(),
   announcement_duration: z.number().min(1).max(60).optional(),
+});
+
+// Pricing configuration segment schema
+const fdPricingSegmentSchema = z.object({
+  label: z.string().max(30).optional(),
+  cost: z.number().min(0).optional(),
+  cost_bold: z.boolean().optional(),
+  days: z.string().max(20).optional(),
+  days_bold: z.boolean().optional(),
+});
+
+// Pricing shipping level schema (contains threshold + display settings)
+const fdPricingLevelSchema = z.object({
+  threshold: z.number().min(0).nullable().optional(), // cart threshold in pence, null = no limit
+  segments: z.array(fdPricingSegmentSchema).max(2).optional(),
+  free_text_enabled: z.boolean().optional(),
+  free_text: z.string().max(100).optional(),
+  divider: z.string().max(5).optional(),
+  days_divider: z.string().max(5).optional(),
+  show_days: z.boolean().optional(),
+});
+
+// Pricing configuration schema
+const fdPricingConfigSchema = z.object({
+  id: z.string(),
+  name: z.string().max(20).regex(/^[a-z0-9_-]*$/).optional(),
+  // New levels-based structure
+  levels: z.array(fdPricingLevelSchema).max(3).optional(),
+  // Cart threshold message (overrides levels when cart >= fd_threshold)
+  threshold_message_enabled: z.boolean().optional(),
+  threshold_message: z.string().max(150).optional(),
+  // Legacy flat fields (for migration)
+  segments: z.array(fdPricingSegmentSchema).max(4).optional(),
+  free_text: z.string().max(100).optional(),
+  divider: z.string().max(5).optional(),
+  days_divider: z.string().max(5).optional(),
+  show_days: z.boolean().optional(),
+  mode: z.enum(["static", "dynamic"]).optional(),
 });
 
 // Global settings schema
@@ -146,10 +209,17 @@ export const settingsSchema = z.object({
   eta_padding_vertical: z.number().optional(),
   // Special Delivery spacing
   special_delivery_line_height: z.number().optional(),
+  // Global Border Styling
+  global_border_thickness: z.number().min(0).max(10).optional(),
+  global_border_radius: z.number().min(0).max(50).optional(),
+  global_border_color: z.string().optional(),
+  global_background_color: z.string().optional(),
   // Custom icons (global)
   custom_icons: z.array(customIconSchema).max(8).optional(),
   // Custom connector SVG for ETA Timeline
   custom_connector_svg: z.string().optional(),
+  // Utility icons (for announcement bar utility links)
+  utility_icons: z.array(utilityIconSchema).max(2).optional(),
   // Free Delivery Threshold
   fd_threshold: z.number().min(0).optional(),
   fd_show_announcement_bar: z.boolean().optional(),
@@ -159,12 +229,25 @@ export const settingsSchema = z.object({
   fd_announcement_excluded_message: z.string().optional(),
   fd_announcement_bg_color: z.string().optional(),
   fd_announcement_text_color: z.string().optional(),
-  fd_announcement_text_size: z.string().optional(),
+  fd_announcement_text_size: z.number().min(12).max(18).optional(),
   fd_announcement_bar_height: z.string().optional(),
+  fd_use_custom_link_styling: z.boolean().optional(),
   // Free delivery exclusion rules (array of up to 5 rules)
   fd_exclusion_rules: z.array(fdExclusionRuleSchema).max(5).optional(),
   // Multi-match fallback message (when cart matches multiple exclusion rules)
   fd_exclusion_multi_match_message: z.string().optional(),
+  // Pricing configurations (array of up to 10 configs)
+  fd_pricing_configs: z.array(fdPricingConfigSchema).max(10).optional(),
+  // Utility links for announcement bar
+  fd_utility_left_icon: z.enum(['', 'phone', 'envelope', 'package-box', 'chat', 'utility-1', 'utility-2']).optional(),
+  fd_utility_left_label: z.string().max(30).optional(),
+  fd_utility_left_url: z.string().optional(),
+  fd_utility_left_target: z.enum(['_blank', '_self']).optional(),
+  fd_utility_right_icon: z.enum(['', 'phone', 'envelope', 'package-box', 'chat', 'utility-1', 'utility-2']).optional(),
+  fd_utility_right_label: z.string().max(30).optional(),
+  fd_utility_right_url: z.string().optional(),
+  fd_utility_right_target: z.enum(['_blank', '_self']).optional(),
+  fd_utility_mobile_mode: z.enum(['hide', 'icons', 'icons_left', 'icons_right']).optional(),
 }).passthrough();
 
 /**
