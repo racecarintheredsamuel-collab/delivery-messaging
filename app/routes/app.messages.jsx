@@ -6466,46 +6466,56 @@ export default function Index() {
                 style={{
                   border: "1px solid var(--p-color-border, #e5e7eb)",
                   borderRadius: "8px",
-                  padding: "16px",
-                  background: globalSettings?.preview_bg_color || "var(--p-color-bg-surface, #ffffff)",
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: 8,
                   overflow: "hidden",
                 }}
               >
-                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                {/* Header bar - stays with admin default background */}
+                <div style={{
+                  padding: "12px 16px",
+                  borderBottom: "1px solid var(--p-color-border, #e5e7eb)",
+                  background: "var(--p-color-bg-surface, #ffffff)",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 8,
+                }}>
                   <s-heading>Preview</s-heading>
                   <span
                     title="Storefront appearance may vary slightly based on theme settings."
                     style={{ cursor: "help", fontSize: 14 }}
                   >ℹ️</span>
                 </div>
-                {/* Link hover styles for preview */}
-                <style>{`
-                  .dib-link-preview {
-                    color: ${globalSettings?.link_color || "#2563eb"};
-                    text-decoration: ${globalSettings?.link_decoration || "underline"};
-                    text-decoration-thickness: ${globalSettings?.link_thickness || "1px"};
-                    transition: all 0.15s ease;
-                  }
-                  .dib-link-preview:hover {
-                    color: ${globalSettings?.link_hover_color || "#1d4ed8"};
-                    text-decoration: ${globalSettings?.link_hover_decoration || "underline"};
-                    text-decoration-thickness: ${globalSettings?.link_hover_thickness || "2px"};
-                    opacity: ${globalSettings?.link_hover_opacity ?? 1};
-                  }
-                `}</style>
 
-                {/* Load Google Fonts for preview */}
-                {globalSettings?.preview_body_font && (
-                  <link
-                    href={`https://fonts.googleapis.com/css2?family=${encodeURIComponent(globalSettings.preview_body_font)}:wght@400;500;600;700&display=swap`}
-                    rel="stylesheet"
-                  />
-                )}
+                {/* Content area - gets preview colors */}
+                <div style={{
+                  padding: "16px",
+                  background: globalSettings?.preview_bg_color || "#ffffff",
+                  color: globalSettings?.preview_text_color || "inherit",
+                }}>
+                  {/* Link hover styles for preview */}
+                  <style>{`
+                    .dib-link-preview {
+                      color: ${globalSettings?.link_color || "#2563eb"};
+                      text-decoration: ${globalSettings?.link_decoration || "underline"};
+                      text-decoration-thickness: ${globalSettings?.link_thickness || "1px"};
+                      transition: all 0.15s ease;
+                    }
+                    .dib-link-preview:hover {
+                      color: ${globalSettings?.link_hover_color || "#1d4ed8"};
+                      text-decoration: ${globalSettings?.link_hover_decoration || "underline"};
+                      text-decoration-thickness: ${globalSettings?.link_hover_thickness || "2px"};
+                      opacity: ${globalSettings?.link_hover_opacity ?? 1};
+                    }
+                  `}</style>
 
-                <div style={{ minHeight: 80, overflow: "hidden", overscrollBehavior: "contain", padding: "8px 0", minWidth: 0, color: globalSettings?.preview_text_color || "inherit" }}>
+                  {/* Load Google Fonts for preview */}
+                  {globalSettings?.preview_body_font && (
+                    <link
+                      href={`https://fonts.googleapis.com/css2?family=${encodeURIComponent(globalSettings.preview_body_font)}:wght@400;500;600;700&display=swap`}
+                      rel="stylesheet"
+                    />
+                  )}
+
+                  <div style={{ minHeight: 80, overflow: "hidden", overscrollBehavior: "contain", padding: "8px 0", minWidth: 0 }}>
                   <div
                     style={{
                       minHeight: "100%",
@@ -6867,10 +6877,6 @@ export default function Index() {
                     )}
                   </div>
                 </div>
-
-                <div style={{ display: "flex", alignItems: "center", gap: 6, color: "var(--p-color-text-subdued, #6b7280)" }}>
-                  <span style={{ fontSize: 12, flexShrink: 0 }}>💡</span>
-                  <span style={{ fontSize: 12 }}>Storefront appearance may vary slightly based on theme settings.</span>
                 </div>
               </div>
 
