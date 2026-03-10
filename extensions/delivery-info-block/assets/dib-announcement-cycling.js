@@ -56,42 +56,47 @@
       const state = window.DeliveryMessaging.getState();
       const newMessages = [];
 
-      // Determine which FD message to show based on cart state
-      let fdTemplate = '';
-      let fdDuration = 5;
-      let fdType = 'progress';
+      // Check if FD messages are enabled (default: true)
+      const showFdMessages = target.dataset.showFdMessages !== 'false';
 
-      if (state.excluded) {
-        // Check for multi-match first (cart has products matching multiple rules)
-        if (state.multiMatch) {
-          fdTemplate = target.dataset.multiMatchMessage || "Some items in your cart aren't eligible for free delivery";
-          fdDuration = excludedDuration;
-        } else if (state.excludedRule && state.excludedRule.announcement_message) {
-          // Use matched rule's announcement message if available
-          fdTemplate = state.excludedRule.announcement_message;
-          fdDuration = state.excludedRule.announcement_duration || excludedDuration;
+      if (showFdMessages) {
+        // Determine which FD message to show based on cart state
+        let fdTemplate = '';
+        let fdDuration = 5;
+        let fdType = 'progress';
+
+        if (state.excluded) {
+          // Check for multi-match first (cart has products matching multiple rules)
+          if (state.multiMatch) {
+            fdTemplate = target.dataset.multiMatchMessage || "Some items in your cart aren't eligible for free delivery";
+            fdDuration = excludedDuration;
+          } else if (state.excludedRule && state.excludedRule.announcement_message) {
+            // Use matched rule's announcement message if available
+            fdTemplate = state.excludedRule.announcement_message;
+            fdDuration = state.excludedRule.announcement_duration || excludedDuration;
+          } else {
+            fdTemplate = target.dataset.excludedMessage || '';
+            fdDuration = excludedDuration;
+          }
+          fdType = 'excluded';
+        } else if (state.isEmpty) {
+          fdTemplate = target.dataset.emptyMessage || '';
+          fdDuration = emptyDuration;
+          fdType = 'empty';
+        } else if (state.unlocked) {
+          fdTemplate = target.dataset.unlockedMessage || '';
+          fdDuration = unlockedDuration;
+          fdType = 'unlocked';
         } else {
-          fdTemplate = target.dataset.excludedMessage || '';
-          fdDuration = excludedDuration;
+          fdTemplate = target.dataset.progressMessage || '';
+          fdDuration = progressDuration;
+          fdType = 'progress';
         }
-        fdType = 'excluded';
-      } else if (state.isEmpty) {
-        fdTemplate = target.dataset.emptyMessage || '';
-        fdDuration = emptyDuration;
-        fdType = 'empty';
-      } else if (state.unlocked) {
-        fdTemplate = target.dataset.unlockedMessage || '';
-        fdDuration = unlockedDuration;
-        fdType = 'unlocked';
-      } else {
-        fdTemplate = target.dataset.progressMessage || '';
-        fdDuration = progressDuration;
-        fdType = 'progress';
-      }
 
-      // Store template for FD messages (processed on display)
-      if (fdTemplate) {
-        newMessages.push({ template: fdTemplate, duration: fdDuration, type: fdType, isFD: true });
+        // Store template for FD messages (processed on display)
+        if (fdTemplate) {
+          newMessages.push({ template: fdTemplate, duration: fdDuration, type: fdType, isFD: true });
+        }
       }
 
       // Additional messages

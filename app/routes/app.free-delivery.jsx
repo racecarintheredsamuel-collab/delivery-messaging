@@ -1249,6 +1249,17 @@ export default function FreeDeliveryPage() {
                   Show a bar at the top of the page with free delivery progress. Messages cycle automatically based on their timer.
                 </s-text>
 
+                <label style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer" }}>
+                  <input
+                    type="checkbox"
+                    checked={settings.fd_announcement_show_fd_messages !== false}
+                    onChange={(e) => setSettings({ ...settings, fd_announcement_show_fd_messages: e.target.checked })}
+                  />
+                  <s-text>Show Free Delivery messages</s-text>
+                </label>
+
+                {settings.fd_announcement_show_fd_messages !== false && (
+                <>
                 <div style={{ display: "flex", flexDirection: "column", gap: 4, marginTop: -4 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 6, color: "var(--p-color-text-subdued, #6b7280)" }}>
                     <span style={{ fontSize: 12, flexShrink: 0 }}>💡</span>
@@ -1352,6 +1363,8 @@ export default function FreeDeliveryPage() {
                   <span style={{ fontSize: 12, flexShrink: 0 }}>📝</span>
                   <span style={{ fontSize: 12 }}>Defaults to "Free delivery on orders over {"{threshold}"}" if blank and no additional messages</span>
                 </div>
+                </>
+                )}
 
                 {/* Collapse/Expand All Buttons */}
                 <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
