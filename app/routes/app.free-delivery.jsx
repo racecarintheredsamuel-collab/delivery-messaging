@@ -1577,7 +1577,7 @@ export default function FreeDeliveryPage() {
                     placeholder="/pages/contact, tel:, mailto:"
                     style={{ width: "100%" }}
                   />
-                  {/^https?:\/\//i.test(settings.fd_utility_left_url || "") && (
+                  {settings.fd_utility_left_url && !/^(\/|tel:|mailto:)/i.test(settings.fd_utility_left_url) && (
                     <span style={{ fontSize: 11, color: "#dc2626", marginTop: 2, display: "block" }}>External links not allowed. Use /pages/... or tel:/mailto:</span>
                   )}
                 </label>
@@ -1654,7 +1654,7 @@ export default function FreeDeliveryPage() {
                     placeholder="/pages/tracking, tel:, mailto:"
                     style={{ width: "100%" }}
                   />
-                  {/^https?:\/\//i.test(settings.fd_utility_right_url || "") && (
+                  {settings.fd_utility_right_url && !/^(\/|tel:|mailto:)/i.test(settings.fd_utility_right_url) && (
                     <span style={{ fontSize: 11, color: "#dc2626", marginTop: 2, display: "block" }}>External links not allowed. Use /pages/... or tel:/mailto:</span>
                   )}
                 </label>
