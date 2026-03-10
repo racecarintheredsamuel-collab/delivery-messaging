@@ -86,7 +86,7 @@
   data-additional3-message="{{ fd_additional3_message | escape }}"
   data-additional3-duration="{{ fd_additional3_duration }}"
   data-multi-match-message="{{ fd_multi_match_message | escape }}"
-  data-show-fd-messages="{{ gs.fd_announcement_show_fd_messages | default: true }}"
+  data-show-fd-messages="{% if gs.fd_announcement_show_fd_messages == false %}false{% else %}true{% endif %}"
 >
   <span class="dcc" style="display:none" data-link-color="{{ lc }}" data-link-decoration="{{ ld }}" data-link-hover-color="{{ lhc }}" data-link-hover-decoration="{{ lhd }}" data-link-hover-opacity="{{ lho }}" data-link-thickness="{{ lt }}" data-link-hover-thickness="{{ lht }}"></span>
   <div class="dfi">
