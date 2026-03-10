@@ -2023,6 +2023,18 @@ export default function Index() {
                       style={{ width: "100%" }}
                     />
                   </div>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                    <s-color-field
+                      label="Theme font colour"
+                      value={globalSettings?.preview_text_color || "#000000"}
+                      onInput={(e) => setGlobalSettings({ ...globalSettings, preview_text_color: e.target.value })}
+                    />
+                    <s-color-field
+                      label="Theme background colour"
+                      value={globalSettings?.preview_bg_color || "#ffffff"}
+                      onInput={(e) => setGlobalSettings({ ...globalSettings, preview_bg_color: e.target.value })}
+                    />
+                  </div>
                 </div>
 
                 {/* Messages Font & Text Styling */}
@@ -6455,14 +6467,20 @@ export default function Index() {
                   border: "1px solid var(--p-color-border, #e5e7eb)",
                   borderRadius: "8px",
                   padding: "16px",
-                  background: "var(--p-color-bg-surface, #ffffff)",
+                  background: globalSettings?.preview_bg_color || "var(--p-color-bg-surface, #ffffff)",
                   display: "flex",
                   flexDirection: "column",
                   gap: 8,
                   overflow: "hidden",
                 }}
               >
-                <s-heading>Preview</s-heading>
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <s-heading>Preview</s-heading>
+                  <span
+                    title="Storefront appearance may vary slightly based on theme settings."
+                    style={{ cursor: "help", fontSize: 14 }}
+                  >ℹ️</span>
+                </div>
                 {/* Link hover styles for preview */}
                 <style>{`
                   .dib-link-preview {
@@ -6487,7 +6505,7 @@ export default function Index() {
                   />
                 )}
 
-                <div style={{ minHeight: 80, overflow: "hidden", overscrollBehavior: "contain", padding: "8px 0", minWidth: 0 }}>
+                <div style={{ minHeight: 80, overflow: "hidden", overscrollBehavior: "contain", padding: "8px 0", minWidth: 0, color: globalSettings?.preview_text_color || "inherit" }}>
                   <div
                     style={{
                       minHeight: "100%",
