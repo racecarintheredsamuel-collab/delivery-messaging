@@ -1997,13 +1997,13 @@ export default function Index() {
               {showTypographyPanel && (
                 <div style={{ border: "1px solid var(--p-color-border, #e5e7eb)", borderRadius: 8, padding: 16, background: "var(--p-color-bg-surface, #ffffff)", display: "grid", gap: 16 }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <s-heading>Styling</s-heading>
+                  <s-heading>Global Styling</s-heading>
                   <s-button variant="plain" onClick={() => setShowTypographyPanel(false)}>Close</s-button>
                 </div>
 
                 {/* Theme Fonts for Preview */}
                 <div style={{ border: "1px solid var(--p-color-border, #e5e7eb)", borderRadius: 8, padding: 16, display: "grid", gap: 12, background: "var(--p-color-bg-surface-secondary, #f9fafb)" }}>
-                  <s-heading size="small">Theme Font for Preview</s-heading>
+                  <s-heading size="small">Theme Styling for Preview</s-heading>
                   <s-text size="small" style={{ color: "var(--p-color-text-subdued, #6b7280)" }}>
                     Select your Shopify theme's body font so the admin preview matches your storefront.
                   </s-text>
@@ -2510,7 +2510,7 @@ export default function Index() {
               {showAlignmentPanel && (
                 <div style={{ border: "1px solid var(--p-color-border, #e5e7eb)", borderRadius: 8, padding: 16, background: "var(--p-color-bg-surface, #ffffff)", display: "grid", gap: 16 }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <s-heading>Spacing & Alignment</s-heading>
+                  <s-heading>Global Spacing & Alignment</s-heading>
                   <s-button variant="plain" onClick={() => setShowAlignmentPanel(false)}>Close</s-button>
                 </div>
 
