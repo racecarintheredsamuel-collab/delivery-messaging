@@ -1560,29 +1560,19 @@ export default function FreeDeliveryPage() {
                     />
                   </label>
                 </div>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 100px", gap: 12 }}>
-                  <label>
-                    <s-text>Left URL</s-text>
-                    <input
-                      type="text"
-                      value={settings.fd_utility_left_url || ""}
-                      onChange={(e) => setSettings({ ...settings, fd_utility_left_url: e.target.value })}
-                      placeholder="tel:+441234567890 or mailto:..."
-                      style={{ width: "100%" }}
-                    />
-                  </label>
-                  <label>
-                    <s-text>Target</s-text>
-                    <select
-                      value={settings.fd_utility_left_target || "_blank"}
-                      onChange={(e) => setSettings({ ...settings, fd_utility_left_target: e.target.value })}
-                      style={{ width: "100%" }}
-                    >
-                      <option value="_blank">New tab</option>
-                      <option value="_self">Same tab</option>
-                    </select>
-                  </label>
-                </div>
+                <label>
+                  <s-text>Left URL</s-text>
+                  <input
+                    type="text"
+                    value={settings.fd_utility_left_url || ""}
+                    onChange={(e) => setSettings({ ...settings, fd_utility_left_url: e.target.value })}
+                    placeholder="/pages/contact, tel:, mailto:"
+                    style={{ width: "100%" }}
+                  />
+                  {/^https?:\/\//i.test(settings.fd_utility_left_url || "") && (
+                    <span style={{ fontSize: 11, color: "#dc2626", marginTop: 2, display: "block" }}>External links not allowed. Use /pages/... or tel:/mailto:</span>
+                  )}
+                </label>
                 {/* Left Preview */}
                 {(settings.fd_utility_left_icon || settings.fd_utility_left_label) && (() => {
                   const hasLink = !!settings.fd_utility_left_url;
@@ -1647,29 +1637,19 @@ export default function FreeDeliveryPage() {
                     />
                   </label>
                 </div>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 100px", gap: 12 }}>
-                  <label>
-                    <s-text>Right URL</s-text>
-                    <input
-                      type="text"
-                      value={settings.fd_utility_right_url || ""}
-                      onChange={(e) => setSettings({ ...settings, fd_utility_right_url: e.target.value })}
-                      placeholder="/pages/tracking"
-                      style={{ width: "100%" }}
-                    />
-                  </label>
-                  <label>
-                    <s-text>Target</s-text>
-                    <select
-                      value={settings.fd_utility_right_target || "_blank"}
-                      onChange={(e) => setSettings({ ...settings, fd_utility_right_target: e.target.value })}
-                      style={{ width: "100%" }}
-                    >
-                      <option value="_blank">New tab</option>
-                      <option value="_self">Same tab</option>
-                    </select>
-                  </label>
-                </div>
+                <label>
+                  <s-text>Right URL</s-text>
+                  <input
+                    type="text"
+                    value={settings.fd_utility_right_url || ""}
+                    onChange={(e) => setSettings({ ...settings, fd_utility_right_url: e.target.value })}
+                    placeholder="/pages/tracking, tel:, mailto:"
+                    style={{ width: "100%" }}
+                  />
+                  {/^https?:\/\//i.test(settings.fd_utility_right_url || "") && (
+                    <span style={{ fontSize: 11, color: "#dc2626", marginTop: 2, display: "block" }}>External links not allowed. Use /pages/... or tel:/mailto:</span>
+                  )}
+                </label>
                 {/* Right Preview */}
                 {(settings.fd_utility_right_icon || settings.fd_utility_right_label) && (() => {
                   const hasLink = !!settings.fd_utility_right_url;
@@ -1800,7 +1780,7 @@ export default function FreeDeliveryPage() {
                   </div>
                   <input
                     type="range"
-                    min="400"
+                    min="500"
                     max="800"
                     step="50"
                     value={settings.fd_announcement_content_max_width || 800}
@@ -1825,6 +1805,10 @@ export default function FreeDeliveryPage() {
                     onChange={(e) => setSettings({ ...settings, fd_announcement_content_max_width_mobile: parseInt(e.target.value) })}
                     style={{ width: "100%" }}
                   />
+                  <div style={{ display: "flex", alignItems: "center", gap: 6, color: "var(--p-color-text-subdued, #6b7280)", marginTop: 4 }}>
+                    <span style={{ fontSize: 12, flexShrink: 0 }}>💡</span>
+                    <span style={{ fontSize: 12 }}>When using mobile icons, keep below 90% to avoid overlap</span>
+                  </div>
                 </div>
                   </div>
                   )}
@@ -2089,19 +2073,6 @@ export default function FreeDeliveryPage() {
                               />
                             </label>
 
-                            <label style={{ display: "block" }}>
-                              <s-text size="small">Cart message</s-text>
-                              <input
-                                type="text"
-                                value={rule.cart_message || ""}
-                                onChange={(e) => {
-                                  setExclusionRules(prev => prev.map(r => r.id === rule.id ? { ...r, cart_message: e.target.value } : r));
-                                }}
-                                placeholder="Leave blank for default message"
-                                style={{ width: "100%" }}
-                              />
-                            </label>
-
                             <div style={{ display: "grid", gridTemplateColumns: "1fr 75px", gap: 12, alignItems: "start" }}>
                               <label style={{ display: "block" }}>
                                 <s-text size="small">Announcement message</s-text>
@@ -2148,7 +2119,6 @@ export default function FreeDeliveryPage() {
                           id: newId,
                           tags: [],
                           handles: [],
-                          cart_message: '',
                           announcement_message: '',
                           announcement_duration: 5,
                         }]);

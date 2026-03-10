@@ -39,7 +39,6 @@
     // State
     let currentIndex = 0;
     let cycleTimer = null;
-    let countdownInterval = null;
     let messages = [];
     let lastCartState = null;
 
@@ -50,18 +49,6 @@
     // Get chevrons
     const prevBtn = target.querySelector('.dfp');
     const nextBtn = target.querySelector('.dfn');
-
-    // Check if {countdown} placeholder would have a valid value
-    function isCountdownActive(text) {
-      if (!text || !text.includes('{countdown}')) return true; // No countdown = always active
-
-      const configEl = target.querySelector('.dcc');
-      if (!configEl || !window.DIBCountdown) return false;
-
-      const now = new Date();
-      const result = window.DIBCountdown.computeCutoffForToday(configEl, now);
-      return result.ok && result.cutoffUtcMs - now.getTime() > 0;
-    }
 
     // Build messages array based on current state
     // Note: FD messages store templates (processed on display) to avoid caching stale threshold values
@@ -107,14 +94,14 @@
         newMessages.push({ template: fdTemplate, duration: fdDuration, type: fdType, isFD: true });
       }
 
-      // Additional messages - only include if countdown is active (or no countdown placeholder)
-      if (additional1Message && isCountdownActive(additional1Message)) {
+      // Additional messages
+      if (additional1Message) {
         newMessages.push({ text: additional1Message, duration: additional1Duration, type: 'additional1', isFD: false });
       }
-      if (additional2Message && isCountdownActive(additional2Message)) {
+      if (additional2Message) {
         newMessages.push({ text: additional2Message, duration: additional2Duration, type: 'additional2', isFD: false });
       }
-      if (additional3Message && isCountdownActive(additional3Message)) {
+      if (additional3Message) {
         newMessages.push({ text: additional3Message, duration: additional3Duration, type: 'additional3', isFD: false });
       }
 
@@ -124,8 +111,8 @@
     // Process FD template with current state values
     function processMessageText(msg) {
       if (!msg.isFD) {
-        // Additional messages - process countdown placeholder
-        return processCountdown(msg.text);
+        // Additional messages - return as-is
+        return msg.text;
       }
 
       const state = window.DeliveryMessaging.getState();
@@ -201,31 +188,11 @@
           const decodedUrl = url.replace(/&amp;/g, '&');
           const finalUrl = normalizeUrl(decodedUrl);
           if (!finalUrl) return match;
-          return '<a href="' + finalUrl + '" target="_blank" rel="noopener" class="dfl">' + linkText + '</a>';
+          const target = /^(\/|tel:|mailto:)/i.test(finalUrl) ? '_self' : '_blank';
+          return '<a href="' + finalUrl + '" target="' + target + '"' + (target === '_blank' ? ' rel="noopener"' : '') + ' class="dfl">' + linkText + '</a>';
         });
       }
       return result;
-    }
-
-    // Process {countdown} placeholder in additional messages
-    function processCountdown(text) {
-      if (!text || !text.includes('{countdown}')) return text;
-
-      const configEl = target.querySelector('.dcc');
-      if (!configEl || !window.DIBCountdown) {
-        return text.replace('{countdown}', '');
-      }
-
-      const now = new Date();
-      const result = window.DIBCountdown.computeCutoffForToday(configEl, now);
-
-      if (!result.ok || result.cutoffUtcMs - now.getTime() <= 0) {
-        return text.replace('{countdown}', '');
-      }
-
-      const remainingMs = result.cutoffUtcMs - now.getTime();
-      const timeStr = window.DIBCountdown.formatRemaining(remainingMs);
-      return text.replace('{countdown}', timeStr);
     }
 
     function showMessage(index, skipCount = 0) {
@@ -272,19 +239,6 @@
 
       showMessage(currentIndex);
       scheduleNext();
-
-      // Start countdown refresh interval if any message has {countdown}
-      const hasCountdown = messages.some(m => !m.isFD && m.text && m.text.includes('{countdown}'));
-      if (hasCountdown && !countdownInterval) {
-        countdownInterval = setInterval(() => {
-          const currentMsg = messages[currentIndex];
-          if (currentMsg && !currentMsg.isFD && currentMsg.text && currentMsg.text.includes('{countdown}')) {
-            // Refresh current message to update countdown (without fade)
-            const text = processMessageText(currentMsg);
-            messageEl.innerHTML = parseMarkdown(text);
-          }
-        }, 30000);
-      }
     }
 
     function scheduleNext() {
@@ -304,10 +258,6 @@
       if (cycleTimer) {
         clearTimeout(cycleTimer);
         cycleTimer = null;
-      }
-      if (countdownInterval) {
-        clearInterval(countdownInterval);
-        countdownInterval = null;
       }
     }
 
