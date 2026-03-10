@@ -8,6 +8,7 @@ import { authenticate } from "../shopify.server";
 import { safeLogError, validateSettings } from "../utils/validation";
 import { generateIconsMetafield, getIconSvg, getConfiguredUtilityIcons, getUtilityIconSvg } from "../utils/icons";
 import { ChevronDownIcon, ChevronRightIcon } from "../components/icons/ChevronIcons";
+import { FontSelector } from "../components/FontSelector";
 import {
   GET_SHOP_DELIVERY_DATA,
   GET_SHOP_ID,
@@ -519,6 +520,13 @@ export default function FreeDeliveryPage() {
 
   return (
     <s-page heading="Free Delivery">
+      {/* Load Google Font for Announcement Bar preview */}
+      {settings.fd_announcement_use_theme_font === false && settings.fd_announcement_font_family && (
+        <link
+          href={`https://fonts.googleapis.com/css2?family=${encodeURIComponent(settings.fd_announcement_font_family)}:wght@400;700&display=swap`}
+          rel="stylesheet"
+        />
+      )}
       <s-layout style={{ maxWidth: 1000 }}>
         <div style={{ display: "grid", gap: 24 }}>
           {/* Top Save Button */}
@@ -1595,7 +1603,7 @@ export default function FreeDeliveryPage() {
                     <div
                       onMouseEnter={() => setLeftUtilHover(true)}
                       onMouseLeave={() => setLeftUtilHover(false)}
-                      style={{ display: "inline-flex", alignItems: "center", color: isHover ? hoverColor : baseColor, fontSize: settings.fd_announcement_text_size || 14, textDecoration: isHover ? hoverDecoration : baseDecoration, textDecorationThickness: isHover ? hoverThickness : baseThickness, textUnderlineOffset: "2px", opacity: isHover ? hoverOpacity : 1, cursor: hasLink ? "pointer" : "default", transition: "color 0.15s, opacity 0.15s" }}
+                      style={{ display: "inline-flex", alignItems: "center", color: isHover ? hoverColor : baseColor, fontSize: settings.fd_announcement_text_size || 14, fontFamily: settings.fd_announcement_use_theme_font === false && settings.fd_announcement_font_family ? `'${settings.fd_announcement_font_family}', sans-serif` : "inherit", textDecoration: isHover ? hoverDecoration : baseDecoration, textDecorationThickness: isHover ? hoverThickness : baseThickness, textUnderlineOffset: "2px", opacity: isHover ? hoverOpacity : 1, cursor: hasLink ? "pointer" : "default", transition: "color 0.15s, opacity 0.15s" }}
                     >
                       <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
                         {settings.fd_utility_left_icon && <span style={{ width: settings.fd_announcement_text_size || 14, height: settings.fd_announcement_text_size || 14 }} dangerouslySetInnerHTML={{ __html: getUtilityIconSvg(settings.fd_utility_left_icon, settings) || getIconSvg(settings.fd_utility_left_icon) || '' }} />}
@@ -1674,7 +1682,7 @@ export default function FreeDeliveryPage() {
                       onMouseLeave={() => setRightUtilHover(false)}
                       style={{ display: "flex", alignItems: "center", justifyContent: "flex-end" }}
                     >
-                      <span style={{ display: "inline-flex", alignItems: "center", gap: 4, color: isHover ? hoverColor : baseColor, fontSize: settings.fd_announcement_text_size || 14, textDecoration: isHover ? hoverDecoration : baseDecoration, textDecorationThickness: isHover ? hoverThickness : baseThickness, textUnderlineOffset: "2px", opacity: isHover ? hoverOpacity : 1, cursor: hasLink ? "pointer" : "default", transition: "color 0.15s, opacity 0.15s" }}>
+                      <span style={{ display: "inline-flex", alignItems: "center", gap: 4, color: isHover ? hoverColor : baseColor, fontSize: settings.fd_announcement_text_size || 14, fontFamily: settings.fd_announcement_use_theme_font === false && settings.fd_announcement_font_family ? `'${settings.fd_announcement_font_family}', sans-serif` : "inherit", textDecoration: isHover ? hoverDecoration : baseDecoration, textDecorationThickness: isHover ? hoverThickness : baseThickness, textUnderlineOffset: "2px", opacity: isHover ? hoverOpacity : 1, cursor: hasLink ? "pointer" : "default", transition: "color 0.15s, opacity 0.15s" }}>
                         {settings.fd_utility_right_icon && <span style={{ width: settings.fd_announcement_text_size || 14, height: settings.fd_announcement_text_size || 14 }} dangerouslySetInnerHTML={{ __html: getUtilityIconSvg(settings.fd_utility_right_icon, settings) || getIconSvg(settings.fd_utility_right_icon) || '' }} />}
                         {settings.fd_utility_right_label && <span>{settings.fd_utility_right_label}</span>}
                       </span>
@@ -1768,6 +1776,27 @@ export default function FreeDeliveryPage() {
                       <option value="spacious">Spacious</option>
                     </select>
                   </label>
+                </div>
+
+                <div>
+                  <label style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer" }}>
+                    <input
+                      type="checkbox"
+                      checked={settings.fd_announcement_use_theme_font !== false}
+                      onChange={(e) => setSettings({ ...settings, fd_announcement_use_theme_font: e.target.checked })}
+                    />
+                    <s-text>Match theme font</s-text>
+                  </label>
+                  {settings.fd_announcement_use_theme_font === false && (
+                    <div style={{ marginLeft: 24, marginTop: 8 }}>
+                      <FontSelector
+                        label="Custom font"
+                        value={settings.fd_announcement_font_family || ""}
+                        onChange={(val) => setSettings({ ...settings, fd_announcement_font_family: val })}
+                        placeholder="Select font..."
+                      />
+                    </div>
+                  )}
                 </div>
 
                 <div>
