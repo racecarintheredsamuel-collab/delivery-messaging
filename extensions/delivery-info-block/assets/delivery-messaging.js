@@ -24,8 +24,19 @@
         return; // No change since last update
       }
       el.dataset.lastCartTotal = String(cartTotal);
-      el.dataset.jsInitialized = 'true';
 
+      // First render: delay 3s so placeholder is readable, then render pricing
+      if (!el.dataset.jsInitialized) {
+        el.dataset.jsInitialized = 'true';
+        setTimeout(() => renderPricing(el, cartTotal, fdThreshold, dm), 3000);
+        return;
+      }
+
+      renderPricing(el, cartTotal, fdThreshold, dm);
+    });
+  }
+
+  function renderPricing(el, cartTotal, fdThreshold, dm) {
       const levelsJson = el.dataset.levels;
       if (!levelsJson) return;
 
@@ -122,7 +133,6 @@
           el.style.opacity = '1';
         }, 150);
       }
-    });
   }
 
   // Process initial bold formatting in pricing elements
