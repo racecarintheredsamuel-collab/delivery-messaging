@@ -18,6 +18,20 @@
     const fdThreshold = dm.getConfig().threshold || 0;
 
     document.querySelectorAll('.dib-pricing[data-levels]').forEach(el => {
+      // Skip first update - trust Liquid's server-rendered content
+      if (!el.dataset.jsInitialized) {
+        el.dataset.jsInitialized = 'true';
+        el.dataset.lastCartTotal = String(cartTotal);
+        return;
+      }
+
+      // Only update if cart total actually changed
+      const lastCartTotal = parseInt(el.dataset.lastCartTotal || '0', 10);
+      if (lastCartTotal === cartTotal) {
+        return;
+      }
+      el.dataset.lastCartTotal = String(cartTotal);
+
       const levelsJson = el.dataset.levels;
       if (!levelsJson) return;
 
