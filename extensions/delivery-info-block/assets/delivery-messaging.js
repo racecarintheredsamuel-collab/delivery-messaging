@@ -24,27 +24,13 @@
       // Check if cart has met free delivery threshold and threshold message is set
       const thresholdMessage = el.dataset.thresholdMessage;
 
-      // For elements with threshold messages, wait for cart data before showing
-      // state.lastUpdated is null before cart fetch, set after
-      if (thresholdMessage && state.lastUpdated === null) {
-        return; // Skip until we have cart data
-      }
-
-      // Track first update per element to avoid fade flash on initial load
-      const isFirstUpdate = !el.dataset.pricingReady;
-
       if (thresholdMessage && fdThreshold > 0 && cartTotal >= fdThreshold) {
         // Cart meets threshold - show the threshold message
         const thresholdFormatted = dm.formatMoney(fdThreshold);
         const newContent = thresholdMessage.replace(/\{threshold\}/g, thresholdFormatted);
         const newHtml = parseBold(newContent);
 
-        if (isFirstUpdate) {
-          // First update - show immediately without fade
-          el.innerHTML = newHtml;
-          el.style.opacity = '1';
-          el.dataset.pricingReady = 'true';
-        } else if (el.innerHTML !== newHtml) {
+        if (el.innerHTML !== newHtml) {
           el.style.opacity = '0';
           setTimeout(() => {
             el.innerHTML = newHtml;
@@ -121,12 +107,7 @@
       const newContent = parts.join(' ' + divider + ' ');
       const newHtml = parseBold(newContent);
 
-      if (isFirstUpdate) {
-        // First update - show immediately without fade
-        el.innerHTML = newHtml;
-        el.style.opacity = '1';
-        el.dataset.pricingReady = 'true';
-      } else if (el.innerHTML !== newHtml) {
+      if (el.innerHTML !== newHtml) {
         el.style.opacity = '0';
         setTimeout(() => {
           el.innerHTML = newHtml;
