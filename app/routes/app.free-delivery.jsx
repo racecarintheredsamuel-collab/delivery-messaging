@@ -1150,6 +1150,31 @@ export default function FreeDeliveryPage() {
                                     <span style={{ fontSize: 12 }}>Displays in place of pricing line when free delivery threshold is met</span>
                                   </div>
                                 </div>
+
+                                {/* Loading Placeholder */}
+                                <div style={{ marginTop: 16 }}>
+                                  <label style={{ display: "block" }}>
+                                    <s-text>Loading Placeholder</s-text>
+                                    <input
+                                      type="text"
+                                      value={config.loading_placeholder ?? "Checking delivery rates..."}
+                                      onChange={e => {
+                                        setPricingConfigs(prev => prev.map(c =>
+                                          c.id === config.id
+                                            ? { ...c, loading_placeholder: e.target.value }
+                                            : c
+                                        ));
+                                      }}
+                                      placeholder="Checking delivery rates..."
+                                      style={{ width: "100%", marginTop: 4 }}
+                                      maxLength={100}
+                                    />
+                                  </label>
+                                  <div style={{ display: "flex", alignItems: "center", gap: 6, color: "var(--p-color-text-subdued, #6b7280)", marginTop: 4 }}>
+                                    <span style={{ fontSize: 12, flexShrink: 0 }}>💡</span>
+                                    <span style={{ fontSize: 12 }}>Shown briefly while prices load. Leave blank for skeleton shimmer.</span>
+                                  </div>
+                                </div>
                               </div>
                             </div>
                           )}
