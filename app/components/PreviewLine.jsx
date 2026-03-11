@@ -33,6 +33,9 @@ export function PreviewLine({ rule, globalSettings, lineNumber, children }) {
   const perLineIconKey = `icon_line_${lineNumber}`;
   const perLineIcon = rule.settings?.[perLineIconKey];
   const mainIcon = rule.settings?.icon;
+
+  // "none" explicitly hides the icon (no space), different from "spacer" (keeps space)
+  const hideIcon = perLineIcon === "none";
   const effectiveIcon = getEffectiveIcon(perLineIcon || mainIcon);
 
   // Check for per-line style override, fall back to main style
@@ -85,8 +88,8 @@ export function PreviewLine({ rule, globalSettings, lineNumber, children }) {
   };
 
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: (showIcon && !isSingleLayout) ? "0.5em" : 0 }}>
-      {!isSingleLayout && showIcon && (
+    <div style={{ display: "flex", alignItems: "center", gap: (showIcon && !isSingleLayout && !hideIcon) ? "0.5em" : 0 }}>
+      {!isSingleLayout && showIcon && !hideIcon && (
         <span
           aria-hidden="true"
           style={{

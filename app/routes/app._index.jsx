@@ -1598,7 +1598,8 @@ export default function DashboardPage() {
                     label="Icon color"
                     placeholder="#111827"
                     value={ruleData.icon_color}
-                    onInput={(e) => handleRuleChange("icon_color", e.target.value)}
+                    onInput={(e) => handleRuleChange("icon_color", e.detail?.value ?? e.target?.value ?? "#111827")}
+                    onChange={(e) => handleRuleChange("icon_color", e.detail?.value ?? e.target?.value ?? "#111827")}
                   />
                 </s-box>
 
@@ -1712,7 +1713,8 @@ export default function DashboardPage() {
                     label="Border color"
                     placeholder="#e5e7eb"
                     value={ruleData.eta_border_color}
-                    onInput={(e) => handleRuleChange("eta_border_color", e.target.value)}
+                    onInput={(e) => handleRuleChange("eta_border_color", e.detail?.value ?? e.target?.value ?? "#e5e7eb")}
+                    onChange={(e) => handleRuleChange("eta_border_color", e.detail?.value ?? e.target?.value ?? "#e5e7eb")}
                   />
                 </s-box>
 

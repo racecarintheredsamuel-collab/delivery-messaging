@@ -163,6 +163,8 @@ const fdPricingConfigSchema = z.object({
   // Cart threshold message (overrides levels when cart >= fd_threshold)
   threshold_message_enabled: z.boolean().optional(),
   threshold_message: z.string().max(150).optional(),
+  // Loading placeholder (shown during 2s delay before JS renders pricing)
+  loading_placeholder: z.string().max(100).optional(),
   // Legacy flat fields (for migration)
   segments: z.array(fdPricingSegmentSchema).max(4).optional(),
   free_text: z.string().max(100).optional(),

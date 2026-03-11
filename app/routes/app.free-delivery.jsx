@@ -224,26 +224,31 @@ export default function FreeDeliveryPage() {
     const configs = settings.fd_pricing_configs || [];
     // Migrate flat segments to levels format
     return configs.map(config => {
-      if (config.levels && config.levels.length > 0) {
-        return config; // Already in levels format
+      // Normalize loading_placeholder to empty string if undefined (fixes controlled input issue)
+      const baseConfig = {
+        ...config,
+        loading_placeholder: config.loading_placeholder ?? '',
+      };
+      if (baseConfig.levels && baseConfig.levels.length > 0) {
+        return baseConfig; // Already in levels format
       }
       // Migrate legacy flat format to single level
-      if (config.segments && config.segments.length > 0) {
+      if (baseConfig.segments && baseConfig.segments.length > 0) {
         return {
-          ...config,
+          ...baseConfig,
           levels: [{
             threshold: null, // No threshold for single level
-            segments: config.segments,
-            free_text: config.free_text,
-            divider: config.divider,
-            days_divider: config.days_divider,
-            show_days: config.show_days,
+            segments: baseConfig.segments,
+            free_text: baseConfig.free_text,
+            divider: baseConfig.divider,
+            days_divider: baseConfig.days_divider,
+            show_days: baseConfig.show_days,
           }],
         };
       }
       // New config - initialize with empty level
       return {
-        ...config,
+        ...baseConfig,
         levels: [{
           threshold: null,
           segments: [{ label: '', cost: 0, days: '' }, { label: '', cost: 0, days: '' }],
@@ -830,8 +835,9 @@ export default function FreeDeliveryPage() {
                                                 <input
                                                   type="text"
                                                   inputMode="decimal"
-                                                  value={level.threshold != null ? (level.threshold / 100) : ''}
-                                                  onChange={(e) => {
+                                                  defaultValue={level.threshold != null ? (level.threshold / 100) : ''}
+                                                  key={`${config.id}-${levelIndex}-threshold-${level.threshold}`}
+                                                  onBlur={(e) => {
                                                     const val = e.target.value.trim();
                                                     const newThreshold = val === '' ? null : Math.round(parseFloat(val || 0) * 100);
                                                     setPricingConfigs(prev => prev.map(c => {
@@ -1074,9 +1080,9 @@ export default function FreeDeliveryPage() {
                                   );
                                 })}
 
-                                {/* Add Level button */}
+                                {/* Add/Copy Level buttons */}
                                 {(config.levels || []).length < 3 && (
-                                  <div style={{ textAlign: 'center' }}>
+                                  <div style={{ display: 'flex', justifyContent: 'center', gap: 8 }}>
                                   <s-button
                                     onClick={() => {
                                       setPricingConfigs(prev => prev.map(c => {
@@ -1108,11 +1114,46 @@ export default function FreeDeliveryPage() {
                                   >
                                     Add Shipping Level
                                   </s-button>
+                                  {(config.levels || []).length > 0 && (
+                                    <s-button
+                                      variant="secondary"
+                                      onClick={() => {
+                                        setPricingConfigs(prev => prev.map(c => {
+                                          if (c.id !== config.id) return c;
+                                          const existingLevels = c.levels || [];
+                                          if (existingLevels.length === 0) return c;
+                                          const newLevels = [...existingLevels];
+                                          // Set threshold on previous level if not set
+                                          if (newLevels[newLevels.length - 1].threshold == null) {
+                                            newLevels[newLevels.length - 1] = { ...newLevels[newLevels.length - 1], threshold: 2000 };
+                                          }
+                                          // Deep copy the last level
+                                          const copiedLevel = JSON.parse(JSON.stringify(existingLevels[existingLevels.length - 1]));
+                                          copiedLevel.threshold = null; // Reset threshold for new level
+                                          newLevels.push(copiedLevel);
+                                          return { ...c, levels: newLevels };
+                                        }));
+                                        // Auto-expand the new level
+                                        setExpandedLevels(prev => {
+                                          const next = new Map(prev);
+                                          const levelSet = new Set(next.get(config.id) || []);
+                                          levelSet.add((config.levels || []).length);
+                                          next.set(config.id, levelSet);
+                                          return next;
+                                        });
+                                      }}
+                                    >
+                                      Copy Shipping Level
+                                    </s-button>
+                                  )}
                                   </div>
                                 )}
 
+                                {/* Divider before threshold settings */}
+                                <hr style={{ margin: "10px 0 8px 0", border: "none", borderTop: "1px solid var(--p-color-border, #e5e7eb)" }} />
+
                                 {/* Cart Threshold Message */}
-                                <div style={{ marginTop: 16 }}>
+                                <div style={{ marginTop: 8 }}>
                                   <label style={{ display: "flex", alignItems: "center", gap: 6 }}>
                                     <input
                                       type="checkbox"
@@ -1152,12 +1193,12 @@ export default function FreeDeliveryPage() {
                                 </div>
 
                                 {/* Loading Placeholder */}
-                                <div style={{ marginTop: 16 }}>
+                                <div style={{ marginTop: 8 }}>
                                   <label style={{ display: "block" }}>
                                     <s-text>Loading Placeholder</s-text>
                                     <input
                                       type="text"
-                                      value={config.loading_placeholder ?? "Checking delivery rates..."}
+                                      value={config.loading_placeholder}
                                       onChange={e => {
                                         setPricingConfigs(prev => prev.map(c =>
                                           c.id === config.id
@@ -1165,7 +1206,7 @@ export default function FreeDeliveryPage() {
                                             : c
                                         ));
                                       }}
-                                      placeholder="Checking delivery rates..."
+                                      placeholder="Checking delivery rates... (default)"
                                       style={{ width: "100%", marginTop: 4 }}
                                       maxLength={100}
                                     />
@@ -1200,9 +1241,9 @@ export default function FreeDeliveryPage() {
                       </div>
                     )}
 
-                  {/* Add Pricing Display button */}
+                  {/* Add/Copy Pricing Display buttons */}
                   {pricingConfigs.length < 10 && (
-                    <div style={{ textAlign: 'center' }}>
+                    <div style={{ display: 'flex', justifyContent: 'center', gap: 8 }}>
                     <s-button
                       onClick={() => {
                         const newId = `config-${Date.now()}`;
@@ -1229,6 +1270,29 @@ export default function FreeDeliveryPage() {
                     >
                       Add Pricing Display
                     </s-button>
+                    {pricingConfigs.length > 0 && (
+                      <s-button
+                        variant="secondary"
+                        onClick={() => {
+                          const lastConfig = pricingConfigs[pricingConfigs.length - 1];
+                          const newId = `config-${Date.now()}`;
+                          // Deep copy the last config
+                          const copiedConfig = JSON.parse(JSON.stringify(lastConfig));
+                          copiedConfig.id = newId;
+                          copiedConfig.name = lastConfig.name ? `${lastConfig.name} (copy)` : '';
+                          setPricingConfigs(prev => [...prev, copiedConfig]);
+                          setExpandedPricingConfigs(prev => new Set([...prev, newId]));
+                          // Auto-expand the first level
+                          setExpandedLevels(prev => {
+                            const next = new Map(prev);
+                            next.set(newId, new Set([0]));
+                            return next;
+                          });
+                        }}
+                      >
+                        Copy Pricing Display
+                      </s-button>
+                    )}
                     </div>
                   )}
                 </div>
@@ -1779,12 +1843,14 @@ export default function FreeDeliveryPage() {
                   <s-color-field
                     label="Background color"
                     value={settings.fd_announcement_bg_color || "#1f2937"}
-                    onInput={(e) => setSettings({ ...settings, fd_announcement_bg_color: e.target.value })}
+                    onInput={(e) => setSettings({ ...settings, fd_announcement_bg_color: e.detail?.value ?? e.target?.value ?? "#1f2937" })}
+                    onChange={(e) => setSettings({ ...settings, fd_announcement_bg_color: e.detail?.value ?? e.target?.value ?? "#1f2937" })}
                   />
                   <s-color-field
                     label="Text color"
                     value={settings.fd_announcement_text_color || "#ffffff"}
-                    onInput={(e) => setSettings({ ...settings, fd_announcement_text_color: e.target.value })}
+                    onInput={(e) => setSettings({ ...settings, fd_announcement_text_color: e.detail?.value ?? e.target?.value ?? "#ffffff" })}
+                    onChange={(e) => setSettings({ ...settings, fd_announcement_text_color: e.detail?.value ?? e.target?.value ?? "#ffffff" })}
                   />
                 </div>
 
@@ -1929,7 +1995,8 @@ export default function FreeDeliveryPage() {
                     <s-color-field
                       label=""
                       value={settings.fd_announcement_link_color || "#ffffff"}
-                      onInput={(e) => setSettings({ ...settings, fd_announcement_link_color: e.target.value })}
+                      onInput={(e) => setSettings({ ...settings, fd_announcement_link_color: e.detail?.value ?? e.target?.value ?? "#ffffff" })}
+                      onChange={(e) => setSettings({ ...settings, fd_announcement_link_color: e.detail?.value ?? e.target?.value ?? "#ffffff" })}
                     />
                   </div>
 
@@ -1970,7 +2037,8 @@ export default function FreeDeliveryPage() {
                       <s-color-field
                         label=""
                         value={settings.fd_announcement_link_hover_color || "#e5e7eb"}
-                        onInput={(e) => setSettings({ ...settings, fd_announcement_link_hover_color: e.target.value })}
+                        onInput={(e) => setSettings({ ...settings, fd_announcement_link_hover_color: e.detail?.value ?? e.target?.value ?? "#e5e7eb" })}
+                        onChange={(e) => setSettings({ ...settings, fd_announcement_link_hover_color: e.detail?.value ?? e.target?.value ?? "#e5e7eb" })}
                       />
                     </div>
 

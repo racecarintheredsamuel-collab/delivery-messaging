@@ -679,6 +679,11 @@ function replacePricingPlaceholders(text, globalSettings, shopCurrency = 'GBP') 
     }
   }
 
+  // If there are still unmatched {pricing:*} placeholders, return error marker for preview
+  if (text.includes('{pricing:')) {
+    return '__INVALID_PRICING_CODE__';
+  }
+
   return text;
 }
 
@@ -743,7 +748,7 @@ function defaultRule() {
   return {
     id: newRuleId(),
     name: "Untitled rule",
-    match: { product_handles: [], tags: [], stock_status: "any", is_fallback: false },
+    match: { product_handles: [], tags: [], exclude_handles: [], stock_status: "any", is_fallback: false },
     settings: {
       // Collapsed states - only Product Matching expanded by default
       collapsed_product_matching: false,
@@ -992,6 +997,7 @@ export default function Index() {
   // Note: activeProfileId is derived from parsed (below), not stored separately
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [handlesText, setHandlesText] = useState("");
+  const [excludeHandlesText, setExcludeHandlesText] = useState("");
   const [tagsText, setTagsText] = useState("");
   const [hoverDeleteIdx, setHoverDeleteIdx] = useState(null);
 
@@ -1072,10 +1078,12 @@ export default function Index() {
   // Refs for tags/handles inputs to enable programmatic blur before rule switch
   const tagsInputRef = useRef(null);
   const handlesInputRef = useRef(null);
+  const excludeHandlesInputRef = useRef(null);
 
   // Track which rule ID we're editing (prevents stale closure issues)
   const editingTagsRuleId = useRef(null);
   const editingHandlesRuleId = useRef(null);
+  const editingExcludeHandlesRuleId = useRef(null);
 
   const fetcher = useFetcher();
 
@@ -1383,6 +1391,10 @@ export default function Index() {
       }
 
       const totalMinutes = Math.floor(diff / 60000);
+      if (totalMinutes < 1) {
+        setCountdownText('less than 1 min');
+        return;
+      }
       const h = Math.floor(totalMinutes / 60);
       const m = totalMinutes % 60;
 
@@ -1444,6 +1456,9 @@ export default function Index() {
     if (document.activeElement === handlesInputRef.current) {
       handlesInputRef.current.blur();
     }
+    if (document.activeElement === excludeHandlesInputRef.current) {
+      excludeHandlesInputRef.current.blur();
+    }
   };
 
   // Sync local text state when rule changes or data changes externally (e.g., undo)
@@ -1455,7 +1470,10 @@ export default function Index() {
     if (document.activeElement !== handlesInputRef.current) {
       setHandlesText((rule?.match?.product_handles ?? []).join(", "));
     }
-  }, [rule?.id, rule?.match?.tags, rule?.match?.product_handles]);
+    if (document.activeElement !== excludeHandlesInputRef.current) {
+      setExcludeHandlesText((rule?.match?.exclude_handles ?? []).join(", "));
+    }
+  }, [rule?.id, rule?.match?.tags, rule?.match?.product_handles, rule?.match?.exclude_handles]);
 
   // --------------------------------------------------------------------------
   // Handlers for updating rules and profiles
@@ -2027,12 +2045,14 @@ export default function Index() {
                     <s-color-field
                       label="Theme font colour"
                       value={globalSettings?.preview_text_color || "#000000"}
-                      onInput={(e) => setGlobalSettings({ ...globalSettings, preview_text_color: e.target.value })}
+                      onInput={(e) => setGlobalSettings({ ...globalSettings, preview_text_color: e.detail?.value ?? e.target?.value ?? "#000000" })}
+                      onChange={(e) => setGlobalSettings({ ...globalSettings, preview_text_color: e.detail?.value ?? e.target?.value ?? "#000000" })}
                     />
                     <s-color-field
                       label="Theme background colour"
                       value={globalSettings?.preview_bg_color || "#ffffff"}
-                      onInput={(e) => setGlobalSettings({ ...globalSettings, preview_bg_color: e.target.value })}
+                      onInput={(e) => setGlobalSettings({ ...globalSettings, preview_bg_color: e.detail?.value ?? e.target?.value ?? "#ffffff" })}
+                      onChange={(e) => setGlobalSettings({ ...globalSettings, preview_bg_color: e.detail?.value ?? e.target?.value ?? "#ffffff" })}
                     />
                   </div>
                 </div>
@@ -3384,6 +3404,70 @@ export default function Index() {
                       style={{ width: "100%" }}
                     />
                   </label>
+
+                  <label>
+                    <s-text>Exclusions - Product handles (comma-separated)</s-text>
+                    <input
+                      ref={excludeHandlesInputRef}
+                      value={excludeHandlesText}
+                      onChange={(e) => setExcludeHandlesText(e.target.value)}
+                      onFocus={() => {
+                        editingExcludeHandlesRuleId.current = rule?.id;
+                      }}
+                      onBlur={() => {
+                        const ruleId = editingExcludeHandlesRuleId.current;
+                        if (!ruleId) return;
+
+                        const currentRules = rulesRef.current;
+                        const ruleIndex = currentRules.findIndex((r) => r.id === ruleId);
+                        if (ruleIndex < 0) {
+                          editingExcludeHandlesRuleId.current = null;
+                          return;
+                        }
+
+                        const targetRule = currentRules[ruleIndex];
+                        const excludeHandles = excludeHandlesText
+                          .split(",")
+                          .map((s) => s.trim())
+                          .filter(Boolean);
+
+                        setExcludeHandlesText(excludeHandles.join(", "));
+
+                        const next = [...currentRules];
+                        next[ruleIndex] = {
+                          ...targetRule,
+                          match: { ...targetRule.match, exclude_handles: excludeHandles },
+                        };
+                        setRules(next);
+                        editingExcludeHandlesRuleId.current = null;
+                      }}
+                      style={{ width: "100%" }}
+                    />
+                  </label>
+
+                  {/* Warning if same handle in both fields */}
+                  {(() => {
+                    const handles = (rule.match?.product_handles || []);
+                    const excludes = (rule.match?.exclude_handles || []);
+                    const overlap = handles.filter(h => excludes.includes(h));
+                    if (overlap.length === 0) return null;
+                    return (
+                      <div style={{
+                        color: "#dc2626",
+                        fontSize: 12,
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 6,
+                        padding: "8px 12px",
+                        background: "#fef2f2",
+                        borderRadius: 6,
+                        border: "1px solid #fecaca"
+                      }}>
+                        <span>⚠️</span>
+                        <span>Handle "{overlap[0]}" appears in both Product handles and Exclusions</span>
+                      </div>
+                    );
+                  })()}
                       </>)}
 
                       <label style={{ display: "flex", gap: 6, alignItems: "flex-start" }}>
@@ -3475,6 +3559,68 @@ export default function Index() {
                   {/* Content - only show when not collapsed */}
                   {!collapsedPanels.dispatch_settings && (
                     <div style={{ padding: "16px", display: "grid", gap: 16 }}>
+
+                      {/* ===== COURIER DELIVERY WINDOW ===== */}
+                      <div>
+                        <s-text style={{ fontWeight: 600, marginBottom: 4, display: "block" }}>Courier delivery window</s-text>
+                        <div style={{ display: "flex", alignItems: "center", gap: 6, color: "var(--p-color-text-subdued, #6b7280)", marginBottom: 8 }}>
+                          <span style={{ fontSize: 12, flexShrink: 0 }}>💡</span>
+                          <span style={{ fontSize: 12 }}>Used by &#123;arrival&#125;, &#123;express&#125; placeholders and ETA Timeline</span>
+                        </div>
+                        <div style={{ display: "flex" }}>
+                          <label style={{ width: "40%" }}>
+                            <s-text>Min days (after shipping)</s-text>
+                            <input
+                              type="number"
+                              min="0"
+                              value={String(rule.settings?.eta_delivery_days_min ?? 3)}
+                              onChange={(e) => {
+                                const newMin = safeParseNumber(e.target.value, 3, 0);
+                                const currentMax = rule.settings?.eta_delivery_days_max ?? 5;
+                                const next = [...rules];
+                                next[safeSelectedIndex] = {
+                                  ...rule,
+                                  settings: {
+                                    ...rule.settings,
+                                    eta_delivery_days_min: newMin,
+                                    // If min exceeds max, bump max to match
+                                    ...(newMin > currentMax ? { eta_delivery_days_max: newMin } : {}),
+                                  },
+                                };
+                                setRules(next);
+                              }}
+                              style={{ width: "100%" }}
+                            />
+                          </label>
+                          <label style={{ width: "40%", marginLeft: "10%" }}>
+                            <s-text>Max days (after shipping)</s-text>
+                            <input
+                              type="number"
+                              min="0"
+                              value={String(rule.settings?.eta_delivery_days_max ?? 5)}
+                              onChange={(e) => {
+                                const newMax = safeParseNumber(e.target.value, 5, 0);
+                                const currentMin = rule.settings?.eta_delivery_days_min ?? 3;
+                                const next = [...rules];
+                                next[safeSelectedIndex] = {
+                                  ...rule,
+                                  settings: {
+                                    ...rule.settings,
+                                    eta_delivery_days_max: newMax,
+                                    // If max goes below min, lower min to match
+                                    ...(newMax < currentMin ? { eta_delivery_days_min: newMax } : {}),
+                                  },
+                                };
+                                setRules(next);
+                              }}
+                              style={{ width: "100%" }}
+                            />
+                          </label>
+                        </div>
+                      </div>
+
+                      {/* Divider */}
+                      <div style={{ borderTop: "1px solid var(--p-color-border, #e5e7eb)", margin: "4px 0" }} />
 
                       {/* ===== 1. CUTOFF TIMES ===== */}
                       <div>
@@ -3996,10 +4142,20 @@ export default function Index() {
                             placeholder="#e5e7eb"
                             value={rule.settings?.border_color || "#e5e7eb"}
                             onInput={(e) => {
+                              const val = e.detail?.value ?? e.target?.value ?? "#e5e7eb";
                               const next = [...rules];
                               next[safeSelectedIndex] = {
                                 ...rule,
-                                settings: { ...rule.settings, border_color: e.target.value },
+                                settings: { ...rule.settings, border_color: val },
+                              };
+                              setRules(next);
+                            }}
+                            onChange={(e) => {
+                              const val = e.detail?.value ?? e.target?.value ?? "#e5e7eb";
+                              const next = [...rules];
+                              next[safeSelectedIndex] = {
+                                ...rule,
+                                settings: { ...rule.settings, border_color: val },
                               };
                               setRules(next);
                             }}
@@ -4355,10 +4511,20 @@ export default function Index() {
                     placeholder="#111827"
                     value={rule.settings?.icon_color || "#111827"}
                     onInput={(e) => {
+                      const val = e.detail?.value ?? e.target?.value ?? "#111827";
                       const next = [...rules];
                       next[safeSelectedIndex] = {
                         ...rule,
-                        settings: { ...rule.settings, icon_color: e.target.value },
+                        settings: { ...rule.settings, icon_color: val },
+                      };
+                      setRules(next);
+                    }}
+                    onChange={(e) => {
+                      const val = e.detail?.value ?? e.target?.value ?? "#111827";
+                      const next = [...rules];
+                      next[safeSelectedIndex] = {
+                        ...rule,
+                        settings: { ...rule.settings, icon_color: val },
                       };
                       setRules(next);
                     }}
@@ -4406,6 +4572,8 @@ export default function Index() {
                             title="Icon"
                           >
                             <option value="">(Main icon)</option>
+                            <option value="none">No icon</option>
+                            <option value="spacer">Spacer</option>
                             <optgroup label="Preset Icons">
                               <option value="truck">Truck</option>
                               <option value="truck-v2">Truck v2</option>
@@ -4522,6 +4690,8 @@ export default function Index() {
                             title="Icon"
                           >
                             <option value="">(Main icon)</option>
+                            <option value="none">No icon</option>
+                            <option value="spacer">Spacer</option>
                             <optgroup label="Preset Icons">
                               <option value="truck">Truck</option>
                               <option value="truck-v2">Truck v2</option>
@@ -4638,6 +4808,8 @@ export default function Index() {
                             title="Icon"
                           >
                             <option value="">(Main icon)</option>
+                            <option value="none">No icon</option>
+                            <option value="spacer">Spacer</option>
                             <optgroup label="Preset Icons">
                               <option value="truck">Truck</option>
                               <option value="truck-v2">Truck v2</option>
@@ -4754,6 +4926,8 @@ export default function Index() {
                             title="Icon"
                           >
                             <option value="">(Main icon)</option>
+                            <option value="none">No icon</option>
+                            <option value="spacer">Spacer</option>
                             <optgroup label="Preset Icons">
                               <option value="truck">Truck</option>
                               <option value="truck-v2">Truck v2</option>
@@ -4959,153 +5133,10 @@ export default function Index() {
                   {/* Content - only show when not collapsed */}
                   {!collapsedPanels.eta_timeline && (
                   <div style={{ padding: "16px", display: "grid", gap: 12 }}>
-                    <s-text size="small" style={{ color: "var(--p-color-text-subdued, #6b7280)" }}>
-                      Timeline shows: Order date (today) → Shipping date (based on cutoff) → Delivery date range
-                    </s-text>
-
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-                    <label>
-                      <s-text>Delivery: Min days (after shipping)</s-text>
-                      <input
-                        type="number"
-                        min="0"
-                        value={String(rule.settings?.eta_delivery_days_min ?? 3)}
-                        onChange={(e) => {
-                          const next = [...rules];
-                          next[safeSelectedIndex] = {
-                            ...rule,
-                            settings: { ...rule.settings, eta_delivery_days_min: safeParseNumber(e.target.value, 3, 0) },
-                          };
-                          setRules(next);
-                        }}
-                        style={{ width: "100%" }}
-                      />
-                    </label>
-
-                    <label>
-                      <s-text>Delivery: Max days (after shipping)</s-text>
-                      <input
-                        type="number"
-                        min="0"
-                        value={String(rule.settings?.eta_delivery_days_max ?? 5)}
-                        onChange={(e) => {
-                          const next = [...rules];
-                          next[safeSelectedIndex] = {
-                            ...rule,
-                            settings: { ...rule.settings, eta_delivery_days_max: safeParseNumber(e.target.value, 5, 0) },
-                          };
-                          setRules(next);
-                        }}
-                        style={{ width: "100%" }}
-                      />
-                    </label>
-                  </div>
-
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-                    <label>
-                      <s-text>Connector style</s-text>
-                      <select
-                        value={rule.settings?.eta_connector_style || "double-chevron"}
-                        onChange={(e) => {
-                          const next = [...rules];
-                          next[safeSelectedIndex] = {
-                            ...rule,
-                            settings: { ...rule.settings, eta_connector_style: e.target.value },
-                          };
-                          setRules(next);
-                        }}
-                        style={{ width: "100%" }}
-                      >
-                        <option value="double-chevron">Chevrons</option>
-                        <option value="big-arrow">Arrow</option>
-                        <option value="line">Line</option>
-                        <option value="arrow-dot">Line dot</option>
-                        {globalSettings?.custom_connector_svg && (
-                          <option value="custom">Custom</option>
-                        )}
-                      </select>
-                    </label>
-
-                    <label>
-                      <s-text>Connector alignment</s-text>
-                      <select
-                        value={rule.settings?.eta_connector_alignment || "center"}
-                        onChange={(e) => {
-                          const next = [...rules];
-                          next[safeSelectedIndex] = {
-                            ...rule,
-                            settings: { ...rule.settings, eta_connector_alignment: e.target.value },
-                          };
-                          setRules(next);
-                        }}
-                        style={{ width: "100%" }}
-                      >
-                        <option value="center">Center (full height)</option>
-                        <option value="icon">Center (icon level)</option>
-                      </select>
-                    </label>
-                  </div>
-
-                  <label>
-                    <s-text>Connector size ({rule.settings?.eta_connector_size || 24}px)</s-text>
-                    <input
-                      type="range"
-                      min="12"
-                      max="72"
-                      value={rule.settings?.eta_connector_size || 24}
-                      onChange={(e) => {
-                        const next = [...rules];
-                        next[safeSelectedIndex] = {
-                          ...rule,
-                          settings: { ...rule.settings, eta_connector_size: Number(e.target.value) },
-                        };
-                        setRules(next);
-                      }}
-                      style={{ width: "100%" }}
-                    />
-                  </label>
-
-                  <label style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer" }}>
-                    <input
-                      type="checkbox"
-                      checked={rule.settings?.eta_connector_use_main_color !== false}
-                      onChange={(e) => {
-                        const next = [...rules];
-                        next[safeSelectedIndex] = {
-                          ...rule,
-                          settings: {
-                            ...rule.settings,
-                            eta_connector_use_main_color: e.target.checked
-                          },
-                        };
-                        setRules(next);
-                      }}
-                    />
-                    <s-text>Connector uses main icon colour</s-text>
-                  </label>
-
-                  {rule.settings?.eta_connector_use_main_color === false && (
-                    <s-color-field
-                      label="Custom connector colour"
-                      value={rule.settings?.eta_connector_color || "#111827"}
-                      onInput={(e) => {
-                        const next = [...rules];
-                        next[safeSelectedIndex] = {
-                          ...rule,
-                          settings: { ...rule.settings, eta_connector_color: e.target.value || e.detail?.value },
-                        };
-                        setRules(next);
-                      }}
-                      onChange={(e) => {
-                        const next = [...rules];
-                        next[safeSelectedIndex] = {
-                          ...rule,
-                          settings: { ...rule.settings, eta_connector_color: e.target.value || e.detail?.value },
-                        };
-                        setRules(next);
-                      }}
-                    />
-                  )}
+                    <div>
+                      <div>ETA Timeline displays:</div>
+                      <div>Order date (today) → Shipping date <span title="Cutoff and lead time set in Global Settings or overridden per rule in Dispatch Settings." style={{ cursor: "help" }}>ℹ️</span> → Delivery date range <span title="Courier delivery window set per rule in Dispatch Settings." style={{ cursor: "help" }}>ℹ️</span></div>
+                    </div>
 
                   <s-text style={{ fontWeight: 600, marginTop: 12 }}>Stage Labels</s-text>
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8 }}>
@@ -5370,26 +5401,6 @@ export default function Index() {
                     </label>
                   </div>
 
-                  <label style={{ marginTop: 12 }}>
-                    <s-text>Icon size: {rule.settings?.eta_icon_size || 36}px</s-text>
-                    <input
-                      type="range"
-                      min="20"
-                      max="56"
-                      step="4"
-                      value={rule.settings?.eta_icon_size || 36}
-                      onChange={(e) => {
-                        const next = [...rules];
-                        next[safeSelectedIndex] = {
-                          ...rule,
-                          settings: { ...rule.settings, eta_icon_size: parseInt(e.target.value) },
-                        };
-                        setRules(next);
-                      }}
-                      style={{ width: "100%" }}
-                    />
-                  </label>
-
                   <label style={{ display: "flex", gap: 8, alignItems: "center", marginTop: 12 }}>
                     <input
                       type="checkbox"
@@ -5410,14 +5421,194 @@ export default function Index() {
                   </label>
 
                   {rule.settings?.eta_use_main_icon_color === false && (
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8 }}>
+                      <s-color-field
+                        label="Order"
+                        value={rule.settings?.eta_order_icon_color || "#111827"}
+                        onInput={(e) => {
+                          const val = e.detail?.value ?? e.target?.value ?? "#111827";
+                          const next = [...rules];
+                          next[safeSelectedIndex] = {
+                            ...rule,
+                            settings: { ...rule.settings, eta_order_icon_color: val },
+                          };
+                          setRules(next);
+                        }}
+                        onChange={(e) => {
+                          const val = e.detail?.value ?? e.target?.value ?? "#111827";
+                          const next = [...rules];
+                          next[safeSelectedIndex] = {
+                            ...rule,
+                            settings: { ...rule.settings, eta_order_icon_color: val },
+                          };
+                          setRules(next);
+                        }}
+                      />
+                      <s-color-field
+                        label="Shipping"
+                        value={rule.settings?.eta_shipping_icon_color || "#111827"}
+                        onInput={(e) => {
+                          const val = e.detail?.value ?? e.target?.value ?? "#111827";
+                          const next = [...rules];
+                          next[safeSelectedIndex] = {
+                            ...rule,
+                            settings: { ...rule.settings, eta_shipping_icon_color: val },
+                          };
+                          setRules(next);
+                        }}
+                        onChange={(e) => {
+                          const val = e.detail?.value ?? e.target?.value ?? "#111827";
+                          const next = [...rules];
+                          next[safeSelectedIndex] = {
+                            ...rule,
+                            settings: { ...rule.settings, eta_shipping_icon_color: val },
+                          };
+                          setRules(next);
+                        }}
+                      />
+                      <s-color-field
+                        label="Delivery"
+                        value={rule.settings?.eta_delivery_icon_color || "#111827"}
+                        onInput={(e) => {
+                          const val = e.detail?.value ?? e.target?.value ?? "#111827";
+                          const next = [...rules];
+                          next[safeSelectedIndex] = {
+                            ...rule,
+                            settings: { ...rule.settings, eta_delivery_icon_color: val },
+                          };
+                          setRules(next);
+                        }}
+                        onChange={(e) => {
+                          const val = e.detail?.value ?? e.target?.value ?? "#111827";
+                          const next = [...rules];
+                          next[safeSelectedIndex] = {
+                            ...rule,
+                            settings: { ...rule.settings, eta_delivery_icon_color: val },
+                          };
+                          setRules(next);
+                        }}
+                      />
+                    </div>
+                  )}
+
+                  <label style={{ marginTop: 12 }}>
+                    <s-text>Icon size: {rule.settings?.eta_icon_size || 36}px</s-text>
+                    <input
+                      type="range"
+                      min="20"
+                      max="56"
+                      step="4"
+                      value={rule.settings?.eta_icon_size || 36}
+                      onChange={(e) => {
+                        const next = [...rules];
+                        next[safeSelectedIndex] = {
+                          ...rule,
+                          settings: { ...rule.settings, eta_icon_size: parseInt(e.target.value) },
+                        };
+                        setRules(next);
+                      }}
+                      style={{ width: "100%" }}
+                    />
+                  </label>
+
+                  {/* Divider before Connector section */}
+                  <div style={{ borderTop: "1px solid var(--p-color-border, #e5e7eb)", margin: "8px 0" }} />
+
+                  {/* Connector section */}
+                  <s-text style={{ fontWeight: 600 }}>Connector</s-text>
+
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                    <label>
+                      <s-text>Connector style</s-text>
+                      <select
+                        value={rule.settings?.eta_connector_style || "double-chevron"}
+                        onChange={(e) => {
+                          const next = [...rules];
+                          next[safeSelectedIndex] = {
+                            ...rule,
+                            settings: { ...rule.settings, eta_connector_style: e.target.value },
+                          };
+                          setRules(next);
+                        }}
+                        style={{ width: "100%" }}
+                      >
+                        <option value="double-chevron">Chevrons</option>
+                        <option value="big-arrow">Arrow</option>
+                        <option value="line">Line</option>
+                        <option value="arrow-dot">Line dot</option>
+                        {globalSettings?.custom_connector_svg && (
+                          <option value="custom">Custom</option>
+                        )}
+                      </select>
+                    </label>
+
+                    <label>
+                      <s-text>Connector alignment</s-text>
+                      <select
+                        value={rule.settings?.eta_connector_alignment || "center"}
+                        onChange={(e) => {
+                          const next = [...rules];
+                          next[safeSelectedIndex] = {
+                            ...rule,
+                            settings: { ...rule.settings, eta_connector_alignment: e.target.value },
+                          };
+                          setRules(next);
+                        }}
+                        style={{ width: "100%" }}
+                      >
+                        <option value="center">Center (full height)</option>
+                        <option value="icon">Center (icon level)</option>
+                      </select>
+                    </label>
+                  </div>
+
+                  <label>
+                    <s-text>Connector size ({rule.settings?.eta_connector_size || 24}px)</s-text>
+                    <input
+                      type="range"
+                      min="12"
+                      max="72"
+                      value={rule.settings?.eta_connector_size || 24}
+                      onChange={(e) => {
+                        const next = [...rules];
+                        next[safeSelectedIndex] = {
+                          ...rule,
+                          settings: { ...rule.settings, eta_connector_size: Number(e.target.value) },
+                        };
+                        setRules(next);
+                      }}
+                      style={{ width: "100%" }}
+                    />
+                  </label>
+
+                  <label style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer" }}>
+                    <input
+                      type="checkbox"
+                      checked={rule.settings?.eta_connector_use_main_color !== false}
+                      onChange={(e) => {
+                        const next = [...rules];
+                        next[safeSelectedIndex] = {
+                          ...rule,
+                          settings: {
+                            ...rule.settings,
+                            eta_connector_use_main_color: e.target.checked
+                          },
+                        };
+                        setRules(next);
+                      }}
+                    />
+                    <s-text>Connector uses main icon colour</s-text>
+                  </label>
+
+                  {rule.settings?.eta_connector_use_main_color === false && (
                     <s-color-field
-                      label="Custom icon color"
-                      value={rule.settings?.eta_color || "#111827"}
+                      label="Custom connector colour"
+                      value={rule.settings?.eta_connector_color || "#111827"}
                       onInput={(e) => {
                         const next = [...rules];
                         next[safeSelectedIndex] = {
                           ...rule,
-                          settings: { ...rule.settings, eta_color: e.target.value || e.detail?.value },
+                          settings: { ...rule.settings, eta_connector_color: e.target.value || e.detail?.value },
                         };
                         setRules(next);
                       }}
@@ -5425,7 +5616,7 @@ export default function Index() {
                         const next = [...rules];
                         next[safeSelectedIndex] = {
                           ...rule,
-                          settings: { ...rule.settings, eta_color: e.target.value || e.detail?.value },
+                          settings: { ...rule.settings, eta_connector_color: e.target.value || e.detail?.value },
                         };
                         setRules(next);
                       }}
@@ -5498,10 +5689,20 @@ export default function Index() {
                     label="Border color"
                     value={rule.settings?.eta_border_color || "#e5e7eb"}
                     onInput={(e) => {
+                      const val = e.detail?.value ?? e.target?.value ?? "#e5e7eb";
                       const next = [...rules];
                       next[safeSelectedIndex] = {
                         ...rule,
-                        settings: { ...rule.settings, eta_border_color: e.target.value },
+                        settings: { ...rule.settings, eta_border_color: val },
+                      };
+                      setRules(next);
+                    }}
+                    onChange={(e) => {
+                      const val = e.detail?.value ?? e.target?.value ?? "#e5e7eb";
+                      const next = [...rules];
+                      next[safeSelectedIndex] = {
+                        ...rule,
+                        settings: { ...rule.settings, eta_border_color: val },
                       };
                       setRules(next);
                     }}
@@ -6669,37 +6870,77 @@ export default function Index() {
                             <div style={{ display: "grid", gap: "0.35em", flex: 1 }}>
                               {rule.settings?.show_messages !== false ? (
                                 <>
-                                  {rule.settings?.message_line_1 && (
-                                    <PreviewLine rule={rule} globalSettings={globalSettings} lineNumber={1}>
-                                      {parseMarkdown(replacePricingPlaceholders(replaceDatePlaceholders(rule.settings.message_line_1, rule, globalSettings, shopCurrency, countdownText), globalSettings, shopCurrency)).map((seg, i) =>
-                                        renderSegment(seg, i, 'l1', globalSettings)
-                                      )}
-                                    </PreviewLine>
-                                  )}
+                                  {rule.settings?.message_line_1 && (() => {
+                                    const processed = replacePricingPlaceholders(replaceDatePlaceholders(rule.settings.message_line_1, rule, globalSettings, shopCurrency, countdownText), globalSettings, shopCurrency);
+                                    if (processed === '__INVALID_PRICING_CODE__') {
+                                      return (
+                                        <PreviewLine rule={rule} globalSettings={globalSettings} lineNumber={1}>
+                                          <span style={{ color: '#dc2626', fontStyle: 'italic', fontSize: '0.9em' }}>Invalid Pricing Display Code</span>
+                                        </PreviewLine>
+                                      );
+                                    }
+                                    return (
+                                      <PreviewLine rule={rule} globalSettings={globalSettings} lineNumber={1}>
+                                        {parseMarkdown(processed).map((seg, i) =>
+                                          renderSegment(seg, i, 'l1', globalSettings)
+                                        )}
+                                      </PreviewLine>
+                                    );
+                                  })()}
 
-                                  {rule.settings?.message_line_2 && (
-                                    <PreviewLine rule={rule} globalSettings={globalSettings} lineNumber={2}>
-                                      {parseMarkdown(replacePricingPlaceholders(replaceDatePlaceholders(rule.settings.message_line_2, rule, globalSettings, shopCurrency, countdownText), globalSettings, shopCurrency)).map((seg, i) =>
-                                        renderSegment(seg, i, 'l2', globalSettings)
-                                      )}
-                                    </PreviewLine>
-                                  )}
+                                  {rule.settings?.message_line_2 && (() => {
+                                    const processed = replacePricingPlaceholders(replaceDatePlaceholders(rule.settings.message_line_2, rule, globalSettings, shopCurrency, countdownText), globalSettings, shopCurrency);
+                                    if (processed === '__INVALID_PRICING_CODE__') {
+                                      return (
+                                        <PreviewLine rule={rule} globalSettings={globalSettings} lineNumber={2}>
+                                          <span style={{ color: '#dc2626', fontStyle: 'italic', fontSize: '0.9em' }}>Invalid Pricing Display Code</span>
+                                        </PreviewLine>
+                                      );
+                                    }
+                                    return (
+                                      <PreviewLine rule={rule} globalSettings={globalSettings} lineNumber={2}>
+                                        {parseMarkdown(processed).map((seg, i) =>
+                                          renderSegment(seg, i, 'l2', globalSettings)
+                                        )}
+                                      </PreviewLine>
+                                    );
+                                  })()}
 
-                                  {rule.settings?.message_line_3 && (
-                                    <PreviewLine rule={rule} globalSettings={globalSettings} lineNumber={3}>
-                                      {parseMarkdown(replacePricingPlaceholders(replaceDatePlaceholders(rule.settings.message_line_3, rule, globalSettings, shopCurrency, countdownText), globalSettings, shopCurrency)).map((seg, i) =>
-                                        renderSegment(seg, i, 'l3', globalSettings)
-                                      )}
-                                    </PreviewLine>
-                                  )}
+                                  {rule.settings?.message_line_3 && (() => {
+                                    const processed = replacePricingPlaceholders(replaceDatePlaceholders(rule.settings.message_line_3, rule, globalSettings, shopCurrency, countdownText), globalSettings, shopCurrency);
+                                    if (processed === '__INVALID_PRICING_CODE__') {
+                                      return (
+                                        <PreviewLine rule={rule} globalSettings={globalSettings} lineNumber={3}>
+                                          <span style={{ color: '#dc2626', fontStyle: 'italic', fontSize: '0.9em' }}>Invalid Pricing Display Code</span>
+                                        </PreviewLine>
+                                      );
+                                    }
+                                    return (
+                                      <PreviewLine rule={rule} globalSettings={globalSettings} lineNumber={3}>
+                                        {parseMarkdown(processed).map((seg, i) =>
+                                          renderSegment(seg, i, 'l3', globalSettings)
+                                        )}
+                                      </PreviewLine>
+                                    );
+                                  })()}
 
-                                  {rule.settings?.message_line_4 && (
-                                    <PreviewLine rule={rule} globalSettings={globalSettings} lineNumber={4}>
-                                      {parseMarkdown(replacePricingPlaceholders(replaceDatePlaceholders(rule.settings.message_line_4, rule, globalSettings, shopCurrency, countdownText), globalSettings, shopCurrency)).map((seg, i) =>
-                                        renderSegment(seg, i, 'l4', globalSettings)
-                                      )}
-                                    </PreviewLine>
-                                  )}
+                                  {rule.settings?.message_line_4 && (() => {
+                                    const processed = replacePricingPlaceholders(replaceDatePlaceholders(rule.settings.message_line_4, rule, globalSettings, shopCurrency, countdownText), globalSettings, shopCurrency);
+                                    if (processed === '__INVALID_PRICING_CODE__') {
+                                      return (
+                                        <PreviewLine rule={rule} globalSettings={globalSettings} lineNumber={4}>
+                                          <span style={{ color: '#dc2626', fontStyle: 'italic', fontSize: '0.9em' }}>Invalid Pricing Display Code</span>
+                                        </PreviewLine>
+                                      );
+                                    }
+                                    return (
+                                      <PreviewLine rule={rule} globalSettings={globalSettings} lineNumber={4}>
+                                        {parseMarkdown(processed).map((seg, i) =>
+                                          renderSegment(seg, i, 'l4', globalSettings)
+                                        )}
+                                      </PreviewLine>
+                                    );
+                                  })()}
                                 </>
                               ) : null}
                             </div>

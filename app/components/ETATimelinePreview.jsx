@@ -39,17 +39,27 @@ function parseTimeString(timeStr, defaultHour = 14, defaultMin = 0) {
 export function ETATimelinePreview({ rule, globalSettings }) {
   const iconPx = rule.settings?.eta_icon_size || 36;
   const mainIconColor = rule.settings?.icon_color || "#111827";
-  // Use custom ETA color only if the "use main" flag is explicitly false
-  const iconColor = rule.settings?.eta_use_main_icon_color === false
-    ? (rule.settings?.eta_color || "#111827")
-    : mainIconColor;
+
+  // Get icon color for a specific stage
+  const getStageIconColor = (stageType) => {
+    if (rule.settings?.eta_use_main_icon_color !== false) {
+      return mainIconColor;
+    }
+    // Per-stage custom colors
+    if (stageType === "order") return rule.settings?.eta_order_icon_color || "#111827";
+    if (stageType === "shipping") return rule.settings?.eta_shipping_icon_color || "#111827";
+    if (stageType === "delivery") return rule.settings?.eta_delivery_icon_color || "#111827";
+    return "#111827";
+  };
+
   const connectorStyle = rule.settings?.eta_connector_style || "double-chevron";
   const connectorAlignment = rule.settings?.eta_connector_alignment || "center";
   const connectorSize = rule.settings?.eta_connector_size || 24;
   // Use custom connector color only if the "use main" flag is explicitly false
+  // Otherwise use mainIconColor (the Messages icon color), NOT the per-stage colors
   const connectorColor = rule.settings?.eta_connector_use_main_color === false
     ? (rule.settings?.eta_connector_color || "#111827")
-    : iconColor;
+    : mainIconColor;
   const minDays = rule.settings?.eta_delivery_days_min ?? 3;
   const maxDays = rule.settings?.eta_delivery_days_max ?? 5;
 
@@ -406,6 +416,7 @@ export function ETATimelinePreview({ rule, globalSettings }) {
   const Stage = ({ label, date, icon, extraMarginRight = 0, marginLeft = 0 }) => {
     const iconName = getStageIconName(icon);
     const iconStyle = getStageIconStyle(icon);
+    const stageIconColor = getStageIconColor(icon);
 
     // Check if this is a custom icon from global settings
     const isCustomIcon = iconName?.startsWith("custom-");
@@ -433,7 +444,7 @@ export function ETATimelinePreview({ rule, globalSettings }) {
 
     return (
       <div style={{ flex: 1, minWidth: 0, marginLeft: marginLeft, marginRight: extraMarginRight, display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center" }}>
-        <div style={{ width: iconPx, height: iconPx, marginBottom: gapIconLabel, color: iconColor }}>
+        <div style={{ width: iconPx, height: iconPx, marginBottom: gapIconLabel, color: stageIconColor }}>
           {isCustomIcon ? (
             customIconContent
           ) : (

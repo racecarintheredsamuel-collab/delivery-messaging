@@ -210,7 +210,7 @@
 
 /* Pricing display transition for cart updates */
 .dib-pricing {
-  transition: opacity 150ms ease-out;
+  transition: opacity 400ms ease-in;
 }
 
 /* Skeleton shimmer for pricing placeholder */

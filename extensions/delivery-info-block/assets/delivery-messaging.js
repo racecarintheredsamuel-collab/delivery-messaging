@@ -18,20 +18,39 @@
     const fdThreshold = dm.getConfig().threshold || 0;
 
     document.querySelectorAll('.dib-pricing[data-levels]').forEach(el => {
-      // Track cart total for change detection (skip if no change after first render)
-      const lastCartTotal = parseInt(el.dataset.lastCartTotal || '-1', 10);
-      if (lastCartTotal === cartTotal && el.dataset.jsInitialized) {
-        return; // No change since last update
-      }
-      el.dataset.lastCartTotal = String(cartTotal);
-
-      // First render: delay 3s so placeholder is readable, then render pricing
+      // First render: delay 2s so placeholder is readable
       if (!el.dataset.jsInitialized) {
         el.dataset.jsInitialized = 'true';
-        setTimeout(() => renderPricing(el, cartTotal, fdThreshold, dm), 3000);
+        const configName = el.dataset.config; // Store config name to re-query later
+        setTimeout(() => {
+          try {
+            // Re-query the element in case DOM was replaced during delay
+            const freshEl = document.querySelector('.dib-pricing[data-config="' + configName + '"]');
+            if (!freshEl) return;
+            freshEl.dataset.jsDelayComplete = 'true';
+            // Get fresh cart total when delay completes
+            const currentState = dm.getState();
+            const currentCartTotal = currentState.cartTotal || 0;
+            freshEl.dataset.lastCartTotal = String(currentCartTotal);
+            renderPricing(freshEl, currentCartTotal, fdThreshold, dm);
+          } catch (err) {
+            console.error('[DIB] Error in setTimeout callback:', err);
+          }
+        }, 2000);
         return;
       }
 
+      // Still in delay period - ignore cart updates until delay completes
+      if (!el.dataset.jsDelayComplete) {
+        return;
+      }
+
+      // After delay: only update if cart total has changed
+      const lastCartTotal = parseInt(el.dataset.lastCartTotal || '-1', 10);
+      if (lastCartTotal === cartTotal) {
+        return;
+      }
+      el.dataset.lastCartTotal = String(cartTotal);
       renderPricing(el, cartTotal, fdThreshold, dm);
     });
   }
@@ -54,7 +73,7 @@
           setTimeout(() => {
             el.innerHTML = newHtml;
             el.style.opacity = '1';
-          }, 150);
+          }, 400);
         }
         return;
       }
@@ -131,7 +150,7 @@
         setTimeout(() => {
           el.innerHTML = newHtml;
           el.style.opacity = '1';
-        }, 150);
+        }, 400);
       }
   }
 

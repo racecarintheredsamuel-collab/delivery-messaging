@@ -48,6 +48,10 @@ export function getIconSvg(name, style = "solid") {
     }
     return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" style="display: block;"><circle cx="12" cy="12" r="4" /></svg>`;
   }
+  // Spacer - transparent placeholder for alignment
+  if (name === "spacer") {
+    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" style="display: block;"></svg>`;
+  }
   // Checkmark icons (badge style)
   if (name === "checkmark") {
     if (isOutline) {
@@ -377,6 +381,7 @@ export const PRESET_ICONS = [
   { value: "clipboard-v2", label: "Clipboard v2" },
   { value: "bullet", label: "Bullet" },
   { value: "checkmark", label: "Checkmark" },
+  { value: "spacer", label: "Spacer" },
 ];
 
 /**
