@@ -161,16 +161,21 @@ export const loader = async ({ request }) => {
 
   // Create default config if it doesn't exist (first install)
   if (!configMf?.value) {
-    // Create v2 config with Default profile directly (so it's persisted from the start)
+    // Create v3 config with Default profile directly (so it's persisted from the start)
     const defaultProfileId = newProfileId();
     const firstInstallConfig = {
-      version: 2,
+      version: 3,
       profiles: [{
         id: defaultProfileId,
         name: "Default",
         rules: [],
+        fd_threshold: 0,
+        fd_exclusion_rules: [],
+        fd_pricing_configs: [],
+        fd_show_announcement_bar: false,
       }],
       activeProfileId: defaultProfileId,
+      liveProfileId: defaultProfileId,
     };
     const setRes = await admin.graphql(SET_METAFIELDS, {
       variables: {
@@ -245,7 +250,7 @@ export const loader = async ({ request }) => {
   let hasRules = false;
   try {
     const configToCheck = configMf?.value ? JSON.parse(configMf.value) : null;
-    if (configToCheck?.version === 2 && configToCheck.profiles) {
+    if ((configToCheck?.version === 2 || configToCheck?.version === 3) && configToCheck.profiles) {
       hasRules = configToCheck.profiles.some(p => p.rules && p.rules.length > 0);
     } else if (configToCheck?.rules) {
       hasRules = configToCheck.rules.length > 0;
@@ -373,12 +378,17 @@ function defaultProfile(name = "Default") {
     id: newProfileId(),
     name: name,
     rules: [],
+    // Default fd_* settings (empty/zero) so Free Delivery doesn't inherit from globalSettings
+    fd_threshold: 0,
+    fd_exclusion_rules: [],
+    fd_pricing_configs: [],
+    fd_show_announcement_bar: false,
   };
 }
 
 // Migrate v1 config to v2 format (profiles)
 function migrateToV2(config) {
-  if (config?.version === 2) {
+  if (config?.version === 2 || config?.version === 3) {
     // Ensure liveProfileId exists (backward compat for existing v2 configs)
     if (!config.liveProfileId && config.activeProfileId) {
       return { ...config, liveProfileId: config.activeProfileId };
@@ -396,6 +406,35 @@ function migrateToV2(config) {
     profiles: [profile],
     activeProfileId: profile.id,
     liveProfileId: profile.id,
+  };
+}
+
+// Migrate v2 config to v3 format (fd_* settings per profile)
+// v3 moves Free Delivery settings into each profile so they can be copied/switched
+function migrateToV3(config, globalSettings) {
+  if (config?.version === 3) return config;
+  if (config?.version !== 2) return config; // Must be v2 first
+
+  // Extract fd_* keys from globalSettings
+  const fdSettings = {};
+  if (globalSettings && typeof globalSettings === 'object') {
+    for (const key of Object.keys(globalSettings)) {
+      if (key.startsWith('fd_')) {
+        fdSettings[key] = globalSettings[key];
+      }
+    }
+  }
+
+  // Copy fd_* into each profile
+  const profiles = (config.profiles || []).map(p => ({
+    ...p,
+    ...fdSettings,
+  }));
+
+  return {
+    ...config,
+    version: 3,
+    profiles,
   };
 }
 
@@ -969,23 +1008,25 @@ export default function Index() {
   // Real-time countdown for preview (state only - useEffect is after rule is defined)
   const [countdownText, setCountdownText] = useState('02h 14m');
 
-  // Parse and migrate config to v2 format on initial load
+  // Parse and migrate config to v2/v3 format on initial load
   const initialConfig = (() => {
     try {
       const obj = JSON.parse(config);
       const v2 = migrateToV2(obj);
+      // Migrate to v3 (fd_* settings per profile)
+      const v3 = migrateToV3(v2, loaderGlobalSettings);
       // Migrate message fields in all rules of all profiles
-      v2.profiles = v2.profiles.map((profile) => ({
+      v3.profiles = v3.profiles.map((profile) => ({
         ...profile,
         rules: profile.rules.map((rule) => ({
           ...rule,
           settings: migrateMessageFields(rule.settings),
         })),
       }));
-      return v2;
+      return v3;
     } catch (error) {
       safeLogError("Failed to parse/migrate initial config, using empty default", error);
-      return migrateToV2({ version: 1, rules: [] });
+      return migrateToV3(migrateToV2({ version: 1, rules: [] }), loaderGlobalSettings);
     }
   })();
 
@@ -1129,7 +1170,7 @@ export default function Index() {
   const configHasData = () => {
     try {
       const parsed = JSON.parse(draft);
-      if (parsed.version === 2 && parsed.profiles) {
+      if ((parsed.version === 2 || parsed.version === 3) && parsed.profiles) {
         return parsed.profiles.some(p => p.rules && p.rules.length > 0);
       }
       return parsed.rules && parsed.rules.length > 0;
@@ -1217,13 +1258,14 @@ export default function Index() {
   const parsed = useMemo(() => {
     try {
       const obj = JSON.parse(draft);
-      // Always run migration to ensure liveProfileId exists for v2 configs
-      return migrateToV2(obj);
+      // Always run migrations to ensure proper format
+      const v2 = migrateToV2(obj);
+      return migrateToV3(v2, globalSettings);
     } catch (error) {
       safeLogError("Failed to parse draft config, using empty default", error);
-      return migrateToV2({ version: 1, rules: [] });
+      return migrateToV3(migrateToV2({ version: 1, rules: [] }), globalSettings);
     }
-  }, [draft]);
+  }, [draft, globalSettings]);
 
   const profiles = parsed?.profiles ?? [];
   // Derive liveProfileId (what's on the site) and activeProfileId (what's being edited)
@@ -1239,11 +1281,25 @@ export default function Index() {
   // Memoize rules to maintain referential stability (prevents useEffect re-runs)
   const rules = useMemo(() => activeProfile?.rules ?? [], [activeProfile]);
 
+  // Merged settings for preview - combines globalSettings with active profile's fd_*
+  const previewSettings = useMemo(() => {
+    const merged = { ...globalSettings };
+    if (activeProfile) {
+      for (const key of Object.keys(activeProfile)) {
+        if (key.startsWith('fd_')) {
+          merged[key] = activeProfile[key];
+        }
+      }
+    }
+    return merged;
+  }, [globalSettings, activeProfile]);
+
   // Track previous activeProfileId to reset selectedIndex when switching profiles
   const prevActiveProfileIdRef = useRef(activeProfileId);
   useEffect(() => {
     if (prevActiveProfileIdRef.current !== activeProfileId && activeProfileId !== null) {
       setSelectedIndex(0); // Reset to first rule when switching profiles
+      sessionStorage.removeItem("messages_selectedRuleId"); // Clear saved selection
     }
     prevActiveProfileIdRef.current = activeProfileId;
   }, [activeProfileId]);
@@ -1252,13 +1308,30 @@ export default function Index() {
   // Check the raw draft string since parsed already has migration applied
   const hasPersistedLiveProfileId = useRef(false);
   useEffect(() => {
-    if (!hasPersistedLiveProfileId.current && parsed?.version === 2 && parsed?.liveProfileId) {
+    if (!hasPersistedLiveProfileId.current && parsed?.liveProfileId) {
       try {
         const rawObj = JSON.parse(draft);
         // If raw data lacks liveProfileId but parsed has it, migration added it - need to save
-        if (rawObj?.version === 2 && rawObj?.activeProfileId && !rawObj?.liveProfileId) {
+        if (rawObj?.activeProfileId && !rawObj?.liveProfileId) {
           hasPersistedLiveProfileId.current = true;
           setDraft(JSON.stringify({ ...rawObj, liveProfileId: rawObj.activeProfileId }));
+        }
+      } catch (e) {
+        // Ignore parse errors
+      }
+    }
+  }, [draft, parsed]);
+
+  // Ensure v3 migration gets saved (fd_* settings per profile)
+  const hasPersistedV3Migration = useRef(false);
+  useEffect(() => {
+    if (!hasPersistedV3Migration.current && parsed?.version === 3) {
+      try {
+        const rawObj = JSON.parse(draft);
+        // If raw data is v2 but parsed is v3, migration added fd_* to profiles - need to save
+        if (rawObj?.version === 2) {
+          hasPersistedV3Migration.current = true;
+          setDraft(JSON.stringify(parsed));
         }
       } catch (e) {
         // Ignore parse errors
@@ -1294,11 +1367,33 @@ export default function Index() {
       changed = true;
     }
 
-    // Clear params from URL after handling
     if (changed) {
       setSearchParams(searchParams, { replace: true });
     }
   }, [rules, searchParams, setSearchParams]);
+
+  // Restore selected rule from sessionStorage on mount
+  const hasRestoredSelection = useRef(false);
+  useEffect(() => {
+    if (!hasRestoredSelection.current && rules.length > 0) {
+      hasRestoredSelection.current = true;
+      const savedRuleId = sessionStorage.getItem("messages_selectedRuleId");
+      if (savedRuleId) {
+        const ruleIndex = rules.findIndex(r => r.id === savedRuleId);
+        if (ruleIndex !== -1) {
+          setSelectedIndex(ruleIndex);
+        }
+      }
+    }
+  }, [rules]);
+
+  // Save selected rule to sessionStorage when it changes
+  useEffect(() => {
+    const ruleId = rules[selectedIndex]?.id;
+    if (ruleId) {
+      sessionStorage.setItem("messages_selectedRuleId", ruleId);
+    }
+  }, [rules, selectedIndex]);
 
   const invalidRuleIndexes = rules
     .map((r, idx) => (ruleHasMatch(r) ? null : idx))
@@ -1484,7 +1579,7 @@ export default function Index() {
     const updatedProfiles = profiles.map((p) =>
       p.id === activeProfileId ? { ...p, rules: nextRules } : p
     );
-    setDraft(JSON.stringify({ version: 2, profiles: updatedProfiles, activeProfileId, liveProfileId }));
+    setDraft(JSON.stringify({ version: 3, profiles: updatedProfiles, activeProfileId, liveProfileId }));
   };
 
   // Update all profiles (activeProfileId = editing, liveProfileId = on site)
@@ -1492,13 +1587,26 @@ export default function Index() {
     if (newActiveId !== activeProfileId) {
       flushPendingEdits(); // Save any pending edits before switching profiles
     }
-    setDraft(JSON.stringify({ version: 2, profiles: nextProfiles, activeProfileId: newActiveId, liveProfileId }));
+    setDraft(JSON.stringify({ version: 3, profiles: nextProfiles, activeProfileId: newActiveId, liveProfileId }));
     // Note: selectedIndex reset is handled by the effect watching activeProfileId changes
   };
 
   // Set which profile is live on the site (separate from editing)
+  // Also copies the new live profile's fd_* settings to globalSettings for Liquid to read
   const setLiveProfile = (newLiveId) => {
     setDraft(JSON.stringify({ ...parsed, liveProfileId: newLiveId }));
+
+    // Copy fd_* from new live profile to globalSettings
+    const newLiveProfile = profiles.find(p => p.id === newLiveId);
+    if (newLiveProfile) {
+      const updatedGlobalSettings = { ...globalSettings };
+      for (const key of Object.keys(newLiveProfile)) {
+        if (key.startsWith('fd_')) {
+          updatedGlobalSettings[key] = newLiveProfile[key];
+        }
+      }
+      setGlobalSettings(updatedGlobalSettings);
+    }
   };
 
   // Profile management functions (max 5 profiles)
@@ -1506,6 +1614,8 @@ export default function Index() {
 
   const addProfile = () => {
     if (maxProfilesReached) return;
+
+    // Create new profile with defaults - NO fd_* inheritance (user sets up from scratch)
     const newProfile = defaultProfile(`Profile ${profiles.length + 1}`);
     setProfiles([...profiles, newProfile], newProfile.id);
   };
@@ -1581,7 +1691,7 @@ export default function Index() {
       nextLiveId = nextProfiles[Math.min(removedIndex, nextProfiles.length - 1)]?.id;
     }
 
-    setDraft(JSON.stringify({ version: 2, profiles: nextProfiles, activeProfileId: nextActiveId, liveProfileId: nextLiveId }));
+    setDraft(JSON.stringify({ version: 3, profiles: nextProfiles, activeProfileId: nextActiveId, liveProfileId: nextLiveId }));
 
     // Reset editing profile if we deleted the one being edited
     if (profileId === editingProfileId) {
@@ -1616,7 +1726,7 @@ export default function Index() {
     const updatedProfiles = profiles.map((p) =>
       p.id === profileId ? { ...p, name: newName } : p
     );
-    setDraft(JSON.stringify({ version: 2, profiles: updatedProfiles, activeProfileId, liveProfileId }));
+    setDraft(JSON.stringify({ version: 3, profiles: updatedProfiles, activeProfileId, liveProfileId }));
   };
 
   const addRule = () => {
@@ -1707,6 +1817,91 @@ export default function Index() {
   // --------------------------------------------------------------------------
   // Render
   // --------------------------------------------------------------------------
+
+  // Profile/Save bar component (used at bottom of page)
+  const SaveButtonRow = () => (
+    <div style={{
+      border: "1px solid var(--p-color-border, #e5e7eb)",
+      borderRadius: "8px",
+      padding: "12px",
+      background: "var(--p-color-bg-surface, #ffffff)",
+      display: "flex",
+      alignItems: "center",
+      gap: 12,
+    }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, marginLeft: "auto" }}>
+        {/* Live profile selector */}
+        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <span style={{ color: "var(--p-color-text-subdued, #6b7280)", fontSize: "14px" }}>Live:</span>
+          <select
+            value={liveProfileId}
+            onChange={(e) => setLiveProfile(e.target.value)}
+            aria-label="Select live profile"
+            style={{
+              fontSize: "14px",
+              padding: "4px 8px",
+              borderRadius: "4px",
+              border: "1px solid #22c55e",
+              background: "#f0fdf4",
+              cursor: "pointer",
+            }}
+          >
+            {profiles.map((p) => (
+              <option key={p.id} value={p.id}>{p.name}</option>
+            ))}
+          </select>
+        </div>
+        {/* Editing profile selector */}
+        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <span style={{ color: "var(--p-color-text-subdued, #6b7280)", fontSize: "14px" }}>Editing:</span>
+          <select
+            value={activeProfileId}
+            onChange={(e) => setProfiles(profiles, e.target.value)}
+            aria-label="Select editing profile"
+            style={{
+              fontSize: "14px",
+              padding: "4px 8px",
+              borderRadius: "4px",
+              border: "1px solid var(--p-color-border, #e5e7eb)",
+              background: "var(--p-color-bg-surface-secondary, #f9fafb)",
+              cursor: "pointer",
+            }}
+          >
+            {profiles.map((p) => (
+              <option key={p.id} value={p.id}>{p.name}</option>
+            ))}
+          </select>
+        </div>
+        {/* Save indicator + button */}
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 24 24"
+          width="24"
+          height="24"
+          aria-hidden="true"
+        >
+          <g fill={isLoading ? "#22c55e" : "#9ca3af"} fillRule="evenodd" clipRule="evenodd">
+            <path d="M5 3a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V7.414A2 2 0 0 0 20.414 6L18 3.586A2 2 0 0 0 16.586 3zm3 11a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v6H8zm1-7V5h6v2a1 1 0 0 1-1 1h-4a1 1 0 0 1-1-1" />
+            <path d="M14 17h-4v-2h4z" />
+          </g>
+        </svg>
+        <s-button
+          variant="primary"
+          onClick={() => {
+            if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
+            if (loadedWithData && !configHasData()) {
+              if (!confirm("Configuration appears empty. Are you sure you want to save? This may overwrite your existing rules.")) {
+                return;
+              }
+            }
+            fetcher.submit({ config: draft, shopId }, { method: "POST" });
+          }}
+        >
+          Save
+        </s-button>
+      </div>
+    </div>
+  );
 
   return (
     <>
@@ -2088,7 +2283,7 @@ export default function Index() {
                     />
                     <s-text>Match theme text styling</s-text>
                   </label>
-                  {rule.settings?.override_global_text_styling === true && (
+                  {rule?.settings?.override_global_text_styling === true && (
                     <s-text size="small" style={{ color: "#6b7280", marginLeft: 24 }}><em>📌 Current rule is using custom text styling</em></s-text>
                   )}
                   {globalSettings?.use_theme_text_styling === false && (
@@ -2159,7 +2354,7 @@ export default function Index() {
                     />
                     <s-text>Match theme text styling</s-text>
                   </label>
-                  {rule.settings?.override_eta_text_styling === true && (
+                  {rule?.settings?.override_eta_text_styling === true && (
                     <s-text size="small" style={{ color: "#6b7280", marginLeft: 24 }}><em>📌 Current rule is using custom text styling</em></s-text>
                   )}
                   {globalSettings?.eta_use_theme_text_styling === false && (
@@ -2268,7 +2463,7 @@ export default function Index() {
                     />
                     <s-text>Match theme text styling</s-text>
                   </label>
-                  {(rule.settings?.special_delivery_override_global_text_styling === true || rule.settings?.special_delivery_override_global_header_styling === true) && (
+                  {(rule?.settings?.special_delivery_override_global_text_styling === true || rule?.settings?.special_delivery_override_global_header_styling === true) && (
                     <s-text size="small" style={{ color: "#6b7280", marginLeft: 24 }}><em>📌 Current rule is using custom text styling</em></s-text>
                   )}
                   {globalSettings?.special_delivery_use_theme_text_styling === false && (
@@ -6871,7 +7066,7 @@ export default function Index() {
                               {rule.settings?.show_messages !== false ? (
                                 <>
                                   {rule.settings?.message_line_1 && (() => {
-                                    const processed = replacePricingPlaceholders(replaceDatePlaceholders(rule.settings.message_line_1, rule, globalSettings, shopCurrency, countdownText), globalSettings, shopCurrency);
+                                    const processed = replacePricingPlaceholders(replaceDatePlaceholders(rule.settings.message_line_1, rule, previewSettings, shopCurrency, countdownText), previewSettings, shopCurrency);
                                     if (processed === '__INVALID_PRICING_CODE__') {
                                       return (
                                         <PreviewLine rule={rule} globalSettings={globalSettings} lineNumber={1}>
@@ -6889,7 +7084,7 @@ export default function Index() {
                                   })()}
 
                                   {rule.settings?.message_line_2 && (() => {
-                                    const processed = replacePricingPlaceholders(replaceDatePlaceholders(rule.settings.message_line_2, rule, globalSettings, shopCurrency, countdownText), globalSettings, shopCurrency);
+                                    const processed = replacePricingPlaceholders(replaceDatePlaceholders(rule.settings.message_line_2, rule, previewSettings, shopCurrency, countdownText), previewSettings, shopCurrency);
                                     if (processed === '__INVALID_PRICING_CODE__') {
                                       return (
                                         <PreviewLine rule={rule} globalSettings={globalSettings} lineNumber={2}>
@@ -6907,7 +7102,7 @@ export default function Index() {
                                   })()}
 
                                   {rule.settings?.message_line_3 && (() => {
-                                    const processed = replacePricingPlaceholders(replaceDatePlaceholders(rule.settings.message_line_3, rule, globalSettings, shopCurrency, countdownText), globalSettings, shopCurrency);
+                                    const processed = replacePricingPlaceholders(replaceDatePlaceholders(rule.settings.message_line_3, rule, previewSettings, shopCurrency, countdownText), previewSettings, shopCurrency);
                                     if (processed === '__INVALID_PRICING_CODE__') {
                                       return (
                                         <PreviewLine rule={rule} globalSettings={globalSettings} lineNumber={3}>
@@ -6925,7 +7120,7 @@ export default function Index() {
                                   })()}
 
                                   {rule.settings?.message_line_4 && (() => {
-                                    const processed = replacePricingPlaceholders(replaceDatePlaceholders(rule.settings.message_line_4, rule, globalSettings, shopCurrency, countdownText), globalSettings, shopCurrency);
+                                    const processed = replacePricingPlaceholders(replaceDatePlaceholders(rule.settings.message_line_4, rule, previewSettings, shopCurrency, countdownText), previewSettings, shopCurrency);
                                     if (processed === '__INVALID_PRICING_CODE__') {
                                       return (
                                         <PreviewLine rule={rule} globalSettings={globalSettings} lineNumber={4}>
@@ -7355,6 +7550,11 @@ export default function Index() {
               </div>
             </div>
           </div>
+
+            {/* Bottom Save Button */}
+            <div style={{ marginTop: 24 }}>
+              <SaveButtonRow />
+            </div>
         </s-box>
       </s-section>
     </s-page>

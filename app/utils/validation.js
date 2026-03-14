@@ -94,7 +94,7 @@ const configV1Schema = z.object({
   rules: z.array(ruleSchema),
 });
 
-// Config v2 schema (current)
+// Config v2 schema (legacy)
 const configV2Schema = z.object({
   version: z.literal(2),
   profiles: z.array(profileSchema).min(1),
@@ -102,8 +102,16 @@ const configV2Schema = z.object({
   liveProfileId: z.string().optional(),
 });
 
+// Config v3 schema (current - profiles include fd_* settings)
+const configV3Schema = z.object({
+  version: z.literal(3),
+  profiles: z.array(profileSchema.passthrough()).min(1), // passthrough allows fd_* keys
+  activeProfileId: z.string(),
+  liveProfileId: z.string().optional(),
+});
+
 // Combined config schema
-export const configSchema = z.union([configV1Schema, configV2Schema]);
+export const configSchema = z.union([configV1Schema, configV2Schema, configV3Schema]);
 
 // Custom holiday schema
 const customHolidaySchema = z.object({

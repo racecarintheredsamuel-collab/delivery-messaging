@@ -43,19 +43,23 @@ export const loader = async ({ request }) => {
 
   const shopId = json?.data?.shop?.id;
   const settingsMf = json?.data?.shop?.settings;
+  const configMf = json?.data?.shop?.config;
 
-  // Track whether we loaded with existing settings (for auto-save safeguard)
+  // Track whether we loaded with existing data (for auto-save safeguard)
   const hasExistingSettings = !!settingsMf?.value && settingsMf.value !== "{}";
+  const hasExistingConfig = !!configMf?.value;
 
   return {
     settings: settingsMf?.value ?? "{}",
+    config: configMf?.value ?? "{}",
     shopId,
     hasExistingSettings,
+    hasExistingConfig,
   };
 };
 
 // ============================================================================
-// ACTION - Save settings to Shopify metafields
+// ACTION - Save settings and config to Shopify metafields
 // ============================================================================
 
 export const action = async ({ request }) => {
@@ -63,24 +67,53 @@ export const action = async ({ request }) => {
 
   const formData = await request.formData();
   const settingsRaw = formData.get("settings");
+  const configRaw = formData.get("config");
   let shopId = formData.get("shopId");
 
-  if (!settingsRaw || typeof settingsRaw !== "string" || !settingsRaw.trim()) {
+  const metafieldsToSave = [];
+
+  // Parse and validate settings if provided
+  if (settingsRaw && typeof settingsRaw === "string" && settingsRaw.trim()) {
+    let parsedSettings;
+    try {
+      parsedSettings = JSON.parse(settingsRaw);
+    } catch (error) {
+      safeLogError("Failed to parse settings JSON", error);
+      return { ok: false, error: "Settings must be valid JSON." };
+    }
+
+    const settingsValidation = validateSettings(parsedSettings);
+    if (!settingsValidation.success) {
+      safeLogError("Settings validation failed", new Error(settingsValidation.error));
+      return { ok: false, error: "Invalid settings format. Please check your data and try again." };
+    }
+    metafieldsToSave.push({
+      namespace: METAFIELD_NAMESPACE,
+      key: SETTINGS_KEY,
+      type: "json",
+      value: JSON.stringify(settingsValidation.data),
+    });
+  }
+
+  // Parse config if provided (for saving fd_* to profiles)
+  if (configRaw && typeof configRaw === "string" && configRaw.trim()) {
+    let parsedConfig;
+    try {
+      parsedConfig = JSON.parse(configRaw);
+    } catch (error) {
+      safeLogError("Failed to parse config JSON", error);
+      return { ok: false, error: "Config must be valid JSON." };
+    }
+    metafieldsToSave.push({
+      namespace: METAFIELD_NAMESPACE,
+      key: CONFIG_KEY,
+      type: "json",
+      value: JSON.stringify(parsedConfig),
+    });
+  }
+
+  if (metafieldsToSave.length === 0) {
     return { ok: false, error: "No data to save." };
-  }
-
-  let parsedSettings;
-  try {
-    parsedSettings = JSON.parse(settingsRaw);
-  } catch (error) {
-    safeLogError("Failed to parse settings JSON", error);
-    return { ok: false, error: "Settings must be valid JSON." };
-  }
-
-  const settingsValidation = validateSettings(parsedSettings);
-  if (!settingsValidation.success) {
-    safeLogError("Settings validation failed", new Error(settingsValidation.error));
-    return { ok: false, error: "Invalid settings format. Please check your data and try again." };
   }
 
   if (!shopId) {
@@ -94,25 +127,22 @@ export const action = async ({ request }) => {
 
   // Generate icons metafield (ensures utility icons are synced)
   const iconsData = generateIconsMetafield();
+  metafieldsToSave.push({
+    namespace: METAFIELD_NAMESPACE,
+    key: ICONS_KEY,
+    type: "json",
+    value: JSON.stringify(iconsData),
+  });
+
+  // Add ownerId to all metafields
+  const metafieldsWithOwner = metafieldsToSave.map(mf => ({
+    ...mf,
+    ownerId: shopId,
+  }));
 
   const setRes = await admin.graphql(SET_METAFIELDS_MINIMAL, {
     variables: {
-      metafields: [
-        {
-          ownerId: shopId,
-          namespace: METAFIELD_NAMESPACE,
-          key: SETTINGS_KEY,
-          type: "json",
-          value: JSON.stringify(settingsValidation.data),
-        },
-        {
-          ownerId: shopId,
-          namespace: METAFIELD_NAMESPACE,
-          key: ICONS_KEY,
-          type: "json",
-          value: JSON.stringify(iconsData),
-        },
-      ],
+      metafields: metafieldsWithOwner,
     },
   });
 
@@ -180,12 +210,73 @@ const setExpandedLevelsStorage = (levelsMap) => {
 // ============================================================================
 
 export default function FreeDeliveryPage() {
-  const { settings: settingsRaw, shopId, hasExistingSettings } = useLoaderData();
+  const { settings: settingsRaw, config: configRaw, shopId, hasExistingSettings, hasExistingConfig } = useLoaderData();
   const fetcher = useFetcher();
 
+  // Parse config to get profiles (v3 format) - includes v2→v3 migration
+  const [config, setConfig] = useState(() => {
+    try {
+      const parsed = JSON.parse(configRaw);
+      // Run v2→v3 migration if needed
+      if (parsed.version === 2 && parsed.profiles) {
+        // Extract fd_* from global settings for migration
+        let globalSettings = {};
+        try {
+          globalSettings = JSON.parse(settingsRaw);
+        } catch {}
+
+        const fdSettings = {};
+        for (const key of Object.keys(globalSettings)) {
+          if (key.startsWith('fd_')) {
+            fdSettings[key] = globalSettings[key];
+          }
+        }
+
+        // Copy fd_* into each profile
+        const migratedProfiles = parsed.profiles.map(p => ({
+          ...p,
+          ...fdSettings,
+        }));
+
+        return {
+          ...parsed,
+          version: 3,
+          profiles: migratedProfiles,
+        };
+      }
+      return parsed;
+    } catch {
+      return { version: 3, profiles: [], activeProfileId: null, liveProfileId: null };
+    }
+  });
+
+  const profiles = config?.profiles || [];
+  const activeProfileId = config?.activeProfileId || profiles[0]?.id;
+  const liveProfileId = config?.liveProfileId || profiles[0]?.id;
+  const activeProfile = profiles.find(p => p.id === activeProfileId) || profiles[0];
+
+  // Merge global settings (non-fd_*) with active profile's fd_* settings
   const [settings, setSettings] = useState(() => {
     try {
-      return JSON.parse(settingsRaw);
+      const globalSettings = JSON.parse(settingsRaw);
+      // If we have an active profile with fd_* settings (v3), use those
+      if (activeProfile && activeProfile.fd_threshold !== undefined) {
+        // Start with globalSettings but CLEAR all fd_* keys (profile owns its own fd_* settings)
+        const merged = {};
+        for (const key of Object.keys(globalSettings)) {
+          if (!key.startsWith('fd_')) {
+            merged[key] = globalSettings[key];
+          }
+        }
+        // Add profile's fd_* settings
+        for (const key of Object.keys(activeProfile)) {
+          if (key.startsWith('fd_')) {
+            merged[key] = activeProfile[key];
+          }
+        }
+        return merged;
+      }
+      return globalSettings;
     } catch {
       return {};
     }
@@ -281,6 +372,38 @@ export default function FreeDeliveryPage() {
   const [lastDeletedPricingConfig, setLastDeletedPricingConfig] = useState(null);
   const undoPricingConfigTimerRef = useRef(null);
 
+  // Set active profile (which one we're editing)
+  const setActiveProfile = (newActiveId) => {
+    const newProfile = profiles.find(p => p.id === newActiveId);
+    if (newProfile) {
+      // Update settings with new profile's fd_*
+      setSettings(prev => {
+        const newSettings = { ...prev };
+        // Clear old fd_* and add new profile's fd_*
+        for (const key of Object.keys(prev)) {
+          if (key.startsWith('fd_')) {
+            delete newSettings[key];
+          }
+        }
+        for (const key of Object.keys(newProfile)) {
+          if (key.startsWith('fd_')) {
+            newSettings[key] = newProfile[key];
+          }
+        }
+        return newSettings;
+      });
+      // Also update exclusionRules and pricingConfigs from new profile
+      setExclusionRules(newProfile.fd_exclusion_rules || []);
+      setPricingConfigs(newProfile.fd_pricing_configs || []);
+    }
+    setConfig(prev => ({ ...prev, activeProfileId: newActiveId }));
+  };
+
+  // Set live profile (which one is on the site)
+  const setLiveProfileId = (newLiveId) => {
+    setConfig(prev => ({ ...prev, liveProfileId: newLiveId }));
+  };
+
   // Sync exclusion rules to settings (also clear legacy fields)
   useEffect(() => {
     setSettings(prev => ({
@@ -295,6 +418,38 @@ export default function FreeDeliveryPage() {
   useEffect(() => {
     setSettings(prev => ({ ...prev, fd_pricing_configs: pricingConfigs }));
   }, [pricingConfigs]);
+
+  // Sync fd_* settings to active profile in config (for v3 profile system)
+  useEffect(() => {
+    if (!activeProfile || config.version !== 3) return;
+
+    // Extract fd_* keys from settings
+    const fdSettings = {};
+    for (const key of Object.keys(settings)) {
+      if (key.startsWith('fd_')) {
+        fdSettings[key] = settings[key];
+      }
+    }
+
+    // Check if anything actually changed before updating
+    const currentProfile = config.profiles.find(p => p.id === activeProfileId);
+    const hasChanges = Object.keys(fdSettings).some(
+      key => currentProfile?.[key] !== fdSettings[key]
+    );
+
+    if (hasChanges) {
+      // Update the active profile with fd_* settings using functional update
+      setConfig(prev => ({
+        ...prev,
+        profiles: prev.profiles.map(p => {
+          if (p.id === activeProfileId) {
+            return { ...p, ...fdSettings };
+          }
+          return p;
+        }),
+      }));
+    }
+  }, [settings, activeProfileId, activeProfile, config.version, config.profiles]);
 
   // Legacy exclusion input text state (kept for backward compat during transition)
   const [excludeTagsText, setExcludeTagsText] = useState(() =>
@@ -319,9 +474,13 @@ export default function FreeDeliveryPage() {
     setCollapsedAnnouncementPanels(prev => ({ ...prev, [section]: !prev[section] }));
   };
 
+  // Pricing Displays exclusions collapse state
+  const [pricingExclusionsCollapsed, setPricingExclusionsCollapsed] = useState(true);
+
   // Auto-save refs
   const autoSaveTimerRef = useRef(null);
   const initialSettingsRef = useRef(JSON.stringify(settings));
+  const initialConfigRef = useRef(JSON.stringify(config));
   const prevFetcherStateRef = useRef(fetcher.state);
   const undoExclusionTimerRef = useRef(null);
 
@@ -335,6 +494,7 @@ export default function FreeDeliveryPage() {
 
     if (fetcher.data?.ok === true) {
       initialSettingsRef.current = JSON.stringify(settings);
+      initialConfigRef.current = JSON.stringify(config);
       setSaveStatus("Saved!");
       const timer = setTimeout(() => setSaveStatus(""), 2000);
       return () => clearTimeout(timer);
@@ -359,12 +519,37 @@ export default function FreeDeliveryPage() {
     return true;
   };
 
-  // Auto-save after 2 seconds of inactivity
+  // Prepare settings for save - ensures globalSettings has LIVE profile's fd_* for Liquid
+  const getSettingsForSave = () => {
+    if (config.version !== 3) return settings;
+
+    const liveProfileId = config.liveProfileId || profiles[0]?.id;
+    const liveProfile = profiles.find(p => p.id === liveProfileId);
+    if (!liveProfile) return settings;
+
+    // Start with current settings (non-fd_* keys)
+    const settingsForSave = {};
+    for (const key of Object.keys(settings)) {
+      if (!key.startsWith('fd_')) {
+        settingsForSave[key] = settings[key];
+      }
+    }
+    // Add LIVE profile's fd_* keys (for Liquid to read)
+    for (const key of Object.keys(liveProfile)) {
+      if (key.startsWith('fd_')) {
+        settingsForSave[key] = liveProfile[key];
+      }
+    }
+    return settingsForSave;
+  };
+
+  // Auto-save after 2 seconds of inactivity (saves both settings and config)
   useEffect(() => {
     if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
 
     const settingsChanged = JSON.stringify(settings) !== initialSettingsRef.current;
-    if (!settingsChanged) return;
+    const configChanged = JSON.stringify(config) !== initialConfigRef.current;
+    if (!settingsChanged && !configChanged) return;
     if (fetcher.state !== "idle") return;
 
     autoSaveTimerRef.current = setTimeout(() => {
@@ -374,8 +559,14 @@ export default function FreeDeliveryPage() {
         return;
       }
       setSaveStatus("Saving...");
+      // Save both settings and config (for v3 profile system)
+      // Use getSettingsForSave to ensure globalSettings has LIVE profile's fd_* for Liquid
       fetcher.submit(
-        { settings: JSON.stringify(settings), shopId },
+        {
+          settings: JSON.stringify(getSettingsForSave()),
+          config: JSON.stringify(config),
+          shopId,
+        },
         { method: "POST" }
       );
     }, 2000);
@@ -383,7 +574,7 @@ export default function FreeDeliveryPage() {
     return () => {
       if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
     };
-  }, [settings, shopId, fetcher.state]);
+  }, [settings, config, shopId, fetcher.state]);
 
   // Cleanup undo timer on unmount
   useEffect(() => {
@@ -403,8 +594,14 @@ export default function FreeDeliveryPage() {
     }
 
     setSaveStatus("Saving...");
+    // Save both settings and config (for v3 profile system)
+    // Use getSettingsForSave to ensure globalSettings has LIVE profile's fd_* for Liquid
     fetcher.submit(
-      { settings: JSON.stringify(settings), shopId },
+      {
+        settings: JSON.stringify(getSettingsForSave()),
+        config: JSON.stringify(config),
+        shopId,
+      },
       { method: "POST" }
     );
   };
@@ -502,24 +699,87 @@ export default function FreeDeliveryPage() {
     return renderBoldText(fullText);
   };
 
-  // Reusable save button with floppy disk indicator
+  // Top action bar with profile selectors (matching Messages layout)
   const SaveButtonRow = () => (
-    <div style={{ display: "flex", gap: 8, alignItems: "center", justifyContent: "flex-end" }}>
-      <svg
-        xmlns="http://www.w3.org/2000/svg"
-        viewBox="0 0 24 24"
-        width="24"
-        height="24"
-        aria-hidden="true"
-      >
-        <g fill={saveStatus === "Saving..." ? "#22c55e" : "#9ca3af"} fillRule="evenodd" clipRule="evenodd">
-          <path d="M5 3a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V7.414A2 2 0 0 0 20.414 6L18 3.586A2 2 0 0 0 16.586 3zm3 11a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v6H8zm1-7V5h6v2a1 1 0 0 1-1 1h-4a1 1 0 0 1-1-1" />
-          <path d="M14 17h-4v-2h4z" />
-        </g>
-      </svg>
-      <s-button variant="primary" onClick={handleSave}>
-        Save
-      </s-button>
+    <div style={{
+      border: "1px solid var(--p-color-border, #e5e7eb)",
+      borderRadius: "8px",
+      padding: "12px",
+      background: "var(--p-color-bg-surface, #ffffff)",
+      display: "flex",
+      alignItems: "center",
+      gap: 12,
+    }}>
+      {/* Profile selectors + Save - RIGHT */}
+      <div style={{ display: "flex", alignItems: "center", gap: 8, marginLeft: "auto" }}>
+        {/* Profile selectors - only show if we have profiles (v3) */}
+        {profiles.length > 0 && config.version === 3 && (
+          <>
+            {/* Live profile selector - FIRST */}
+            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <span style={{ color: "var(--p-color-text-subdued, #6b7280)", fontSize: "14px" }}>Live:</span>
+              <select
+                value={liveProfileId}
+                onChange={(e) => setLiveProfileId(e.target.value)}
+                aria-label="Select live profile"
+                style={{
+                  fontSize: "14px",
+                  padding: "4px 8px",
+                  borderRadius: "4px",
+                  border: "1px solid #22c55e",
+                  background: "#f0fdf4",
+                  cursor: "pointer",
+                }}
+              >
+                {profiles.map(p => (
+                  <option key={p.id} value={p.id}>{p.name}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* Editing profile selector - SECOND */}
+            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <span style={{ color: "var(--p-color-text-subdued, #6b7280)", fontSize: "14px" }}>Editing:</span>
+              <select
+                value={activeProfileId}
+                onChange={(e) => setActiveProfile(e.target.value)}
+                aria-label="Select editing profile"
+                style={{
+                  fontSize: "14px",
+                  padding: "4px 8px",
+                  borderRadius: "4px",
+                  border: "1px solid var(--p-color-border, #e5e7eb)",
+                  background: "var(--p-color-bg-surface-secondary, #f9fafb)",
+                  cursor: "pointer",
+                }}
+              >
+                {profiles.map(p => (
+                  <option key={p.id} value={p.id}>{p.name}</option>
+                ))}
+              </select>
+            </div>
+          </>
+        )}
+
+        {/* Save indicator and button */}
+        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24"
+            width="24"
+            height="24"
+            aria-hidden="true"
+          >
+            <g fill={saveStatus === "Saving..." ? "#22c55e" : "#9ca3af"} fillRule="evenodd" clipRule="evenodd">
+              <path d="M5 3a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V7.414A2 2 0 0 0 20.414 6L18 3.586A2 2 0 0 0 16.586 3zm3 11a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v6H8zm1-7V5h6v2a1 1 0 0 1-1 1h-4a1 1 0 0 1-1-1" />
+              <path d="M14 17h-4v-2h4z" />
+            </g>
+          </svg>
+          <s-button variant="primary" onClick={handleSave}>
+            Save
+          </s-button>
+        </div>
+      </div>
     </div>
   );
 
@@ -532,10 +792,11 @@ export default function FreeDeliveryPage() {
           rel="stylesheet"
         />
       )}
-      <s-layout style={{ maxWidth: 1000 }}>
-        <div style={{ display: "grid", gap: 24 }}>
-          {/* Top Save Button */}
-          <SaveButtonRow />
+      <s-section>
+        <s-box padding="base" borderWidth="base" borderRadius="base" background="subdued">
+          <div style={{ display: "grid", gap: 24 }}>
+            {/* Top action bar with Profile Selectors */}
+            <SaveButtonRow />
 
           {/* Two-column layout for messaging sections */}
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24 }}>
@@ -583,7 +844,7 @@ export default function FreeDeliveryPage() {
                 </div>
               </div>
 
-              {/* Section 2: Delivery Pricing */}
+              {/* Section 2: Pricing Displays */}
               <div
                 style={{
                   border: "1px solid var(--p-color-border, #e5e7eb)",
@@ -604,7 +865,7 @@ export default function FreeDeliveryPage() {
                     alignItems: "center",
                   }}
                 >
-                  <s-text style={{ fontWeight: 600 }}>Delivery Pricing</s-text>
+                  <s-text style={{ fontWeight: 600 }}>Pricing Displays</s-text>
                   {pricingConfigs.length > 0 && (
                     <div style={{ display: "flex", gap: 8 }}>
                       <s-button
@@ -859,7 +1120,7 @@ export default function FreeDeliveryPage() {
                                             const segments = level.segments || [];
                                             const segment = segments[segIndex] || { label: '', cost: 0, days: '' };
                                             return (
-                                              <div key={segIndex} style={{ display: "grid", gridTemplateColumns: "140px 99px 101px", gap: 18, alignItems: "end" }}>
+                                              <div key={segIndex} style={{ display: "grid", gridTemplateColumns: "126px 89px 91px", gap: 18, alignItems: "end" }}>
                                                 <label>
                                                   {segIndex === 0 && <s-text size="small">Labels</s-text>}
                                                   <input
@@ -1295,6 +1556,93 @@ export default function FreeDeliveryPage() {
                     )}
                     </div>
                   )}
+
+                  {/* Exclusions Section - always visible, collapsible */}
+                  <div style={{ border: "1px solid var(--p-color-border, #e5e7eb)", borderRadius: 8, overflow: "hidden", marginTop: 12 }}>
+                    <div
+                      role="button"
+                      tabIndex={0}
+                      aria-expanded={!pricingExclusionsCollapsed}
+                      style={{
+                        padding: "12px 16px",
+                        display: "flex",
+                        alignItems: "center",
+                        background: !pricingExclusionsCollapsed ? "var(--p-color-bg-surface-hover, #f8fafc)" : "var(--p-color-bg-surface, #ffffff)",
+                        borderBottom: !pricingExclusionsCollapsed ? "1px solid var(--p-color-border, #e5e7eb)" : "none",
+                        cursor: "pointer",
+                        outline: "none",
+                      }}
+                      onClick={() => setPricingExclusionsCollapsed(!pricingExclusionsCollapsed)}
+                      onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setPricingExclusionsCollapsed(!pricingExclusionsCollapsed); } }}
+                    >
+                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                        <span style={{ color: "var(--p-color-text-subdued, #6b7280)" }} aria-hidden="true">
+                          {pricingExclusionsCollapsed ? <ChevronRightIcon /> : <ChevronDownIcon />}
+                        </span>
+                        <s-text style={{ fontWeight: 600 }}>Exclusions Behaviour</s-text>
+                      </div>
+                    </div>
+                    {!pricingExclusionsCollapsed && (
+                      <div style={{ padding: "16px", display: "grid", gap: 8 }}>
+                        <s-text size="small" style={{ color: "var(--p-color-text-subdued, #6b7280)" }}>
+                          How pricing displays behave when cart contains products excluded from free delivery.
+                        </s-text>
+                        <div style={{ display: "flex", alignItems: "center", gap: 6, color: "var(--p-color-text-subdued, #6b7280)", marginTop: -4 }}>
+                          <span style={{ fontSize: 12, flexShrink: 0 }}>💡</span>
+                          <span style={{ fontSize: 12 }}>Exclude products from free delivery by not activating 'Free delivery text' in their Pricing Display and adding them to the exclusion list in Announcement Bar Exclusions</span>
+                        </div>
+
+                        <div style={{ display: "flex", gap: 16 }}>
+                          <label style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                            <input
+                              type="radio"
+                              name="fd_excluded_cart_behavior"
+                              value="message"
+                              checked={(settings.fd_excluded_cart_behavior || "message") === "message"}
+                              onChange={() => setSettings({ ...settings, fd_excluded_cart_behavior: "message" })}
+                              style={{ marginTop: -1 }}
+                            />
+                            <s-text size="small">Show message</s-text>
+                          </label>
+                          <label style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                            <input
+                              type="radio"
+                              name="fd_excluded_cart_behavior"
+                              value="hide"
+                              checked={settings.fd_excluded_cart_behavior === "hide"}
+                              onChange={() => setSettings({ ...settings, fd_excluded_cart_behavior: "hide" })}
+                              style={{ marginTop: -1 }}
+                            />
+                            <s-text size="small">Hide delivery info</s-text>
+                          </label>
+                        </div>
+
+                        {(settings.fd_excluded_cart_behavior || "message") === "message" && (
+                          <>
+                            <label style={{ display: "block" }}>
+                              <s-text size="small">Message text</s-text>
+                              <input
+                                type="text"
+                                value={settings.fd_excluded_cart_message ?? "Delivery calculated at checkout"}
+                                onChange={(e) => setSettings({ ...settings, fd_excluded_cart_message: e.target.value })}
+                                placeholder="Delivery calculated at checkout"
+                                style={{ width: "100%", marginTop: 4 }}
+                                maxLength={100}
+                              />
+                            </label>
+                            <label style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 4 }}>
+                              <input
+                                type="checkbox"
+                                checked={settings.fd_excluded_cart_subdued === true}
+                                onChange={(e) => setSettings({ ...settings, fd_excluded_cart_subdued: e.target.checked })}
+                              />
+                              <s-text size="small">Use subdued styling</s-text>
+                            </label>
+                          </>
+                        )}
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
 
@@ -2311,10 +2659,11 @@ export default function FreeDeliveryPage() {
           </div>
         </div>
 
-          {/* Bottom Save Button */}
-          <SaveButtonRow />
-        </div>
-      </s-layout>
+            {/* Bottom Save Button */}
+            <SaveButtonRow />
+          </div>
+        </s-box>
+      </s-section>
     </s-page>
   );
 }

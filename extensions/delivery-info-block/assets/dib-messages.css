@@ -213,6 +213,12 @@
   transition: opacity 400ms ease-in;
 }
 
+/* Subdued styling for exclusion messages */
+.dib-pricing.dib-subdued {
+  opacity: 0.7;
+  font-style: italic;
+}
+
 /* Skeleton shimmer for pricing placeholder */
 .dib-pricing-skeleton {
   display: inline-block;

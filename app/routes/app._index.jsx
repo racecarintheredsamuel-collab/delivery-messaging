@@ -89,7 +89,7 @@ export const loader = async ({ request }) => {
     try {
       config = JSON.parse(configMf.value);
       // Check v2 format for rules
-      if (config.version === 2 && config.profiles) {
+      if ((config.version === 2 || config.version === 3) && config.profiles) {
         ruleCount = config.profiles.reduce((sum, p) => sum + (p.rules?.length || 0), 0);
         hasRules = ruleCount > 0;
       } else if (config.rules) {
@@ -175,16 +175,21 @@ export const action = async ({ request }) => {
       config = null;
     }
 
-    // Ensure v2 format
-    if (!config || config.version !== 2) {
+    // Ensure v3 format (or accept v2 since migration handles it)
+    if (!config || (config.version !== 2 && config.version !== 3)) {
       config = {
-        version: 2,
+        version: 3,
         profiles: [{
           id: "default",
           name: "Default",
           rules: [],
+          fd_threshold: 0,
+          fd_exclusion_rules: [],
+          fd_pricing_configs: [],
+          fd_show_announcement_bar: false,
         }],
         activeProfileId: "default",
+        liveProfileId: "default",
       };
     }
 
