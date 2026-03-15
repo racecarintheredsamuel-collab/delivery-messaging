@@ -2779,7 +2779,7 @@ export default function Index() {
                       <input
                         type="range"
                         min="480"
-                        max="1280"
+                        max="1440"
                         step="10"
                         value={globalSettings?.mobile_breakpoint ?? 768}
                         onChange={(e) => setGlobalSettings({ ...globalSettings, mobile_breakpoint: Number(e.target.value) })}
