@@ -44,6 +44,11 @@ function defaultGlobalSettings() {
     bank_holiday_country: "",
     custom_holidays: [],
     courier_no_delivery_days: ["sat", "sun"],
+    // Delivery windows (defaults for all rules)
+    courier_delivery_days_min: 3,
+    courier_delivery_days_max: 5,
+    express_delivery_days_min: 1,
+    express_delivery_days_max: 1,
     // Typography - Messages font
     use_theme_font: true,
     custom_font_family: "",
@@ -639,8 +644,12 @@ function replaceDatePlaceholders(text, rule, globalSettings, shopCurrency = 'GBP
   };
 
   if (text.includes('{arrival}')) {
-    const minDays = rule.settings?.eta_delivery_days_min ?? 3;
-    const maxDays = rule.settings?.eta_delivery_days_max ?? 5;
+    const minDays = rule.settings?.override_courier_delivery_window
+      ? (rule.settings?.eta_delivery_days_min ?? globalSettings?.courier_delivery_days_min ?? 3)
+      : (globalSettings?.courier_delivery_days_min ?? 3);
+    const maxDays = rule.settings?.override_courier_delivery_window
+      ? (rule.settings?.eta_delivery_days_max ?? globalSettings?.courier_delivery_days_max ?? 5)
+      : (globalSettings?.courier_delivery_days_max ?? 5);
     const minDate = addBizDays(shippingDate, minDays);
     const maxDate = addBizDays(shippingDate, maxDays);
     const arrivalText = minDays === maxDays ? formatDate(minDate)
@@ -649,8 +658,18 @@ function replaceDatePlaceholders(text, rule, globalSettings, shopCurrency = 'GBP
     text = text.replace('{arrival}', arrivalText);
   }
   if (text.includes('{express}')) {
-    const expressDate = addBizDays(shippingDate, 1);
-    text = text.replace('{express}', formatDate(expressDate));
+    const expressMinDays = rule.settings?.override_express_delivery_window
+      ? (rule.settings?.express_delivery_days_min ?? globalSettings?.express_delivery_days_min ?? 1)
+      : (globalSettings?.express_delivery_days_min ?? 1);
+    const expressMaxDays = rule.settings?.override_express_delivery_window
+      ? (rule.settings?.express_delivery_days_max ?? globalSettings?.express_delivery_days_max ?? 1)
+      : (globalSettings?.express_delivery_days_max ?? 1);
+    const expressMinDate = addBizDays(shippingDate, expressMinDays);
+    const expressMaxDate = addBizDays(shippingDate, expressMaxDays);
+    const expressText = expressMinDays === expressMaxDays ? formatDate(expressMinDate)
+      : expressMinDate.getMonth() === expressMaxDate.getMonth() ? `${formatDate(expressMinDate)}-${expressMaxDate.getDate()}`
+      : `${formatDate(expressMinDate)}-${formatDate(expressMaxDate)}`;
+    text = text.replace('{express}', expressText);
   }
   if (text.includes('{countdown}')) {
     // Real-time countdown based on cutoff time settings
@@ -819,6 +838,8 @@ function defaultRule() {
       override_lead_time: false,
       override_closed_days: false,
       override_courier_no_delivery_days: false,
+      override_courier_delivery_window: false,
+      override_express_delivery_window: false,
       cutoff_time: "",
       cutoff_time_sat: "",
       cutoff_time_sun: "",
@@ -843,6 +864,8 @@ function defaultRule() {
       eta_background_color: "",
       eta_delivery_days_min: 3,
       eta_delivery_days_max: 5,
+      express_delivery_days_min: 1,
+      express_delivery_days_max: 1,
       eta_order_icon: "clipboard-document-check",
       eta_shipping_icon: "truck",
       eta_delivery_icon: "home",
@@ -3210,9 +3233,110 @@ export default function Index() {
                   </select>
                 </div>
 
+                {/* Courier Delivery Window */}
+                <div style={{ border: "1px solid var(--p-color-border, #e5e7eb)", borderRadius: 8, padding: 16, display: "grid", gap: 12, background: "var(--p-color-bg-surface-secondary, #f9fafb)" }}>
+                  <s-heading size="small">Courier Delivery Window</s-heading>
+                  {rule?.settings?.override_courier_delivery_window === true && (
+                    <s-text size="small" style={{ color: "#6b7280", marginLeft: 24 }}><em>📌 Current rule is using per rule overrides</em></s-text>
+                  )}
+                  <s-text size="small" style={{ color: "var(--p-color-text-subdued, #6b7280)" }}>
+                    Days from shipping to delivery (used by &#123;arrival&#125; and ETA Timeline)
+                  </s-text>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                    <label>
+                      <s-text size="small">Min days</s-text>
+                      <input
+                        type="number"
+                        min="0"
+                        value={globalSettings?.courier_delivery_days_min ?? 3}
+                        onChange={(e) => {
+                          const newMin = safeParseNumber(e.target.value, 3, 0);
+                          const currentMax = globalSettings?.courier_delivery_days_max ?? 5;
+                          setGlobalSettings({
+                            ...globalSettings,
+                            courier_delivery_days_min: newMin,
+                            ...(newMin > currentMax ? { courier_delivery_days_max: newMin } : {}),
+                          });
+                        }}
+                        style={{ width: "100%" }}
+                      />
+                    </label>
+                    <label>
+                      <s-text size="small">Max days</s-text>
+                      <input
+                        type="number"
+                        min="0"
+                        value={globalSettings?.courier_delivery_days_max ?? 5}
+                        onChange={(e) => {
+                          const newMax = safeParseNumber(e.target.value, 5, 0);
+                          const currentMin = globalSettings?.courier_delivery_days_min ?? 3;
+                          setGlobalSettings({
+                            ...globalSettings,
+                            courier_delivery_days_max: newMax,
+                            ...(newMax < currentMin ? { courier_delivery_days_min: newMax } : {}),
+                          });
+                        }}
+                        style={{ width: "100%" }}
+                      />
+                    </label>
+                  </div>
+                </div>
+
+                {/* Express Delivery Window */}
+                <div style={{ border: "1px solid var(--p-color-border, #e5e7eb)", borderRadius: 8, padding: 16, display: "grid", gap: 12, background: "var(--p-color-bg-surface-secondary, #f9fafb)" }}>
+                  <s-heading size="small">Express Delivery Window</s-heading>
+                  {rule?.settings?.override_express_delivery_window === true && (
+                    <s-text size="small" style={{ color: "#6b7280", marginLeft: 24 }}><em>📌 Current rule is using per rule overrides</em></s-text>
+                  )}
+                  <s-text size="small" style={{ color: "var(--p-color-text-subdued, #6b7280)" }}>
+                    Days from shipping to express delivery (used by &#123;express&#125; placeholder)
+                  </s-text>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                    <label>
+                      <s-text size="small">Min days</s-text>
+                      <input
+                        type="number"
+                        min="1"
+                        value={globalSettings?.express_delivery_days_min ?? 1}
+                        onChange={(e) => {
+                          const newMin = safeParseNumber(e.target.value, 1, 1);
+                          const currentMax = globalSettings?.express_delivery_days_max ?? 1;
+                          setGlobalSettings({
+                            ...globalSettings,
+                            express_delivery_days_min: newMin,
+                            ...(newMin > currentMax ? { express_delivery_days_max: newMin } : {}),
+                          });
+                        }}
+                        style={{ width: "100%" }}
+                      />
+                    </label>
+                    <label>
+                      <s-text size="small">Max days</s-text>
+                      <input
+                        type="number"
+                        min="1"
+                        value={globalSettings?.express_delivery_days_max ?? 1}
+                        onChange={(e) => {
+                          const newMax = safeParseNumber(e.target.value, 1, 1);
+                          const currentMin = globalSettings?.express_delivery_days_min ?? 1;
+                          setGlobalSettings({
+                            ...globalSettings,
+                            express_delivery_days_max: newMax,
+                            ...(newMax < currentMin ? { express_delivery_days_min: newMax } : {}),
+                          });
+                        }}
+                        style={{ width: "100%" }}
+                      />
+                    </label>
+                  </div>
+                </div>
+
                 {/* Cutoff Times */}
                 <div style={{ border: "1px solid var(--p-color-border, #e5e7eb)", borderRadius: 8, padding: 16, display: "grid", gap: 12, background: "var(--p-color-bg-surface-secondary, #f9fafb)" }}>
                   <s-heading size="small">Cutoff Times</s-heading>
+                  {rule?.settings?.override_cutoff_times === true && (
+                    <s-text size="small" style={{ color: "#6b7280", marginLeft: 24 }}><em>📌 Current rule is using per rule overrides</em></s-text>
+                  )}
                   <s-text size="small" style={{ color: "var(--p-color-text-subdued, #6b7280)" }}>
                     Orders placed after cutoff time will be processed the next business day.
                   </s-text>
@@ -3252,6 +3376,9 @@ export default function Index() {
                 {/* Lead Time */}
                 <div style={{ border: "1px solid var(--p-color-border, #e5e7eb)", borderRadius: 8, padding: 16, display: "grid", gap: 12, background: "var(--p-color-bg-surface-secondary, #f9fafb)" }}>
                   <s-heading size="small">Lead Time</s-heading>
+                  {rule?.settings?.override_lead_time === true && (
+                    <s-text size="small" style={{ color: "#6b7280", marginLeft: 24 }}><em>📌 Current rule is using per rule overrides</em></s-text>
+                  )}
                   <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                     <input
                       type="number"
@@ -3272,6 +3399,9 @@ export default function Index() {
                 {/* Closed Days */}
                 <div style={{ border: "1px solid var(--p-color-border, #e5e7eb)", borderRadius: 8, padding: 16, display: "grid", gap: 12, background: "var(--p-color-bg-surface-secondary, #f9fafb)" }}>
                   <s-heading size="small">Closed Days</s-heading>
+                  {rule?.settings?.override_closed_days === true && (
+                    <s-text size="small" style={{ color: "#6b7280", marginLeft: 24 }}><em>📌 Current rule is using per rule overrides</em></s-text>
+                  )}
                   <s-text size="small" style={{ color: "var(--p-color-text-subdued, #6b7280)" }}>
                     Days your business does not process/ship orders
                   </s-text>
@@ -3302,6 +3432,9 @@ export default function Index() {
                 {/* Courier Non-Delivery Days */}
                 <div style={{ border: "1px solid var(--p-color-border, #e5e7eb)", borderRadius: 8, padding: 16, display: "grid", gap: 12, background: "var(--p-color-bg-surface-secondary, #f9fafb)" }}>
                   <s-heading size="small">Courier Non-Delivery Days</s-heading>
+                  {rule?.settings?.override_courier_no_delivery_days === true && (
+                    <s-text size="small" style={{ color: "#6b7280", marginLeft: 24 }}><em>📌 Current rule is using per rule overrides</em></s-text>
+                  )}
                   <s-text size="small" style={{ color: "var(--p-color-text-subdued, #6b7280)" }}>
                     Days your courier does not deliver (used for ETA calculations)
                   </s-text>
@@ -3757,61 +3890,162 @@ export default function Index() {
 
                       {/* ===== COURIER DELIVERY WINDOW ===== */}
                       <div>
-                        <s-text style={{ fontWeight: 600, marginBottom: 4, display: "block" }}>Courier delivery window</s-text>
-                        <div style={{ display: "flex", alignItems: "center", gap: 6, color: "var(--p-color-text-subdued, #6b7280)", marginBottom: 8 }}>
-                          <span style={{ fontSize: 12, flexShrink: 0 }}>💡</span>
-                          <span style={{ fontSize: 12 }}>Used by &#123;arrival&#125;, &#123;express&#125; placeholders and ETA Timeline</span>
-                        </div>
-                        <div style={{ display: "flex" }}>
-                          <label style={{ width: "40%" }}>
-                            <s-text>Min days (after shipping)</s-text>
-                            <input
-                              type="number"
-                              min="0"
-                              value={String(rule.settings?.eta_delivery_days_min ?? 3)}
-                              onChange={(e) => {
-                                const newMin = safeParseNumber(e.target.value, 3, 0);
-                                const currentMax = rule.settings?.eta_delivery_days_max ?? 5;
-                                const next = [...rules];
-                                next[safeSelectedIndex] = {
-                                  ...rule,
-                                  settings: {
-                                    ...rule.settings,
-                                    eta_delivery_days_min: newMin,
-                                    // If min exceeds max, bump max to match
-                                    ...(newMin > currentMax ? { eta_delivery_days_max: newMin } : {}),
-                                  },
-                                };
-                                setRules(next);
-                              }}
-                              style={{ width: "100%" }}
-                            />
-                          </label>
-                          <label style={{ width: "40%", marginLeft: "10%" }}>
-                            <s-text>Max days (after shipping)</s-text>
-                            <input
-                              type="number"
-                              min="0"
-                              value={String(rule.settings?.eta_delivery_days_max ?? 5)}
-                              onChange={(e) => {
-                                const newMax = safeParseNumber(e.target.value, 5, 0);
-                                const currentMin = rule.settings?.eta_delivery_days_min ?? 3;
-                                const next = [...rules];
-                                next[safeSelectedIndex] = {
-                                  ...rule,
-                                  settings: {
-                                    ...rule.settings,
-                                    eta_delivery_days_max: newMax,
-                                    // If max goes below min, lower min to match
-                                    ...(newMax < currentMin ? { eta_delivery_days_min: newMax } : {}),
-                                  },
-                                };
-                                setRules(next);
-                              }}
-                              style={{ width: "100%" }}
-                            />
-                          </label>
-                        </div>
+                        <label style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                          <input
+                            type="checkbox"
+                            checked={!!rule.settings?.override_courier_delivery_window}
+                            onChange={(e) => {
+                              const next = [...rules];
+                              next[safeSelectedIndex] = {
+                                ...rule,
+                                settings: { ...rule.settings, override_courier_delivery_window: e.target.checked },
+                              };
+                              setRules(next);
+                            }}
+                          />
+                          <s-text>Override global settings for Courier delivery window</s-text>
+                        </label>
+
+                        {!rule.settings?.override_courier_delivery_window ? (
+                          <div style={{ marginLeft: 24, marginTop: 4, color: "var(--p-color-text-subdued, #6b7280)", fontSize: 12 }}>
+                            Using: <strong>{globalSettings?.courier_delivery_days_min ?? 3}-{globalSettings?.courier_delivery_days_max ?? 5} days</strong>
+                          </div>
+                        ) : (
+                          <div style={{ marginLeft: 24, marginTop: 8 }}>
+                            <div style={{ display: "flex", alignItems: "center", gap: 6, color: "var(--p-color-text-subdued, #6b7280)", marginBottom: 8 }}>
+                              <span style={{ fontSize: 12, flexShrink: 0 }}>💡</span>
+                              <span style={{ fontSize: 12 }}>Used by &#123;arrival&#125; placeholder and ETA Timeline</span>
+                            </div>
+                            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                              <label>
+                                <s-text>Min days (after shipping)</s-text>
+                                <input
+                                  type="number"
+                                  min="0"
+                                  value={String(rule.settings?.eta_delivery_days_min ?? globalSettings?.courier_delivery_days_min ?? 3)}
+                                  onChange={(e) => {
+                                    const newMin = safeParseNumber(e.target.value, 3, 0);
+                                    const currentMax = rule.settings?.eta_delivery_days_max ?? globalSettings?.courier_delivery_days_max ?? 5;
+                                    const next = [...rules];
+                                    next[safeSelectedIndex] = {
+                                      ...rule,
+                                      settings: {
+                                        ...rule.settings,
+                                        eta_delivery_days_min: newMin,
+                                        ...(newMin > currentMax ? { eta_delivery_days_max: newMin } : {}),
+                                      },
+                                    };
+                                    setRules(next);
+                                  }}
+                                  style={{ width: "100%" }}
+                                />
+                              </label>
+                              <label>
+                                <s-text>Max days (after shipping)</s-text>
+                                <input
+                                  type="number"
+                                  min="0"
+                                  value={String(rule.settings?.eta_delivery_days_max ?? globalSettings?.courier_delivery_days_max ?? 5)}
+                                  onChange={(e) => {
+                                    const newMax = safeParseNumber(e.target.value, 5, 0);
+                                    const currentMin = rule.settings?.eta_delivery_days_min ?? globalSettings?.courier_delivery_days_min ?? 3;
+                                    const next = [...rules];
+                                    next[safeSelectedIndex] = {
+                                      ...rule,
+                                      settings: {
+                                        ...rule.settings,
+                                        eta_delivery_days_max: newMax,
+                                        ...(newMax < currentMin ? { eta_delivery_days_min: newMax } : {}),
+                                      },
+                                    };
+                                    setRules(next);
+                                  }}
+                                  style={{ width: "100%" }}
+                                />
+                              </label>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* ===== EXPRESS DELIVERY WINDOW ===== */}
+                      <div>
+                        <label style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                          <input
+                            type="checkbox"
+                            checked={!!rule.settings?.override_express_delivery_window}
+                            onChange={(e) => {
+                              const next = [...rules];
+                              next[safeSelectedIndex] = {
+                                ...rule,
+                                settings: { ...rule.settings, override_express_delivery_window: e.target.checked },
+                              };
+                              setRules(next);
+                            }}
+                          />
+                          <s-text>Override global settings for Express delivery window</s-text>
+                        </label>
+
+                        {!rule.settings?.override_express_delivery_window ? (
+                          <div style={{ marginLeft: 24, marginTop: 4, color: "var(--p-color-text-subdued, #6b7280)", fontSize: 12 }}>
+                            Using: <strong>{globalSettings?.express_delivery_days_min ?? 1}-{globalSettings?.express_delivery_days_max ?? 1} days</strong>
+                          </div>
+                        ) : (
+                          <div style={{ marginLeft: 24, marginTop: 8 }}>
+                            <div style={{ display: "flex", alignItems: "center", gap: 6, color: "var(--p-color-text-subdued, #6b7280)", marginBottom: 8 }}>
+                              <span style={{ fontSize: 12, flexShrink: 0 }}>💡</span>
+                              <span style={{ fontSize: 12 }}>Used by &#123;express&#125; placeholder</span>
+                            </div>
+                            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                              <label>
+                                <s-text>Min days (after shipping)</s-text>
+                                <input
+                                  type="number"
+                                  min="1"
+                                  value={String(rule.settings?.express_delivery_days_min ?? globalSettings?.express_delivery_days_min ?? 1)}
+                                  onChange={(e) => {
+                                    const newMin = safeParseNumber(e.target.value, 1, 1);
+                                    const currentMax = rule.settings?.express_delivery_days_max ?? globalSettings?.express_delivery_days_max ?? 1;
+                                    const next = [...rules];
+                                    next[safeSelectedIndex] = {
+                                      ...rule,
+                                      settings: {
+                                        ...rule.settings,
+                                        express_delivery_days_min: newMin,
+                                        ...(newMin > currentMax ? { express_delivery_days_max: newMin } : {}),
+                                      },
+                                    };
+                                    setRules(next);
+                                  }}
+                                  style={{ width: "100%" }}
+                                />
+                              </label>
+                              <label>
+                                <s-text>Max days (after shipping)</s-text>
+                                <input
+                                  type="number"
+                                  min="1"
+                                  value={String(rule.settings?.express_delivery_days_max ?? globalSettings?.express_delivery_days_max ?? 1)}
+                                  onChange={(e) => {
+                                    const newMax = safeParseNumber(e.target.value, 1, 1);
+                                    const currentMin = rule.settings?.express_delivery_days_min ?? globalSettings?.express_delivery_days_min ?? 1;
+                                    const next = [...rules];
+                                    next[safeSelectedIndex] = {
+                                      ...rule,
+                                      settings: {
+                                        ...rule.settings,
+                                        express_delivery_days_max: newMax,
+                                        ...(newMax < currentMin ? { express_delivery_days_min: newMax } : {}),
+                                      },
+                                    };
+                                    setRules(next);
+                                  }}
+                                  style={{ width: "100%" }}
+                                />
+                              </label>
+                            </div>
+                          </div>
+                        )}
                       </div>
 
                       {/* Divider */}
@@ -4183,7 +4417,7 @@ export default function Index() {
                     <div style={{ display: "grid", gap: 2, color: "var(--p-color-text-subdued, #6b7280)", fontSize: 12 }}>
                       <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
                         💡 Placeholders: &#123;countdown&#125;, &#123;arrival&#125;, &#123;express&#125;, &#123;threshold&#125;, &#123;pricing:name&#125;
-                        <span title={"{countdown} = live countdown timer\n{arrival} = estimated delivery date\n{express} = next-day delivery date\n{threshold} = free delivery threshold\n{pricing:name} = delivery pricing (configure in Free Delivery)"} style={{ cursor: "help" }}>ℹ️</span>
+                        <span title={"{countdown} = live countdown timer\n{arrival} = estimated delivery date\n{express} = express delivery date (configure in Dispatch Settings)\n{threshold} = free delivery threshold\n{pricing:name} = delivery pricing (configure in Free Delivery)"} style={{ cursor: "help" }}>ℹ️</span>
                       </span>
                       <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
                         💡 Formatting: **bold**, [link](url), &#123;lb&#125;
@@ -5229,7 +5463,7 @@ export default function Index() {
                       <input
                         type="range"
                         min="20"
-                        max="56"
+                        max="48"
                         step="4"
                         value={normalizeSingleIconSize(rule.settings?.single_icon_size, 36)}
                         onChange={(e) => {
@@ -5691,7 +5925,7 @@ export default function Index() {
                     <input
                       type="range"
                       min="20"
-                      max="56"
+                      max="48"
                       step="4"
                       value={rule.settings?.eta_icon_size || 36}
                       onChange={(e) => {
@@ -5762,7 +5996,7 @@ export default function Index() {
                     <input
                       type="range"
                       min="12"
-                      max="72"
+                      max="42"
                       value={rule.settings?.eta_connector_size || 24}
                       onChange={(e) => {
                         const next = [...rules];

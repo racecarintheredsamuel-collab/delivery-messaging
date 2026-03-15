@@ -60,8 +60,12 @@ export function ETATimelinePreview({ rule, globalSettings }) {
   const connectorColor = rule.settings?.eta_connector_use_main_color === false
     ? (rule.settings?.eta_connector_color || "#111827")
     : mainIconColor;
-  const minDays = rule.settings?.eta_delivery_days_min ?? 3;
-  const maxDays = rule.settings?.eta_delivery_days_max ?? 5;
+  const minDays = rule.settings?.override_courier_delivery_window
+    ? (rule.settings?.eta_delivery_days_min ?? globalSettings?.courier_delivery_days_min ?? 3)
+    : (globalSettings?.courier_delivery_days_min ?? 3);
+  const maxDays = rule.settings?.override_courier_delivery_window
+    ? (rule.settings?.eta_delivery_days_max ?? globalSettings?.courier_delivery_days_max ?? 5)
+    : (globalSettings?.courier_delivery_days_max ?? 5);
 
   // Border styling: use custom if flag set, else global
   const useCustomBorder = rule.settings?.eta_use_custom_border;

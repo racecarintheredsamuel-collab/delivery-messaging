@@ -88,9 +88,10 @@ export const loader = async ({ request }) => {
   if (configMf?.value) {
     try {
       config = JSON.parse(configMf.value);
-      // Check v2 format for rules
+      // Check v2/v3 format for rules - only count LIVE profile's rules
       if ((config.version === 2 || config.version === 3) && config.profiles) {
-        ruleCount = config.profiles.reduce((sum, p) => sum + (p.rules?.length || 0), 0);
+        const liveProfile = config.profiles.find(p => p.id === config.liveProfileId) || config.profiles[0];
+        ruleCount = liveProfile?.rules?.length || 0;
         hasRules = ruleCount > 0;
       } else if (config.rules) {
         ruleCount = config.rules.length;
