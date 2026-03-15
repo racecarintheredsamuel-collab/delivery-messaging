@@ -87,7 +87,7 @@ function defaultGlobalSettings() {
     messages_alignment: "left",
     eta_alignment: "left",
     // Mobile breakpoint
-    use_early_mobile_breakpoint: false,
+    mobile_breakpoint: 768,
     // ETA Timeline vertical spacing
     eta_gap_icon_label: 2,
     eta_gap_label_date: 0,
@@ -2757,17 +2757,24 @@ export default function Index() {
                 {/* Theme Compatibility */}
                 <div style={{ border: "1px solid var(--p-color-border, #e5e7eb)", borderRadius: 8, padding: 16, display: "grid", gap: 12, background: "var(--p-color-bg-surface-secondary, #f9fafb)" }}>
                   <s-heading size="small">Theme Compatibility</s-heading>
-                  <label style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                  <div>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
+                      <s-text size="small">Mobile alignment breakpoint</s-text>
+                      <s-text size="small" style={{ fontWeight: 600 }}>{globalSettings?.mobile_breakpoint ?? 768}px</s-text>
+                    </div>
                     <input
-                      type="checkbox"
-                      checked={!!globalSettings?.use_early_mobile_breakpoint}
-                      onChange={(e) => setGlobalSettings({ ...globalSettings, use_early_mobile_breakpoint: e.target.checked })}
+                      type="range"
+                      min="480"
+                      max="1200"
+                      step="10"
+                      value={globalSettings?.mobile_breakpoint ?? 768}
+                      onChange={(e) => setGlobalSettings({ ...globalSettings, mobile_breakpoint: Number(e.target.value) })}
+                      style={{ width: "100%" }}
                     />
-                    <s-text>Switch to mobile alignment earlier</s-text>
-                  </label>
+                  </div>
                   <div style={{ display: "flex", alignItems: "center", gap: 6, color: "var(--p-color-text-subdued, #6b7280)" }}>
                     <span style={{ fontSize: 12, flexShrink: 0 }}>💡</span>
-                    <span style={{ fontSize: 12 }}>Some themes (like Warehouse, Prestige) switch to a stacked mobile layout on tablets. Enable this if your mobile alignment settings aren't being applied when expected.</span>
+                    <span style={{ fontSize: 12 }}>Adjust when mobile alignment kicks in. Increase for themes like Warehouse that switch to mobile layout earlier.</span>
                   </div>
                 </div>
 
