@@ -13,6 +13,8 @@
 {%- if max_width_final and max_width_final > 0 and match_eta_width_final != true %}#{{ uid }}{width:min({{ max_width_final }}px,100%);min-width:200px;overflow-wrap:break-word;word-break:break-word}{% endif -%}
 {%- if match_eta_width_final == true and show_eta_timeline_final == true %}#{{ uid }}{display:block}{% endif -%}
 .dib-messages-block-{{ uid }}:has(#{{ uid }} .dib-container:not(:has(.dib-line:not(.dib-has-countdown), .dib-has-countdown.is-ready))){display:none}
+{%- assign mobile_bp = 768 -%}{%- if gs.use_early_mobile_breakpoint == true or gs.use_early_mobile_breakpoint == 'true' -%}{%- assign mobile_bp = 990 -%}{%- endif -%}
+@media(max-width:{{ mobile_bp }}px){.dib-messages-block-{{ uid }}[style*="--dib-align-mobile"]{text-align:var(--dib-align-mobile)!important}}
 </style>
 {%- capture dib_icon_markup -%}
 {%- if icon_final contains 'custom-' -%}

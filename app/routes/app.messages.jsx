@@ -86,6 +86,8 @@ function defaultGlobalSettings() {
     // Block alignment
     messages_alignment: "left",
     eta_alignment: "left",
+    // Mobile breakpoint
+    use_early_mobile_breakpoint: false,
     // ETA Timeline vertical spacing
     eta_gap_icon_label: 2,
     eta_gap_label_date: 0,
@@ -2750,6 +2752,23 @@ export default function Index() {
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                   <s-heading>Global Spacing & Alignment</s-heading>
                   <s-button variant="plain" onClick={() => setShowAlignmentPanel(false)}>Close</s-button>
+                </div>
+
+                {/* Theme Compatibility */}
+                <div style={{ border: "1px solid var(--p-color-border, #e5e7eb)", borderRadius: 8, padding: 16, display: "grid", gap: 12, background: "var(--p-color-bg-surface-secondary, #f9fafb)" }}>
+                  <s-heading size="small">Theme Compatibility</s-heading>
+                  <label style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                    <input
+                      type="checkbox"
+                      checked={!!globalSettings?.use_early_mobile_breakpoint}
+                      onChange={(e) => setGlobalSettings({ ...globalSettings, use_early_mobile_breakpoint: e.target.checked })}
+                    />
+                    <s-text>Switch to mobile alignment earlier</s-text>
+                  </label>
+                  <div style={{ display: "flex", alignItems: "center", gap: 6, color: "var(--p-color-text-subdued, #6b7280)" }}>
+                    <span style={{ fontSize: 12, flexShrink: 0 }}>💡</span>
+                    <span style={{ fontSize: 12 }}>Some themes (like Warehouse, Prestige) switch to a stacked mobile layout on tablets. Enable this if your mobile alignment settings aren't being applied when expected.</span>
+                  </div>
                 </div>
 
                 {/* Messages Spacing & Alignment */}

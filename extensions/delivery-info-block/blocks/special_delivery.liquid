@@ -43,6 +43,7 @@ font-size:{{ sdhfs }}px;
 {%- else -%}font-weight:inherit;{%- endif -%}}
 {%- if fff != blank %}#{{ uid }} .dib-special-header{font-family:{{ fff }}, sans-serif}{% endif -%}
 {%- endif -%}
+{%- assign mobile_bp = 768 -%}{%- if gs.use_early_mobile_breakpoint == true or gs.use_early_mobile_breakpoint == 'true' -%}{%- assign mobile_bp = 990 -%}{%- endif -%}@media(max-width:{{ mobile_bp }}px){#{{ uid }}[style*="--dib-align-mobile"]{text-align:var(--dib-align-mobile)!important}}
 </style>
 <div id="{{ uid }}" class="dib-special-delivery-block" {% if mew %}data-match-eta-width="true"{% endif %} style="text-align:{{ sda }};{% if sdam != blank %}--dib-align-mobile:{{ sdam }};{% endif %}{% if sdmt != 0 %}margin-top:{{ sdmt }}px;{% endif %}{% if sdmb != 0 %}margin-bottom:{{ sdmb }}px;{% endif %}">
 <span class="dib-config" style="display:none" data-link-color="{{ gs.link_color | default: '#2563eb' }}" data-link-decoration="{{ gs.link_decoration | default: 'underline' }}" data-link-hover-color="{{ gs.link_hover_color | default: '#1d4ed8' }}" data-link-hover-decoration="{{ gs.link_hover_decoration | default: 'underline' }}" data-link-hover-opacity="{{ gs.link_hover_opacity | default: 1 }}" data-link-thickness="{{ gs.link_thickness | default: '1px' }}" data-link-hover-thickness="{{ gs.link_hover_thickness | default: '2px' }}"></span>

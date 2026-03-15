@@ -184,17 +184,6 @@
   min-width: 0;
 }
 
-/* Mobile alignment overrides */
-@media (max-width: 768px) {
-  [style*="--dib-align-mobile"] {
-    text-align: var(--dib-align-mobile) !important;
-  }
-
-  .dib-eta-timeline-block[style*="--dib-align-mobile"] .dib-eta-timeline {
-    text-align: var(--dib-align-mobile) !important;
-  }
-}
-
 /* ===========================================
    Special Delivery Block - Fade-in
    =========================================== */
