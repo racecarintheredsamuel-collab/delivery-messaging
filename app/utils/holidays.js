@@ -329,7 +329,9 @@ export const HOLIDAY_DEFINITIONS = {
         holidays.push(`${year}-12-28`); // Substitute for Christmas (if both on weekend)
       }
       if (boxingDay.getDay() === 0) {
-        holidays.push(`${year}-12-28`); // Substitute for Boxing Day
+        holidays.push(`${year}-12-28`); // Substitute for Boxing Day (Sunday)
+      } else if (boxingDay.getDay() === 6 && christmas.getDay() !== 6) {
+        holidays.push(`${year}-12-28`); // Substitute for Boxing Day (Saturday, when Christmas is Friday)
       }
 
       return holidays;
@@ -401,10 +403,17 @@ export const HOLIDAY_DEFINITIONS = {
 
       // Handle substitute days
       const christmas = new Date(year, 11, 25);
+      const stephensDay = new Date(year, 11, 26);
       if (christmas.getDay() === 0) {
         holidays.push(`${year}-12-27`);
       } else if (christmas.getDay() === 6) {
         holidays.push(`${year}-12-27`);
+        holidays.push(`${year}-12-28`);
+      }
+      // St. Stephen's Day substitute (when Christmas is not already on Saturday)
+      if (stephensDay.getDay() === 0 && christmas.getDay() !== 6) {
+        holidays.push(`${year}-12-28`);
+      } else if (stephensDay.getDay() === 6 && christmas.getDay() !== 6) {
         holidays.push(`${year}-12-28`);
       }
 
@@ -632,6 +641,24 @@ export const HOLIDAY_DEFINITIONS = {
       const canadaDay = new Date(year, 6, 1);
       if (canadaDay.getDay() === 0) {
         holidays.push(`${year}-07-02`);
+      } else if (canadaDay.getDay() === 6) {
+        holidays.push(`${year}-07-03`); // Monday substitute when Canada Day is Saturday
+      }
+
+      // Handle Christmas/Boxing Day substitutes
+      const christmas = new Date(year, 11, 25);
+      const boxingDay = new Date(year, 11, 26);
+      if (christmas.getDay() === 0) {
+        holidays.push(`${year}-12-27`);
+      } else if (christmas.getDay() === 6) {
+        holidays.push(`${year}-12-27`);
+        holidays.push(`${year}-12-28`);
+      }
+      // Boxing Day substitute (when Christmas is not already on Saturday)
+      if (boxingDay.getDay() === 0 && christmas.getDay() !== 6) {
+        holidays.push(`${year}-12-28`);
+      } else if (boxingDay.getDay() === 6 && christmas.getDay() !== 6) {
+        holidays.push(`${year}-12-28`);
       }
 
       return holidays;
@@ -698,10 +725,17 @@ export const HOLIDAY_DEFINITIONS = {
 
       // Handle Christmas/Boxing Day substitutes
       const christmas = new Date(year, 11, 25);
+      const boxingDay = new Date(year, 11, 26);
       if (christmas.getDay() === 0) {
         holidays.push(`${year}-12-27`);
       } else if (christmas.getDay() === 6) {
         holidays.push(`${year}-12-27`);
+        holidays.push(`${year}-12-28`);
+      }
+      // Boxing Day substitute (when Christmas is not already on Saturday)
+      if (boxingDay.getDay() === 0 && christmas.getDay() !== 6) {
+        holidays.push(`${year}-12-28`);
+      } else if (boxingDay.getDay() === 6 && christmas.getDay() !== 6) {
         holidays.push(`${year}-12-28`);
       }
 
@@ -739,10 +773,17 @@ export const HOLIDAY_DEFINITIONS = {
 
       // Handle substitute days
       const christmas = new Date(year, 11, 25);
+      const boxingDay = new Date(year, 11, 26);
       if (christmas.getDay() === 0) {
         holidays.push(`${year}-12-27`);
       } else if (christmas.getDay() === 6) {
         holidays.push(`${year}-12-27`);
+        holidays.push(`${year}-12-28`);
+      }
+      // Boxing Day substitute (when Christmas is not already on Saturday)
+      if (boxingDay.getDay() === 0 && christmas.getDay() !== 6) {
+        holidays.push(`${year}-12-28`);
+      } else if (boxingDay.getDay() === 6 && christmas.getDay() !== 6) {
         holidays.push(`${year}-12-28`);
       }
 
