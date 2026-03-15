@@ -14,7 +14,6 @@
 {%- if match_eta_width_final == true and show_eta_timeline_final == true %}#{{ uid }}{display:block}{% endif -%}
 .dib-messages-block-{{ uid }}:has(#{{ uid }} .dib-container:not(:has(.dib-line:not(.dib-has-countdown), .dib-has-countdown.is-ready))){display:none}
 {%- assign mobile_bp = 768 -%}{%- if gs.mobile_breakpoint_enabled == true or gs.mobile_breakpoint_enabled == 'true' -%}{%- assign mobile_bp = gs.mobile_breakpoint | default: 768 -%}{%- endif -%}
-@media(max-width:{{ mobile_bp }}px){.dib-messages-block-{{ uid }}[style*="--dib-align-mobile"]{text-align:var(--dib-align-mobile)!important}}
 </style>
 {%- capture dib_icon_markup -%}
 {%- if icon_final contains 'custom-' -%}
@@ -78,8 +77,8 @@
 {% if request.design_mode %}
 <div style="text-align:{{ messages_alignment }}"><div class="dib-placeholder"><div><b>Delivery Messages</b><br><span>Configure rules in the app to display here.</span></div></div></div>
 {% elsif should_show_block %}
-<style>.dib-messages-block-{{ uid }}{display:block!important;width:100%!important;text-align:{{ messages_alignment }}!important}.dib-messages-block-{{ uid }} #{{ uid }}{display:inline-block!important;text-align:left!important}</style>
-<div class="dib-messages-block-{{ uid }}" style="{% if messages_alignment_mobile != blank %}--dib-align-mobile:{{ messages_alignment_mobile }};{% endif %}{% if messages_margin_top != 0 %}margin-top:{{ messages_margin_top }}px;{% endif %}{% if messages_margin_bottom != 0 %}margin-bottom:{{ messages_margin_bottom }}px;{% endif %}">
+<style>.dib-messages-block-{{ uid }}{display:block!important;width:100%!important}.dib-messages-block-{{ uid }} #{{ uid }}{display:inline-block!important;text-align:left!important}@media(min-width:{{ mobile_bp | plus: 1 }}px){.dib-messages-block-{{ uid }}{text-align:{{ messages_alignment }}!important}}@media(max-width:{{ mobile_bp }}px){.dib-messages-block-{{ uid }}{text-align:{{ messages_alignment_mobile | default: messages_alignment }}!important}}</style>
+<div class="dib-messages-block-{{ uid }}" style="{% if messages_margin_top != 0 %}margin-top:{{ messages_margin_top }}px;{% endif %}{% if messages_margin_bottom != 0 %}margin-bottom:{{ messages_margin_bottom }}px;{% endif %}">
 {%- assign single_icon_size_px = single_icon_size_final | plus: 0 -%}
 {%- if single_icon_size_px == 0 -%}
 {%- case single_icon_size_final -%}
