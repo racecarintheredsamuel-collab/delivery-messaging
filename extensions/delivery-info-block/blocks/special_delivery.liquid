@@ -40,7 +40,7 @@ font-size:{{ sdhfs }}px;
 {%- when 'bold' %}font-weight:700;
 {%- else %}font-weight:400;
 {%- endcase %}
-{%- else -%}font-weight:inherit;{%- endif -%}}
+{%- else -%}font-weight:inherit;{%- endif -%}line-height:{{ sdlh }};}
 {%- if fff != blank %}#{{ uid }} .dib-special-header{font-family:{{ fff }}, sans-serif}{% endif -%}
 {%- endif -%}
 {%- assign mobile_bp = 768 -%}{%- if gs.mobile_breakpoint_enabled == true or gs.mobile_breakpoint_enabled == 'true' -%}{%- assign mobile_bp = gs.mobile_breakpoint | default: 768 -%}{%- endif -%}@media(min-width:{{ mobile_bp | plus: 1 }}px){#{{ uid }}{text-align:{{ sda }}!important}}@media(max-width:{{ mobile_bp }}px){#{{ uid }}{text-align:{{ sdam | default: sda }}!important}}
