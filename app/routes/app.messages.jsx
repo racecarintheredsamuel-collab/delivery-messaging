@@ -2566,6 +2566,79 @@ export default function Index() {
                   )}
                 </div>
 
+                {/* Border Styling */}
+                <div style={{ border: "1px solid var(--p-color-border, #e5e7eb)", borderRadius: 8, padding: 16, display: "grid", gap: 12, background: "var(--p-color-bg-surface-secondary, #f9fafb)" }}>
+                  <s-heading size="small">Border Styling</s-heading>
+                  <s-text size="small" style={{ color: "var(--p-color-text-subdued, #6b7280)" }}>
+                    Default border settings for all blocks. Individual rules can override using "Use custom border styling".
+                  </s-text>
+
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                    <div>
+                      <s-text size="small">Border thickness ({globalSettings?.global_border_thickness ?? 0}px)</s-text>
+                      <input
+                        type="range"
+                        min="0"
+                        max="10"
+                        value={globalSettings?.global_border_thickness ?? 0}
+                        onChange={(e) => setGlobalSettings({ ...globalSettings, global_border_thickness: Number(e.target.value) })}
+                        style={{ width: "100%" }}
+                      />
+                    </div>
+                    <div>
+                      <s-text size="small">Border radius ({globalSettings?.global_border_radius ?? 8}px)</s-text>
+                      <input
+                        type="range"
+                        min="0"
+                        max="50"
+                        value={globalSettings?.global_border_radius ?? 8}
+                        onChange={(e) => setGlobalSettings({ ...globalSettings, global_border_radius: Number(e.target.value) })}
+                        style={{ width: "100%" }}
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <s-text size="small">Border color</s-text>
+                    <s-color-field
+                      label=""
+                      value={globalSettings?.global_border_color || "#e5e7eb"}
+                      onInput={(e) => setGlobalSettings({ ...globalSettings, global_border_color: e.detail?.value ?? e.target?.value ?? "#e5e7eb" })}
+                      onChange={(e) => setGlobalSettings({ ...globalSettings, global_border_color: e.detail?.value ?? e.target?.value ?? "#e5e7eb" })}
+                    />
+                  </div>
+
+                  <div style={{ display: "flex", alignItems: "flex-end", gap: 8 }}>
+                    <div style={{ flex: 1 }}>
+                      <s-text size="small">Background color</s-text>
+                      <s-color-field
+                        label=""
+                        placeholder="transparent"
+                        value={globalSettings?.global_background_color || ""}
+                        onInput={(e) => setGlobalSettings({ ...globalSettings, global_background_color: e.detail?.value ?? e.target?.value ?? "" })}
+                        onChange={(e) => setGlobalSettings({ ...globalSettings, global_background_color: e.detail?.value ?? e.target?.value ?? "" })}
+                      />
+                    </div>
+                    {globalSettings?.global_background_color && (
+                      <button
+                        type="button"
+                        onClick={() => setGlobalSettings({ ...globalSettings, global_background_color: "" })}
+                        style={{
+                          padding: "6px 10px",
+                          fontSize: 12,
+                          border: "1px solid var(--p-color-border, #e5e7eb)",
+                          borderRadius: 4,
+                          background: "var(--p-color-bg-surface, #fff)",
+                          cursor: "pointer",
+                          marginBottom: 4,
+                        }}
+                      >
+                        Clear
+                      </button>
+                    )}
+                  </div>
+                </div>
+
                 {/* Link Styling */}
                 <div style={{ border: "1px solid var(--p-color-border, #e5e7eb)", borderRadius: 8, padding: 16, display: "grid", gap: 12, background: "var(--p-color-bg-surface-secondary, #f9fafb)" }}>
                   <s-heading size="small">Link Styling</s-heading>
@@ -2667,79 +2740,6 @@ export default function Index() {
                         <option value="0.6">60%</option>
                       </select>
                     </div>
-                  </div>
-                </div>
-
-                {/* Border Styling */}
-                <div style={{ border: "1px solid var(--p-color-border, #e5e7eb)", borderRadius: 8, padding: 16, display: "grid", gap: 12, background: "var(--p-color-bg-surface-secondary, #f9fafb)" }}>
-                  <s-heading size="small">Border Styling</s-heading>
-                  <s-text size="small" style={{ color: "var(--p-color-text-subdued, #6b7280)" }}>
-                    Default border settings for all blocks. Individual rules can override using "Use custom border styling".
-                  </s-text>
-
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-                    <div>
-                      <s-text size="small">Border thickness ({globalSettings?.global_border_thickness ?? 0}px)</s-text>
-                      <input
-                        type="range"
-                        min="0"
-                        max="10"
-                        value={globalSettings?.global_border_thickness ?? 0}
-                        onChange={(e) => setGlobalSettings({ ...globalSettings, global_border_thickness: Number(e.target.value) })}
-                        style={{ width: "100%" }}
-                      />
-                    </div>
-                    <div>
-                      <s-text size="small">Border radius ({globalSettings?.global_border_radius ?? 8}px)</s-text>
-                      <input
-                        type="range"
-                        min="0"
-                        max="50"
-                        value={globalSettings?.global_border_radius ?? 8}
-                        onChange={(e) => setGlobalSettings({ ...globalSettings, global_border_radius: Number(e.target.value) })}
-                        style={{ width: "100%" }}
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <s-text size="small">Border color</s-text>
-                    <s-color-field
-                      label=""
-                      value={globalSettings?.global_border_color || "#e5e7eb"}
-                      onInput={(e) => setGlobalSettings({ ...globalSettings, global_border_color: e.detail?.value ?? e.target?.value ?? "#e5e7eb" })}
-                      onChange={(e) => setGlobalSettings({ ...globalSettings, global_border_color: e.detail?.value ?? e.target?.value ?? "#e5e7eb" })}
-                    />
-                  </div>
-
-                  <div style={{ display: "flex", alignItems: "flex-end", gap: 8 }}>
-                    <div style={{ flex: 1 }}>
-                      <s-text size="small">Background color</s-text>
-                      <s-color-field
-                        label=""
-                        placeholder="transparent"
-                        value={globalSettings?.global_background_color || ""}
-                        onInput={(e) => setGlobalSettings({ ...globalSettings, global_background_color: e.detail?.value ?? e.target?.value ?? "" })}
-                        onChange={(e) => setGlobalSettings({ ...globalSettings, global_background_color: e.detail?.value ?? e.target?.value ?? "" })}
-                      />
-                    </div>
-                    {globalSettings?.global_background_color && (
-                      <button
-                        type="button"
-                        onClick={() => setGlobalSettings({ ...globalSettings, global_background_color: "" })}
-                        style={{
-                          padding: "6px 10px",
-                          fontSize: 12,
-                          border: "1px solid var(--p-color-border, #e5e7eb)",
-                          borderRadius: 4,
-                          background: "var(--p-color-bg-surface, #fff)",
-                          cursor: "pointer",
-                          marginBottom: 4,
-                        }}
-                      >
-                        Clear
-                      </button>
-                    )}
                   </div>
                 </div>
               </div>
