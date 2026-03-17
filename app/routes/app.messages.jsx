@@ -17,6 +17,7 @@ import { CustomDatePicker } from "../components/CustomDatePicker";
 import { FontSelector } from "../components/FontSelector";
 import { PreviewLine } from "../components/PreviewLine";
 import { ETATimelinePreview } from "../components/ETATimelinePreview";
+import { HexColorPicker, HexColorInput } from "react-colorful";
 import {
   GET_SHOP_DELIVERY_DATA,
   GET_SHOP_ID,
@@ -2649,12 +2650,19 @@ export default function Index() {
                   {/* Color - full width */}
                   <div>
                     <s-text size="small">Color</s-text>
-                    <s-color-field
-                      label=""
-                      value={globalSettings?.link_color || "#2563eb"}
-                      onInput={(e) => setGlobalSettings({ ...globalSettings, link_color: e.detail?.value ?? e.target?.value ?? "#2563eb" })}
-                      onChange={(e) => setGlobalSettings({ ...globalSettings, link_color: e.detail?.value ?? e.target?.value ?? "#2563eb" })}
-                    />
+                    <div style={{ marginTop: 4 }}>
+                      <HexColorPicker
+                        color={globalSettings?.link_color || "#2563eb"}
+                        onChange={(color) => setGlobalSettings({ ...globalSettings, link_color: color })}
+                        style={{ width: '100%' }}
+                      />
+                      <HexColorInput
+                        color={globalSettings?.link_color || "#2563eb"}
+                        onChange={(color) => setGlobalSettings({ ...globalSettings, link_color: color })}
+                        prefixed
+                        style={{ marginTop: 8, width: '100%', padding: '6px 8px', border: '1px solid #e5e7eb', borderRadius: 4 }}
+                      />
+                    </div>
                   </div>
 
                   {/* Decoration + Thickness - 50% each */}
