@@ -101,6 +101,7 @@ function defaultGlobalSettings() {
     special_delivery_header_font_weight: "normal",
     special_delivery_header_gap: 4,
     special_delivery_line_height: 1.4,
+    special_delivery_icon_gap: 12,
     // Special Delivery Message styling
     special_delivery_use_theme_text_styling: true,
     special_delivery_text_color: "#374151",
@@ -3007,6 +3008,16 @@ export default function Index() {
                         min="0"
                         value={globalSettings?.special_delivery_header_gap ?? 4}
                         onChange={(e) => setGlobalSettings({ ...globalSettings, special_delivery_header_gap: Number(e.target.value) || 0 })}
+                        style={{ width: "100%" }}
+                      />
+                    </div>
+                    <div>
+                      <s-text size="small">Icon gap</s-text>
+                      <input
+                        type="number"
+                        min="0"
+                        value={globalSettings?.special_delivery_icon_gap ?? 12}
+                        onChange={(e) => setGlobalSettings({ ...globalSettings, special_delivery_icon_gap: Number(e.target.value) || 0 })}
                         style={{ width: "100%" }}
                       />
                     </div>
