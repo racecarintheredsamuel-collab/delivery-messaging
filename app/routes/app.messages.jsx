@@ -86,9 +86,6 @@ function defaultGlobalSettings() {
     // Block alignment
     messages_alignment: "left",
     eta_alignment: "left",
-    // Mobile breakpoint
-    mobile_breakpoint_enabled: false,
-    mobile_breakpoint: 768,
     // ETA Timeline vertical spacing
     eta_gap_icon_label: 2,
     eta_gap_label_date: 0,
@@ -2755,40 +2752,6 @@ export default function Index() {
                   <s-button variant="plain" onClick={() => setShowAlignmentPanel(false)}>Close</s-button>
                 </div>
 
-                {/* Theme Compatibility */}
-                <div style={{ border: "1px solid var(--p-color-border, #e5e7eb)", borderRadius: 8, padding: 16, display: "grid", gap: 12, background: "var(--p-color-bg-surface-secondary, #f9fafb)" }}>
-                  <s-heading size="small">Theme Compatibility</s-heading>
-                  <label style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                    <input
-                      type="checkbox"
-                      checked={!!globalSettings?.mobile_breakpoint_enabled}
-                      onChange={(e) => setGlobalSettings({ ...globalSettings, mobile_breakpoint_enabled: e.target.checked })}
-                    />
-                    <s-text>Customize mobile alignment breakpoint</s-text>
-                  </label>
-                  <div style={{ display: "flex", alignItems: "center", gap: 6, color: "var(--p-color-text-subdued, #6b7280)" }}>
-                    <span style={{ fontSize: 12, flexShrink: 0 }}>💡</span>
-                    <span style={{ fontSize: 12 }}>Some themes (like Warehouse) switch to mobile layout earlier. Enable this to adjust when mobile alignment kicks in.</span>
-                  </div>
-                  {globalSettings?.mobile_breakpoint_enabled && (
-                    <div>
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
-                        <s-text size="small">Breakpoint</s-text>
-                        <s-text size="small" style={{ fontWeight: 600 }}>{globalSettings?.mobile_breakpoint ?? 768}px</s-text>
-                      </div>
-                      <input
-                        type="range"
-                        min="480"
-                        max="1440"
-                        step="10"
-                        value={globalSettings?.mobile_breakpoint ?? 768}
-                        onChange={(e) => setGlobalSettings({ ...globalSettings, mobile_breakpoint: Number(e.target.value) })}
-                        style={{ width: "100%" }}
-                      />
-                    </div>
-                  )}
-                </div>
-
                 {/* Messages Spacing & Alignment */}
                 <div style={{ border: "1px solid var(--p-color-border, #e5e7eb)", borderRadius: 8, padding: 16, display: "grid", gap: 12, background: "var(--p-color-bg-surface-secondary, #f9fafb)" }}>
                   <s-heading size="small">Messages Spacing & Alignment</s-heading>
@@ -3041,6 +3004,7 @@ export default function Index() {
                       <s-text size="small">Header gap</s-text>
                       <input
                         type="number"
+                        min="0"
                         value={globalSettings?.special_delivery_header_gap ?? 4}
                         onChange={(e) => setGlobalSettings({ ...globalSettings, special_delivery_header_gap: Number(e.target.value) || 0 })}
                         style={{ width: "100%" }}
