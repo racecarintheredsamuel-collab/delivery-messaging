@@ -2227,7 +2227,7 @@ export default function Index() {
                       style={{ width: "100%" }}
                     />
                   </div>
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                  <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) minmax(0, 1fr)", gap: 12 }}>
                     <div>
                       <s-text size="small">Theme font colour</s-text>
                       <div style={{ marginTop: 4 }}>
@@ -2284,7 +2284,7 @@ export default function Index() {
                     <s-text size="small" style={{ color: "#6b7280", marginLeft: 24 }}><em>📌 Current rule is using custom text styling</em></s-text>
                   )}
                   {globalSettings?.use_theme_text_styling === false && (
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                    <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) minmax(0, 1fr)", gap: 12 }}>
                       <div>
                         <s-text size="small">Text color</s-text>
                         <div style={{ marginTop: 4 }}>
@@ -2355,7 +2355,7 @@ export default function Index() {
                     <s-text size="small" style={{ color: "#6b7280", marginLeft: 24 }}><em>📌 Current rule is using custom text styling</em></s-text>
                   )}
                   {globalSettings?.eta_use_theme_text_styling === false && (
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+                  <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) minmax(0, 1fr)", gap: 16 }}>
                     {/* Labels */}
                     <div style={{ display: "grid", gap: 8 }}>
                       <div style={{ minHeight: 40 }}><s-text size="small" style={{ fontWeight: 600 }}>Labels (Ordered, Shipped, Delivered)</s-text></div>
@@ -2464,7 +2464,7 @@ export default function Index() {
                     <s-text size="small" style={{ color: "#6b7280", marginLeft: 24 }}><em>📌 Current rule is using custom text styling</em></s-text>
                   )}
                   {globalSettings?.special_delivery_use_theme_text_styling === false && (
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+                  <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) minmax(0, 1fr)", gap: 16 }}>
                     {/* Header */}
                     <div style={{ display: "grid", gap: 8 }}>
                       <s-text size="small" style={{ fontWeight: 600 }}>Header (optional)</s-text>
