@@ -2262,7 +2262,7 @@ export default function Index() {
                     <s-text>Match theme font</s-text>
                   </label>
                   {!globalSettings?.use_theme_font && (
-                    <div style={{ marginLeft: 24 }}>
+                    <div>
                       <FontSelector
                         label="Custom font"
                         value={globalSettings?.custom_font_family || ""}
@@ -2333,7 +2333,7 @@ export default function Index() {
                     <s-text>Match theme font</s-text>
                   </label>
                   {globalSettings?.eta_use_theme_font === false && (
-                    <div style={{ marginLeft: 24 }}>
+                    <div>
                       <FontSelector
                         label="Custom font"
                         value={globalSettings?.eta_custom_font_family || ""}
@@ -2442,7 +2442,7 @@ export default function Index() {
                     <s-text>Match theme font</s-text>
                   </label>
                   {globalSettings?.special_delivery_use_theme_font === false && (
-                    <div style={{ marginLeft: 24 }}>
+                    <div>
                       <FontSelector
                         label="Custom font"
                         value={globalSettings?.special_delivery_custom_font_family || ""}
@@ -5757,7 +5757,7 @@ export default function Index() {
                   </label>
 
                   {rule.settings?.eta_use_main_icon_color === false && (
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8 }}>
+                    <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr)", gap: 8 }}>
                       <div>
                         <s-text size="small">Order</s-text>
                         <div style={{ marginTop: 4 }}>
@@ -6718,7 +6718,7 @@ export default function Index() {
                       </label>
 
                       {rule.settings?.special_delivery_override_global_text_styling === true && (
-                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+                        <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) minmax(0, 1fr)", gap: 16 }}>
                           {/* Header */}
                           <div style={{ display: "grid", gap: 8 }}>
                             <s-text size="small" style={{ fontWeight: 600 }}>Header (optional)</s-text>
