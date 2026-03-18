@@ -54,13 +54,14 @@ export function ColorPicker({ color, onChange }) {
   };
 
   return (
-    <div style={{ position: "relative" }}>
+    <div style={{ position: "relative", minWidth: 0 }}>
       {/* Input container with swatch inside */}
       <div
         ref={containerRef}
         style={{
           display: "flex",
           alignItems: "center",
+          minWidth: 0,
           border: "1px solid #888888",
           borderRadius: 7,
           padding: "5px 8px 5px 5px",
