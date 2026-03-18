@@ -2357,7 +2357,7 @@ export default function Index() {
                   {globalSettings?.eta_use_theme_text_styling === false && (
                   <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) minmax(0, 1fr)", gap: 16 }}>
                     {/* Labels */}
-                    <div style={{ display: "grid", gap: 8 }}>
+                    <div style={{ display: "grid", gap: 8, minWidth: 0 }}>
                       <div style={{ minHeight: 40 }}><s-text size="small" style={{ fontWeight: 600 }}>Labels (Ordered, Shipped, Delivered)</s-text></div>
                       <div>
                         <s-text size="small">Color</s-text>
@@ -2392,7 +2392,7 @@ export default function Index() {
                       </div>
                     </div>
                     {/* Dates */}
-                    <div style={{ display: "grid", gap: 8 }}>
+                    <div style={{ display: "grid", gap: 8, minWidth: 0 }}>
                       <div style={{ minHeight: 40 }}><s-text size="small" style={{ fontWeight: 600 }}>Dates (Jan 20, Jan 21-24)</s-text></div>
                       <div>
                         <s-text size="small">Color</s-text>
@@ -2466,7 +2466,7 @@ export default function Index() {
                   {globalSettings?.special_delivery_use_theme_text_styling === false && (
                   <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) minmax(0, 1fr)", gap: 16 }}>
                     {/* Header */}
-                    <div style={{ display: "grid", gap: 8 }}>
+                    <div style={{ display: "grid", gap: 8, minWidth: 0 }}>
                       <s-text size="small" style={{ fontWeight: 600 }}>Header (optional)</s-text>
                       <div>
                         <s-text size="small">Color</s-text>
@@ -2501,7 +2501,7 @@ export default function Index() {
                       </div>
                     </div>
                     {/* Message */}
-                    <div style={{ display: "grid", gap: 8 }}>
+                    <div style={{ display: "grid", gap: 8, minWidth: 0 }}>
                       <s-text size="small" style={{ fontWeight: 600 }}>Message</s-text>
                       <div>
                         <s-text size="small">Color</s-text>
@@ -6720,7 +6720,7 @@ export default function Index() {
                       {rule.settings?.special_delivery_override_global_text_styling === true && (
                         <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) minmax(0, 1fr)", gap: 16 }}>
                           {/* Header */}
-                          <div style={{ display: "grid", gap: 8 }}>
+                          <div style={{ display: "grid", gap: 8, minWidth: 0 }}>
                             <s-text size="small" style={{ fontWeight: 600 }}>Header (optional)</s-text>
                             <div>
                               <s-text size="small">Color</s-text>
@@ -6777,7 +6777,7 @@ export default function Index() {
                             </div>
                           </div>
                           {/* Message */}
-                          <div style={{ display: "grid", gap: 8 }}>
+                          <div style={{ display: "grid", gap: 8, minWidth: 0 }}>
                             <s-text size="small" style={{ fontWeight: 600 }}>Message</s-text>
                             <div>
                               <s-text size="small">Color</s-text>
