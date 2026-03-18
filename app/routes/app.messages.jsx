@@ -2199,14 +2199,14 @@ export default function Index() {
 
               {/* Typography Panel */}
               {showTypographyPanel && (
-                <div style={{ border: "1px solid var(--p-color-border, #e5e7eb)", borderRadius: 8, padding: 16, background: "var(--p-color-bg-surface, #ffffff)", display: "grid", gap: 16 }}>
+                <div style={{ border: "1px solid var(--p-color-border, #e5e7eb)", borderRadius: 8, padding: 16, background: "var(--p-color-bg-surface, #ffffff)", display: "grid", gap: 16, minWidth: 0 }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                   <s-heading>Global Styling</s-heading>
                   <s-button variant="plain" onClick={() => setShowTypographyPanel(false)}>Close</s-button>
                 </div>
 
                 {/* Theme Fonts for Preview */}
-                <div style={{ border: "1px solid var(--p-color-border, #e5e7eb)", borderRadius: 8, padding: 16, display: "grid", gap: 12, background: "var(--p-color-bg-surface-secondary, #f9fafb)" }}>
+                <div style={{ border: "1px solid var(--p-color-border, #e5e7eb)", borderRadius: 8, padding: 16, display: "grid", gap: 12, background: "var(--p-color-bg-surface-secondary, #f9fafb)", minWidth: 0 }}>
                   <s-heading size="small">Theme Styling for Preview</s-heading>
                   <s-text size="small" style={{ color: "var(--p-color-text-subdued, #6b7280)" }}>
                     Select your Shopify theme's body font so the admin preview matches your storefront.
@@ -2250,7 +2250,7 @@ export default function Index() {
                 </div>
 
                 {/* Messages Font & Text Styling */}
-                <div style={{ border: "1px solid var(--p-color-border, #e5e7eb)", borderRadius: 8, padding: 16, display: "grid", gap: 12, background: "var(--p-color-bg-surface-secondary, #f9fafb)" }}>
+                <div style={{ border: "1px solid var(--p-color-border, #e5e7eb)", borderRadius: 8, padding: 16, display: "grid", gap: 12, background: "var(--p-color-bg-surface-secondary, #f9fafb)", minWidth: 0 }}>
                   <s-heading size="small">Messages Font & Text Styling</s-heading>
 
                   <label style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer" }}>
@@ -2321,7 +2321,7 @@ export default function Index() {
                 </div>
 
                 {/* ETA Timeline Font & Text Styling */}
-                <div style={{ border: "1px solid var(--p-color-border, #e5e7eb)", borderRadius: 8, padding: 16, display: "grid", gap: 12, background: "var(--p-color-bg-surface-secondary, #f9fafb)" }}>
+                <div style={{ border: "1px solid var(--p-color-border, #e5e7eb)", borderRadius: 8, padding: 16, display: "grid", gap: 12, background: "var(--p-color-bg-surface-secondary, #f9fafb)", minWidth: 0 }}>
                   <s-heading size="small">ETA Timeline Font & Text Styling</s-heading>
 
                   <label style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer" }}>
@@ -2431,7 +2431,7 @@ export default function Index() {
                 </div>
 
                 {/* Special Delivery Font & Text Styling */}
-                <div style={{ border: "1px solid var(--p-color-border, #e5e7eb)", borderRadius: 8, padding: 16, display: "grid", gap: 12, background: "var(--p-color-bg-surface-secondary, #f9fafb)" }}>
+                <div style={{ border: "1px solid var(--p-color-border, #e5e7eb)", borderRadius: 8, padding: 16, display: "grid", gap: 12, background: "var(--p-color-bg-surface-secondary, #f9fafb)", minWidth: 0 }}>
                   <s-heading size="small">Special Delivery Font & Text Styling</s-heading>
                   <label style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer" }}>
                     <input
@@ -2540,7 +2540,7 @@ export default function Index() {
                 </div>
 
                 {/* Border Styling */}
-                <div style={{ border: "1px solid var(--p-color-border, #e5e7eb)", borderRadius: 8, padding: 16, display: "grid", gap: 12, background: "var(--p-color-bg-surface-secondary, #f9fafb)" }}>
+                <div style={{ border: "1px solid var(--p-color-border, #e5e7eb)", borderRadius: 8, padding: 16, display: "grid", gap: 12, background: "var(--p-color-bg-surface-secondary, #f9fafb)", minWidth: 0 }}>
                   <s-heading size="small">Border Styling</s-heading>
                   <s-text size="small" style={{ color: "var(--p-color-text-subdued, #6b7280)" }}>
                     Default border settings for all blocks. Individual rules can override using "Use custom border styling".
@@ -2612,7 +2612,7 @@ export default function Index() {
                 </div>
 
                 {/* Link Styling */}
-                <div style={{ border: "1px solid var(--p-color-border, #e5e7eb)", borderRadius: 8, padding: 16, display: "grid", gap: 12, background: "var(--p-color-bg-surface-secondary, #f9fafb)" }}>
+                <div style={{ border: "1px solid var(--p-color-border, #e5e7eb)", borderRadius: 8, padding: 16, display: "grid", gap: 12, background: "var(--p-color-bg-surface-secondary, #f9fafb)", minWidth: 0 }}>
                   <s-heading size="small">Link Styling</s-heading>
                   <s-text size="small" style={{ color: "var(--p-color-text-subdued, #6b7280)" }}>
                     Style links created from [text](url) markdown in messages.
@@ -6278,7 +6278,7 @@ export default function Index() {
 
                   {/* Content - only show when not collapsed */}
                   {!collapsedPanels.special_delivery && (
-                  <div style={{ padding: "16px", display: "grid", gap: 12 }}>
+                  <div style={{ padding: "16px", display: "grid", gap: 12, minWidth: 0 }}>
                     <s-text size="small" style={{ color: "var(--p-color-text-subdued, #6b7280)" }}>
                       Display special delivery information for large items, palletised shipments, etc.
                     </s-text>
