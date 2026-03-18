@@ -6,6 +6,7 @@ import { ensureDeliveryRulesDefinition } from "../models/deliveryRules.server";
 import { newRuleId } from "../utils/idGenerators";
 import { HOLIDAY_DEFINITIONS } from "../utils/holidays";
 import { getIconSvg, generateIconsMetafield } from "../utils/icons";
+import { ColorPicker } from "../components/ColorPicker";
 import {
   GET_SHOP_DELIVERY_DATA,
   SET_METAFIELDS,
@@ -1600,13 +1601,15 @@ export default function DashboardPage() {
 
                 {/* Icon Color */}
                 <s-box paddingBlockStart="large">
-                  <s-color-field
-                    label="Icon color"
-                    placeholder="#111827"
-                    value={ruleData.icon_color}
-                    onInput={(e) => handleRuleChange("icon_color", e.detail?.value ?? e.target?.value ?? "#111827")}
-                    onChange={(e) => handleRuleChange("icon_color", e.detail?.value ?? e.target?.value ?? "#111827")}
-                  />
+                  <div>
+                    <s-text size="small">Icon color</s-text>
+                    <div style={{ marginTop: 4 }}>
+                      <ColorPicker
+                        color={ruleData.icon_color || "#111827"}
+                        onChange={(color) => handleRuleChange("icon_color", color)}
+                      />
+                    </div>
+                  </div>
                 </s-box>
 
                 {/* Info tooltip */}
@@ -1715,13 +1718,15 @@ export default function DashboardPage() {
 
                 {/* Border Color */}
                 <s-box paddingBlockStart="large">
-                  <s-color-field
-                    label="Border color"
-                    placeholder="#e5e7eb"
-                    value={ruleData.eta_border_color}
-                    onInput={(e) => handleRuleChange("eta_border_color", e.detail?.value ?? e.target?.value ?? "#e5e7eb")}
-                    onChange={(e) => handleRuleChange("eta_border_color", e.detail?.value ?? e.target?.value ?? "#e5e7eb")}
-                  />
+                  <div>
+                    <s-text size="small">Border color</s-text>
+                    <div style={{ marginTop: 4 }}>
+                      <ColorPicker
+                        color={ruleData.eta_border_color || "#e5e7eb"}
+                        onChange={(color) => handleRuleChange("eta_border_color", color)}
+                      />
+                    </div>
+                  </div>
                 </s-box>
 
                 {/* Info tooltips */}

@@ -17,7 +17,7 @@ import { CustomDatePicker } from "../components/CustomDatePicker";
 import { FontSelector } from "../components/FontSelector";
 import { PreviewLine } from "../components/PreviewLine";
 import { ETATimelinePreview } from "../components/ETATimelinePreview";
-import { HexColorPicker, HexColorInput } from "react-colorful";
+import { ColorPicker } from "../components/ColorPicker";
 import {
   GET_SHOP_DELIVERY_DATA,
   GET_SHOP_ID,
@@ -1852,9 +1852,11 @@ export default function Index() {
       background: "var(--p-color-bg-surface, #ffffff)",
       display: "flex",
       alignItems: "center",
+      justifyContent: "space-between",
       gap: 12,
     }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 8, marginLeft: "auto" }}>
+      {/* Profile selectors - LEFT */}
+      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
         {/* Live profile selector */}
         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
           <span style={{ color: "var(--p-color-text-subdued, #6b7280)", fontSize: "14px" }}>Live:</span>
@@ -1897,7 +1899,9 @@ export default function Index() {
             ))}
           </select>
         </div>
-        {/* Save indicator + button */}
+      </div>
+      {/* Save indicator + button - RIGHT */}
+      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
         <svg
           xmlns="http://www.w3.org/2000/svg"
           viewBox="0 0 24 24"
@@ -1990,54 +1994,11 @@ export default function Index() {
               background: "var(--p-color-bg-surface, #ffffff)",
               display: "flex",
               alignItems: "center",
+              justifyContent: "space-between",
               gap: 12,
             }}>
-              {/* Global buttons - LEFT */}
-              <div style={{ display: "flex", gap: 8 }}>
-                <s-button
-                  variant={!showTypographyPanel && !showAlignmentPanel && !showGlobalSettingsPanel ? "primary" : undefined}
-                  onClick={() => {
-                    setShowTypographyPanel(false);
-                    setShowAlignmentPanel(false);
-                    setShowGlobalSettingsPanel(false);
-                  }}
-                >
-                  Editor
-                </s-button>
-                <s-button
-                  variant={showGlobalSettingsPanel ? "primary" : undefined}
-                  onClick={() => {
-                    setShowGlobalSettingsPanel(!showGlobalSettingsPanel);
-                    setShowTypographyPanel(false);
-                    setShowAlignmentPanel(false);
-                  }}
-                >
-                  Settings
-                </s-button>
-                <s-button
-                  variant={showTypographyPanel ? "primary" : undefined}
-                  onClick={() => {
-                    setShowTypographyPanel(!showTypographyPanel);
-                    setShowAlignmentPanel(false);
-                    setShowGlobalSettingsPanel(false);
-                  }}
-                >
-                  Styling
-                </s-button>
-                <s-button
-                  variant={showAlignmentPanel ? "primary" : undefined}
-                  onClick={() => {
-                    setShowAlignmentPanel(!showAlignmentPanel);
-                    setShowTypographyPanel(false);
-                    setShowGlobalSettingsPanel(false);
-                  }}
-                >
-                  Alignment
-                </s-button>
-              </div>
-
-              {/* Profile selectors + Save - RIGHT */}
-              <div style={{ display: "flex", alignItems: "center", gap: 8, marginLeft: "auto" }}>
+              {/* Profile selectors - LEFT */}
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                 {/* Live profile selector */}
                 <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                   <span style={{ color: "var(--p-color-text-subdued, #6b7280)", fontSize: "14px" }}>Live:</span>
@@ -2080,6 +2041,9 @@ export default function Index() {
                     ))}
                   </select>
                 </div>
+              </div>
+              {/* Save indicator + button - RIGHT */}
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
                   viewBox="0 0 24 24"
@@ -2121,7 +2085,50 @@ export default function Index() {
               justifyContent: "space-between",
               alignItems: "center"
             }}>
-              {/* Collapse/Expand buttons - LEFT */}
+              {/* Editor/Settings/Styling/Alignment buttons - LEFT */}
+              <div style={{ display: "flex", gap: 8 }}>
+                <s-button
+                  variant={!showTypographyPanel && !showAlignmentPanel && !showGlobalSettingsPanel ? "primary" : undefined}
+                  onClick={() => {
+                    setShowTypographyPanel(false);
+                    setShowAlignmentPanel(false);
+                    setShowGlobalSettingsPanel(false);
+                  }}
+                >
+                  Editor
+                </s-button>
+                <s-button
+                  variant={showGlobalSettingsPanel ? "primary" : undefined}
+                  onClick={() => {
+                    setShowGlobalSettingsPanel(!showGlobalSettingsPanel);
+                    setShowTypographyPanel(false);
+                    setShowAlignmentPanel(false);
+                  }}
+                >
+                  Settings
+                </s-button>
+                <s-button
+                  variant={showTypographyPanel ? "primary" : undefined}
+                  onClick={() => {
+                    setShowTypographyPanel(!showTypographyPanel);
+                    setShowAlignmentPanel(false);
+                    setShowGlobalSettingsPanel(false);
+                  }}
+                >
+                  Styling
+                </s-button>
+                <s-button
+                  variant={showAlignmentPanel ? "primary" : undefined}
+                  onClick={() => {
+                    setShowAlignmentPanel(!showAlignmentPanel);
+                    setShowTypographyPanel(false);
+                    setShowGlobalSettingsPanel(false);
+                  }}
+                >
+                  Alignment
+                </s-button>
+              </div>
+              {/* Collapse/Expand buttons - RIGHT */}
               <div style={{ display: "flex", gap: 8 }}>
                 {rule && (
                   <>
@@ -2185,47 +2192,6 @@ export default function Index() {
                   </>
                 )}
               </div>
-              {/* Rule name + Add rule + Copy rule - RIGHT */}
-              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                <input
-                  value={rule?.name || ""}
-                  onChange={(e) => {
-                    const next = [...rules];
-                    next[safeSelectedIndex] = {
-                      ...rule,
-                      name: e.target.value,
-                    };
-                    setRules(next);
-                  }}
-                  maxLength={22}
-                  aria-label="Rule name"
-                  style={{
-                    fontSize: "16px",
-                    fontWeight: 600,
-                    border: "1px solid var(--p-color-border, #e5e7eb)",
-                    borderRadius: "4px",
-                    padding: "4px 8px",
-                    width: "180px",
-                    outline: "none",
-                    background: "var(--p-color-bg-surface-secondary, #f9fafb)",
-                  }}
-                  onFocus={(e) => {
-                    e.target.style.borderColor = "var(--p-color-border-emphasis, #111827)";
-                    e.target.style.boxShadow = "0 0 0 1px var(--p-color-border-emphasis, #111827)";
-                  }}
-                  onBlur={(e) => {
-                    e.target.style.borderColor = "var(--p-color-border, #e5e7eb)";
-                    e.target.style.boxShadow = "none";
-                  }}
-                  placeholder="Rule name"
-                />
-                <s-button onClick={addRule}>
-                  Add rule
-                </s-button>
-                <s-button onClick={duplicateRule}>
-                  Copy rule
-                </s-button>
-              </div>
             </div>
 
             {/* LEFT column: editor (inputs, main work area) */}
@@ -2262,18 +2228,24 @@ export default function Index() {
                     />
                   </div>
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-                    <s-color-field
-                      label="Theme font colour"
-                      value={globalSettings?.preview_text_color || "#000000"}
-                      onInput={(e) => setGlobalSettings({ ...globalSettings, preview_text_color: e.detail?.value ?? e.target?.value ?? "#000000" })}
-                      onChange={(e) => setGlobalSettings({ ...globalSettings, preview_text_color: e.detail?.value ?? e.target?.value ?? "#000000" })}
-                    />
-                    <s-color-field
-                      label="Theme background colour"
-                      value={globalSettings?.preview_bg_color || "#ffffff"}
-                      onInput={(e) => setGlobalSettings({ ...globalSettings, preview_bg_color: e.detail?.value ?? e.target?.value ?? "#ffffff" })}
-                      onChange={(e) => setGlobalSettings({ ...globalSettings, preview_bg_color: e.detail?.value ?? e.target?.value ?? "#ffffff" })}
-                    />
+                    <div>
+                      <s-text size="small">Theme font colour</s-text>
+                      <div style={{ marginTop: 4 }}>
+                        <ColorPicker
+                          color={globalSettings?.preview_text_color || "#000000"}
+                          onChange={(color) => setGlobalSettings({ ...globalSettings, preview_text_color: color })}
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <s-text size="small">Theme background colour</s-text>
+                      <div style={{ marginTop: 4 }}>
+                        <ColorPicker
+                          color={globalSettings?.preview_bg_color || "#ffffff"}
+                          onChange={(color) => setGlobalSettings({ ...globalSettings, preview_bg_color: color })}
+                        />
+                      </div>
+                    </div>
                   </div>
                 </div>
 
@@ -2315,12 +2287,12 @@ export default function Index() {
                     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginLeft: 24 }}>
                       <div>
                         <s-text size="small">Text color</s-text>
-                        <s-color-field
-                          label=""
-                          value={globalSettings?.text_color || "#374151"}
-                          onInput={(e) => setGlobalSettings({ ...globalSettings, text_color: e.detail?.value ?? e.target?.value ?? "#374151" })}
-                          onChange={(e) => setGlobalSettings({ ...globalSettings, text_color: e.detail?.value ?? e.target?.value ?? "#374151" })}
-                        />
+                        <div style={{ marginTop: 4 }}>
+                          <ColorPicker
+                            color={globalSettings?.text_color || "#374151"}
+                            onChange={(color) => setGlobalSettings({ ...globalSettings, text_color: color })}
+                          />
+                        </div>
                       </div>
                       <div>
                         <s-text size="small">Font size ({normalizeFontSize(globalSettings?.font_size, 16)}px)</s-text>
@@ -2389,12 +2361,12 @@ export default function Index() {
                       <div style={{ minHeight: 40 }}><s-text size="small" style={{ fontWeight: 600 }}>Labels (Ordered, Shipped, Delivered)</s-text></div>
                       <div>
                         <s-text size="small">Color</s-text>
-                        <s-color-field
-                          label=""
-                          value={globalSettings?.eta_label_color || "#374151"}
-                          onInput={(e) => setGlobalSettings({ ...globalSettings, eta_label_color: e.detail?.value ?? e.target?.value ?? "#374151" })}
-                          onChange={(e) => setGlobalSettings({ ...globalSettings, eta_label_color: e.detail?.value ?? e.target?.value ?? "#374151" })}
-                        />
+                        <div style={{ marginTop: 4 }}>
+                          <ColorPicker
+                            color={globalSettings?.eta_label_color || "#374151"}
+                            onChange={(color) => setGlobalSettings({ ...globalSettings, eta_label_color: color })}
+                          />
+                        </div>
                       </div>
                       <div>
                         <s-text size="small">Font size ({globalSettings?.eta_label_font_size ?? 12}px)</s-text>
@@ -2424,12 +2396,12 @@ export default function Index() {
                       <div style={{ minHeight: 40 }}><s-text size="small" style={{ fontWeight: 600 }}>Dates (Jan 20, Jan 21-24)</s-text></div>
                       <div>
                         <s-text size="small">Color</s-text>
-                        <s-color-field
-                          label=""
-                          value={globalSettings?.eta_date_color || "#6b7280"}
-                          onInput={(e) => setGlobalSettings({ ...globalSettings, eta_date_color: e.detail?.value ?? e.target?.value ?? "#6b7280" })}
-                          onChange={(e) => setGlobalSettings({ ...globalSettings, eta_date_color: e.detail?.value ?? e.target?.value ?? "#6b7280" })}
-                        />
+                        <div style={{ marginTop: 4 }}>
+                          <ColorPicker
+                            color={globalSettings?.eta_date_color || "#6b7280"}
+                            onChange={(color) => setGlobalSettings({ ...globalSettings, eta_date_color: color })}
+                          />
+                        </div>
                       </div>
                       <div>
                         <s-text size="small">Font size ({globalSettings?.eta_date_font_size ?? 11}px)</s-text>
@@ -2498,12 +2470,12 @@ export default function Index() {
                       <s-text size="small" style={{ fontWeight: 600 }}>Header (optional)</s-text>
                       <div>
                         <s-text size="small">Color</s-text>
-                        <s-color-field
-                          label=""
-                          value={globalSettings?.special_delivery_header_text_color || "#111827"}
-                          onInput={(e) => setGlobalSettings({ ...globalSettings, special_delivery_header_text_color: e.detail?.value ?? e.target?.value ?? "#111827" })}
-                          onChange={(e) => setGlobalSettings({ ...globalSettings, special_delivery_header_text_color: e.detail?.value ?? e.target?.value ?? "#111827" })}
-                        />
+                        <div style={{ marginTop: 4 }}>
+                          <ColorPicker
+                            color={globalSettings?.special_delivery_header_text_color || "#111827"}
+                            onChange={(color) => setGlobalSettings({ ...globalSettings, special_delivery_header_text_color: color })}
+                          />
+                        </div>
                       </div>
                       <div>
                         <s-text size="small">Font size ({globalSettings?.special_delivery_header_font_size ?? 16}px)</s-text>
@@ -2533,12 +2505,12 @@ export default function Index() {
                       <s-text size="small" style={{ fontWeight: 600 }}>Message</s-text>
                       <div>
                         <s-text size="small">Color</s-text>
-                        <s-color-field
-                          label=""
-                          value={globalSettings?.special_delivery_text_color || "#374151"}
-                          onInput={(e) => setGlobalSettings({ ...globalSettings, special_delivery_text_color: e.detail?.value ?? e.target?.value ?? "#374151" })}
-                          onChange={(e) => setGlobalSettings({ ...globalSettings, special_delivery_text_color: e.detail?.value ?? e.target?.value ?? "#374151" })}
-                        />
+                        <div style={{ marginTop: 4 }}>
+                          <ColorPicker
+                            color={globalSettings?.special_delivery_text_color || "#374151"}
+                            onChange={(color) => setGlobalSettings({ ...globalSettings, special_delivery_text_color: color })}
+                          />
+                        </div>
                       </div>
                       <div>
                         <s-text size="small">Font size ({globalSettings?.special_delivery_font_size ?? 16}px)</s-text>
@@ -2601,24 +2573,23 @@ export default function Index() {
 
                   <div>
                     <s-text size="small">Border color</s-text>
-                    <s-color-field
-                      label=""
-                      value={globalSettings?.global_border_color || "#e5e7eb"}
-                      onInput={(e) => setGlobalSettings({ ...globalSettings, global_border_color: e.detail?.value ?? e.target?.value ?? "#e5e7eb" })}
-                      onChange={(e) => setGlobalSettings({ ...globalSettings, global_border_color: e.detail?.value ?? e.target?.value ?? "#e5e7eb" })}
-                    />
+                    <div style={{ marginTop: 4 }}>
+                      <ColorPicker
+                        color={globalSettings?.global_border_color || "#e5e7eb"}
+                        onChange={(color) => setGlobalSettings({ ...globalSettings, global_border_color: color })}
+                      />
+                    </div>
                   </div>
 
                   <div style={{ display: "flex", alignItems: "flex-end", gap: 8 }}>
                     <div style={{ flex: 1 }}>
                       <s-text size="small">Background color</s-text>
-                      <s-color-field
-                        label=""
-                        placeholder="transparent"
-                        value={globalSettings?.global_background_color || ""}
-                        onInput={(e) => setGlobalSettings({ ...globalSettings, global_background_color: e.detail?.value ?? e.target?.value ?? "" })}
-                        onChange={(e) => setGlobalSettings({ ...globalSettings, global_background_color: e.detail?.value ?? e.target?.value ?? "" })}
-                      />
+                      <div style={{ marginTop: 4 }}>
+                        <ColorPicker
+                          color={globalSettings?.global_background_color || ""}
+                          onChange={(color) => setGlobalSettings({ ...globalSettings, global_background_color: color })}
+                        />
+                      </div>
                     </div>
                     {globalSettings?.global_background_color && (
                       <button
@@ -2647,20 +2618,13 @@ export default function Index() {
                     Style links created from [text](url) markdown in messages.
                   </s-text>
 
-                  {/* Color - full width */}
+                  {/* Color */}
                   <div>
                     <s-text size="small">Color</s-text>
                     <div style={{ marginTop: 4 }}>
-                      <HexColorPicker
+                      <ColorPicker
                         color={globalSettings?.link_color || "#2563eb"}
                         onChange={(color) => setGlobalSettings({ ...globalSettings, link_color: color })}
-                        style={{ width: '100%' }}
-                      />
-                      <HexColorInput
-                        color={globalSettings?.link_color || "#2563eb"}
-                        onChange={(color) => setGlobalSettings({ ...globalSettings, link_color: color })}
-                        prefixed
-                        style={{ marginTop: 8, width: '100%', padding: '6px 8px', border: '1px solid #e5e7eb', borderRadius: 4 }}
                       />
                     </div>
                   </div>
@@ -2699,12 +2663,12 @@ export default function Index() {
                     {/* Hover Color - full width */}
                     <div>
                       <s-text size="small">Color</s-text>
-                      <s-color-field
-                        label=""
-                        value={globalSettings?.link_hover_color || "#1d4ed8"}
-                        onInput={(e) => setGlobalSettings({ ...globalSettings, link_hover_color: e.detail?.value ?? e.target?.value ?? "#1d4ed8" })}
-                        onChange={(e) => setGlobalSettings({ ...globalSettings, link_hover_color: e.detail?.value ?? e.target?.value ?? "#1d4ed8" })}
-                      />
+                      <div style={{ marginTop: 4 }}>
+                        <ColorPicker
+                          color={globalSettings?.link_hover_color || "#1d4ed8"}
+                          onChange={(color) => setGlobalSettings({ ...globalSettings, link_hover_color: color })}
+                        />
+                      </div>
                     </div>
 
                     {/* Hover Decoration + Thickness - 50% each */}
@@ -4586,55 +4550,39 @@ export default function Index() {
                             </label>
                           </div>
 
-                          <s-color-field
-                            label="Border color"
-                            placeholder="#e5e7eb"
-                            value={rule.settings?.border_color || "#e5e7eb"}
-                            onInput={(e) => {
-                              const val = e.detail?.value ?? e.target?.value ?? "#e5e7eb";
-                              const next = [...rules];
-                              next[safeSelectedIndex] = {
-                                ...rule,
-                                settings: { ...rule.settings, border_color: val },
-                              };
-                              setRules(next);
-                            }}
-                            onChange={(e) => {
-                              const val = e.detail?.value ?? e.target?.value ?? "#e5e7eb";
-                              const next = [...rules];
-                              next[safeSelectedIndex] = {
-                                ...rule,
-                                settings: { ...rule.settings, border_color: val },
-                              };
-                              setRules(next);
-                            }}
-                          />
-
-                          <div style={{ display: "flex", alignItems: "flex-end", gap: 8 }}>
-                            <div style={{ flex: 1 }}>
-                              <s-color-field
-                                label="Background color"
-                                placeholder="transparent"
-                                value={rule.settings?.background_color || ""}
-                                onInput={(e) => {
-                                  const val = e.detail?.value ?? e.target?.value ?? "";
+                          <div>
+                            <s-text size="small">Border color</s-text>
+                            <div style={{ marginTop: 4 }}>
+                              <ColorPicker
+                                color={rule.settings?.border_color || "#e5e7eb"}
+                                onChange={(color) => {
                                   const next = [...rules];
                                   next[safeSelectedIndex] = {
                                     ...rule,
-                                    settings: { ...rule.settings, background_color: val },
-                                  };
-                                  setRules(next);
-                                }}
-                                onChange={(e) => {
-                                  const val = e.detail?.value ?? e.target?.value ?? "";
-                                  const next = [...rules];
-                                  next[safeSelectedIndex] = {
-                                    ...rule,
-                                    settings: { ...rule.settings, background_color: val },
+                                    settings: { ...rule.settings, border_color: color },
                                   };
                                   setRules(next);
                                 }}
                               />
+                            </div>
+                          </div>
+
+                          <div style={{ display: "flex", alignItems: "flex-end", gap: 8 }}>
+                            <div style={{ flex: 1 }}>
+                              <s-text size="small">Background color</s-text>
+                              <div style={{ marginTop: 4 }}>
+                                <ColorPicker
+                                  color={rule.settings?.background_color || ""}
+                                  onChange={(color) => {
+                                    const next = [...rules];
+                                    next[safeSelectedIndex] = {
+                                      ...rule,
+                                      settings: { ...rule.settings, background_color: color },
+                                    };
+                                    setRules(next);
+                                  }}
+                                />
+                              </div>
                             </div>
                             {rule.settings?.background_color && (
                               <button
@@ -4751,28 +4699,22 @@ export default function Index() {
 
                       {rule.settings?.override_global_text_styling === true && (
                       <div style={{ display: "grid", gap: 12 }}>
-                        <s-color-field
-                          label="Text color"
-                          value={rule.settings?.text_color || "#374151"}
-                          onInput={(e) => {
-                            const val = e.target.value || e.detail?.value || "#374151";
-                            const next = [...rules];
-                            next[safeSelectedIndex] = {
-                              ...rule,
-                              settings: { ...rule.settings, text_color: val },
-                            };
-                            setRules(next);
-                          }}
-                          onChange={(e) => {
-                            const val = e.target.value || e.detail?.value || "#374151";
-                            const next = [...rules];
-                            next[safeSelectedIndex] = {
-                              ...rule,
-                              settings: { ...rule.settings, text_color: val },
-                            };
-                            setRules(next);
-                          }}
-                        />
+                        <div>
+                          <s-text size="small">Text color</s-text>
+                          <div style={{ marginTop: 4 }}>
+                            <ColorPicker
+                              color={rule.settings?.text_color || "#374151"}
+                              onChange={(color) => {
+                                const next = [...rules];
+                                next[safeSelectedIndex] = {
+                                  ...rule,
+                                  settings: { ...rule.settings, text_color: color },
+                                };
+                                setRules(next);
+                              }}
+                            />
+                          </div>
+                        </div>
 
                         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
                           <label>
@@ -4955,29 +4897,22 @@ export default function Index() {
                     </label>
                   )}
 
-                  <s-color-field
-                    label="Main icon color"
-                    placeholder="#111827"
-                    value={rule.settings?.icon_color || "#111827"}
-                    onInput={(e) => {
-                      const val = e.detail?.value ?? e.target?.value ?? "#111827";
-                      const next = [...rules];
-                      next[safeSelectedIndex] = {
-                        ...rule,
-                        settings: { ...rule.settings, icon_color: val },
-                      };
-                      setRules(next);
-                    }}
-                    onChange={(e) => {
-                      const val = e.detail?.value ?? e.target?.value ?? "#111827";
-                      const next = [...rules];
-                      next[safeSelectedIndex] = {
-                        ...rule,
-                        settings: { ...rule.settings, icon_color: val },
-                      };
-                      setRules(next);
-                    }}
-                  />
+                  <div>
+                    <s-text size="small">Main icon color</s-text>
+                    <div style={{ marginTop: 4 }}>
+                      <ColorPicker
+                        color={rule.settings?.icon_color || "#111827"}
+                        onChange={(color) => {
+                          const next = [...rules];
+                          next[safeSelectedIndex] = {
+                            ...rule,
+                            settings: { ...rule.settings, icon_color: color },
+                          };
+                          setRules(next);
+                        }}
+                      />
+                    </div>
+                  </div>
 
                   <label>
                     <s-text>Main icon layout</s-text>
@@ -5070,25 +5005,13 @@ export default function Index() {
                         </div>
                         <div style={{ display: "flex", alignItems: "flex-end", gap: 8 }}>
                           <div style={{ flex: 1 }}>
-                            <s-color-field
-                              label=""
-                              placeholder="(Main color)"
-                              value={rule.settings?.icon_line_1_color || ""}
-                              onInput={(e) => {
-                                const val = e.detail?.value ?? e.target?.value ?? "";
+                            <ColorPicker
+                              color={rule.settings?.icon_line_1_color || ""}
+                              onChange={(color) => {
                                 const next = [...rules];
                                 next[safeSelectedIndex] = {
                                   ...rule,
-                                  settings: { ...rule.settings, icon_line_1_color: val },
-                                };
-                                setRules(next);
-                              }}
-                              onChange={(e) => {
-                                const val = e.detail?.value ?? e.target?.value ?? "";
-                                const next = [...rules];
-                                next[safeSelectedIndex] = {
-                                  ...rule,
-                                  settings: { ...rule.settings, icon_line_1_color: val },
+                                  settings: { ...rule.settings, icon_line_1_color: color },
                                 };
                                 setRules(next);
                               }}
@@ -5188,25 +5111,13 @@ export default function Index() {
                         </div>
                         <div style={{ display: "flex", alignItems: "flex-end", gap: 8 }}>
                           <div style={{ flex: 1 }}>
-                            <s-color-field
-                              label=""
-                              placeholder="(Main color)"
-                              value={rule.settings?.icon_line_2_color || ""}
-                              onInput={(e) => {
-                                const val = e.detail?.value ?? e.target?.value ?? "";
+                            <ColorPicker
+                              color={rule.settings?.icon_line_2_color || ""}
+                              onChange={(color) => {
                                 const next = [...rules];
                                 next[safeSelectedIndex] = {
                                   ...rule,
-                                  settings: { ...rule.settings, icon_line_2_color: val },
-                                };
-                                setRules(next);
-                              }}
-                              onChange={(e) => {
-                                const val = e.detail?.value ?? e.target?.value ?? "";
-                                const next = [...rules];
-                                next[safeSelectedIndex] = {
-                                  ...rule,
-                                  settings: { ...rule.settings, icon_line_2_color: val },
+                                  settings: { ...rule.settings, icon_line_2_color: color },
                                 };
                                 setRules(next);
                               }}
@@ -5306,25 +5217,13 @@ export default function Index() {
                         </div>
                         <div style={{ display: "flex", alignItems: "flex-end", gap: 8 }}>
                           <div style={{ flex: 1 }}>
-                            <s-color-field
-                              label=""
-                              placeholder="(Main color)"
-                              value={rule.settings?.icon_line_3_color || ""}
-                              onInput={(e) => {
-                                const val = e.detail?.value ?? e.target?.value ?? "";
+                            <ColorPicker
+                              color={rule.settings?.icon_line_3_color || ""}
+                              onChange={(color) => {
                                 const next = [...rules];
                                 next[safeSelectedIndex] = {
                                   ...rule,
-                                  settings: { ...rule.settings, icon_line_3_color: val },
-                                };
-                                setRules(next);
-                              }}
-                              onChange={(e) => {
-                                const val = e.detail?.value ?? e.target?.value ?? "";
-                                const next = [...rules];
-                                next[safeSelectedIndex] = {
-                                  ...rule,
-                                  settings: { ...rule.settings, icon_line_3_color: val },
+                                  settings: { ...rule.settings, icon_line_3_color: color },
                                 };
                                 setRules(next);
                               }}
@@ -5424,25 +5323,13 @@ export default function Index() {
                         </div>
                         <div style={{ display: "flex", alignItems: "flex-end", gap: 8 }}>
                           <div style={{ flex: 1 }}>
-                            <s-color-field
-                              label=""
-                              placeholder="(Main color)"
-                              value={rule.settings?.icon_line_4_color || ""}
-                              onInput={(e) => {
-                                const val = e.detail?.value ?? e.target?.value ?? "";
+                            <ColorPicker
+                              color={rule.settings?.icon_line_4_color || ""}
+                              onChange={(color) => {
                                 const next = [...rules];
                                 next[safeSelectedIndex] = {
                                   ...rule,
-                                  settings: { ...rule.settings, icon_line_4_color: val },
-                                };
-                                setRules(next);
-                              }}
-                              onChange={(e) => {
-                                const val = e.detail?.value ?? e.target?.value ?? "";
-                                const next = [...rules];
-                                next[safeSelectedIndex] = {
-                                  ...rule,
-                                  settings: { ...rule.settings, icon_line_4_color: val },
+                                  settings: { ...rule.settings, icon_line_4_color: color },
                                 };
                                 setRules(next);
                               }}
@@ -5871,72 +5758,54 @@ export default function Index() {
 
                   {rule.settings?.eta_use_main_icon_color === false && (
                     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8 }}>
-                      <s-color-field
-                        label="Order"
-                        value={rule.settings?.eta_order_icon_color || "#111827"}
-                        onInput={(e) => {
-                          const val = e.detail?.value ?? e.target?.value ?? "#111827";
-                          const next = [...rules];
-                          next[safeSelectedIndex] = {
-                            ...rule,
-                            settings: { ...rule.settings, eta_order_icon_color: val },
-                          };
-                          setRules(next);
-                        }}
-                        onChange={(e) => {
-                          const val = e.detail?.value ?? e.target?.value ?? "#111827";
-                          const next = [...rules];
-                          next[safeSelectedIndex] = {
-                            ...rule,
-                            settings: { ...rule.settings, eta_order_icon_color: val },
-                          };
-                          setRules(next);
-                        }}
-                      />
-                      <s-color-field
-                        label="Shipping"
-                        value={rule.settings?.eta_shipping_icon_color || "#111827"}
-                        onInput={(e) => {
-                          const val = e.detail?.value ?? e.target?.value ?? "#111827";
-                          const next = [...rules];
-                          next[safeSelectedIndex] = {
-                            ...rule,
-                            settings: { ...rule.settings, eta_shipping_icon_color: val },
-                          };
-                          setRules(next);
-                        }}
-                        onChange={(e) => {
-                          const val = e.detail?.value ?? e.target?.value ?? "#111827";
-                          const next = [...rules];
-                          next[safeSelectedIndex] = {
-                            ...rule,
-                            settings: { ...rule.settings, eta_shipping_icon_color: val },
-                          };
-                          setRules(next);
-                        }}
-                      />
-                      <s-color-field
-                        label="Delivery"
-                        value={rule.settings?.eta_delivery_icon_color || "#111827"}
-                        onInput={(e) => {
-                          const val = e.detail?.value ?? e.target?.value ?? "#111827";
-                          const next = [...rules];
-                          next[safeSelectedIndex] = {
-                            ...rule,
-                            settings: { ...rule.settings, eta_delivery_icon_color: val },
-                          };
-                          setRules(next);
-                        }}
-                        onChange={(e) => {
-                          const val = e.detail?.value ?? e.target?.value ?? "#111827";
-                          const next = [...rules];
-                          next[safeSelectedIndex] = {
-                            ...rule,
-                            settings: { ...rule.settings, eta_delivery_icon_color: val },
-                          };
-                          setRules(next);
-                        }}
-                      />
+                      <div>
+                        <s-text size="small">Order</s-text>
+                        <div style={{ marginTop: 4 }}>
+                          <ColorPicker
+                            color={rule.settings?.eta_order_icon_color || "#111827"}
+                            onChange={(color) => {
+                              const next = [...rules];
+                              next[safeSelectedIndex] = {
+                                ...rule,
+                                settings: { ...rule.settings, eta_order_icon_color: color },
+                              };
+                              setRules(next);
+                            }}
+                          />
+                        </div>
+                      </div>
+                      <div>
+                        <s-text size="small">Shipping</s-text>
+                        <div style={{ marginTop: 4 }}>
+                          <ColorPicker
+                            color={rule.settings?.eta_shipping_icon_color || "#111827"}
+                            onChange={(color) => {
+                              const next = [...rules];
+                              next[safeSelectedIndex] = {
+                                ...rule,
+                                settings: { ...rule.settings, eta_shipping_icon_color: color },
+                              };
+                              setRules(next);
+                            }}
+                          />
+                        </div>
+                      </div>
+                      <div>
+                        <s-text size="small">Delivery</s-text>
+                        <div style={{ marginTop: 4 }}>
+                          <ColorPicker
+                            color={rule.settings?.eta_delivery_icon_color || "#111827"}
+                            onChange={(color) => {
+                              const next = [...rules];
+                              next[safeSelectedIndex] = {
+                                ...rule,
+                                settings: { ...rule.settings, eta_delivery_icon_color: color },
+                              };
+                              setRules(next);
+                            }}
+                          />
+                        </div>
+                      </div>
                     </div>
                   )}
 
@@ -6050,26 +5919,22 @@ export default function Index() {
                   </label>
 
                   {rule.settings?.eta_connector_use_main_color === false && (
-                    <s-color-field
-                      label="Custom connector colour"
-                      value={rule.settings?.eta_connector_color || "#111827"}
-                      onInput={(e) => {
-                        const next = [...rules];
-                        next[safeSelectedIndex] = {
-                          ...rule,
-                          settings: { ...rule.settings, eta_connector_color: e.target.value || e.detail?.value },
-                        };
-                        setRules(next);
-                      }}
-                      onChange={(e) => {
-                        const next = [...rules];
-                        next[safeSelectedIndex] = {
-                          ...rule,
-                          settings: { ...rule.settings, eta_connector_color: e.target.value || e.detail?.value },
-                        };
-                        setRules(next);
-                      }}
-                    />
+                    <div>
+                      <s-text size="small">Custom connector colour</s-text>
+                      <div style={{ marginTop: 4 }}>
+                        <ColorPicker
+                          color={rule.settings?.eta_connector_color || "#111827"}
+                          onChange={(color) => {
+                            const next = [...rules];
+                            next[safeSelectedIndex] = {
+                              ...rule,
+                              settings: { ...rule.settings, eta_connector_color: color },
+                            };
+                            setRules(next);
+                          }}
+                        />
+                      </div>
+                    </div>
                   )}
 
                   {/* Border Styling sub-section */}
@@ -6134,54 +5999,39 @@ export default function Index() {
                     </label>
                   </div>
 
-                  <s-color-field
-                    label="Border color"
-                    value={rule.settings?.eta_border_color || "#e5e7eb"}
-                    onInput={(e) => {
-                      const val = e.detail?.value ?? e.target?.value ?? "#e5e7eb";
-                      const next = [...rules];
-                      next[safeSelectedIndex] = {
-                        ...rule,
-                        settings: { ...rule.settings, eta_border_color: val },
-                      };
-                      setRules(next);
-                    }}
-                    onChange={(e) => {
-                      const val = e.detail?.value ?? e.target?.value ?? "#e5e7eb";
-                      const next = [...rules];
-                      next[safeSelectedIndex] = {
-                        ...rule,
-                        settings: { ...rule.settings, eta_border_color: val },
-                      };
-                      setRules(next);
-                    }}
-                  />
-
-                  <div style={{ display: "flex", alignItems: "flex-end", gap: 8 }}>
-                    <div style={{ flex: 1 }}>
-                      <s-color-field
-                        label="Background color"
-                        placeholder="transparent"
-                        value={rule.settings?.eta_background_color || ""}
-                        onInput={(e) => {
-                          const val = e.detail?.value ?? e.target?.value ?? "";
+                  <div>
+                    <s-text size="small">Border color</s-text>
+                    <div style={{ marginTop: 4 }}>
+                      <ColorPicker
+                        color={rule.settings?.eta_border_color || "#e5e7eb"}
+                        onChange={(color) => {
                           const next = [...rules];
                           next[safeSelectedIndex] = {
                             ...rule,
-                            settings: { ...rule.settings, eta_background_color: val },
-                          };
-                          setRules(next);
-                        }}
-                        onChange={(e) => {
-                          const val = e.detail?.value ?? e.target?.value ?? "";
-                          const next = [...rules];
-                          next[safeSelectedIndex] = {
-                            ...rule,
-                            settings: { ...rule.settings, eta_background_color: val },
+                            settings: { ...rule.settings, eta_border_color: color },
                           };
                           setRules(next);
                         }}
                       />
+                    </div>
+                  </div>
+
+                  <div style={{ display: "flex", alignItems: "flex-end", gap: 8 }}>
+                    <div style={{ flex: 1 }}>
+                      <s-text size="small">Background color</s-text>
+                      <div style={{ marginTop: 4 }}>
+                        <ColorPicker
+                          color={rule.settings?.eta_background_color || ""}
+                          onChange={(color) => {
+                            const next = [...rules];
+                            next[safeSelectedIndex] = {
+                              ...rule,
+                              settings: { ...rule.settings, eta_background_color: color },
+                            };
+                            setRules(next);
+                          }}
+                        />
+                      </div>
                     </div>
                     {rule.settings?.eta_background_color && (
                       <button
@@ -6236,28 +6086,22 @@ export default function Index() {
                     <div style={{ display: "grid", gap: 12, marginTop: 12 }}>
                       <div>
                         <s-text size="small" style={{ fontWeight: 600 }}>Labels (Ordered, Shipped, Delivered)</s-text>
-                        <s-color-field
-                          label="Label color"
-                          value={rule.settings?.eta_label_color || "#374151"}
-                          onInput={(e) => {
-                            const val = e.target.value || e.detail?.value || "#374151";
-                            const next = [...rules];
-                            next[safeSelectedIndex] = {
-                              ...rule,
-                              settings: { ...rule.settings, eta_label_color: val },
-                            };
-                            setRules(next);
-                          }}
-                          onChange={(e) => {
-                            const val = e.target.value || e.detail?.value || "#374151";
-                            const next = [...rules];
-                            next[safeSelectedIndex] = {
-                              ...rule,
-                              settings: { ...rule.settings, eta_label_color: val },
-                            };
-                            setRules(next);
-                          }}
-                        />
+                        <div style={{ marginTop: 4 }}>
+                          <s-text size="small">Label color</s-text>
+                          <div style={{ marginTop: 4 }}>
+                            <ColorPicker
+                              color={rule.settings?.eta_label_color || "#374151"}
+                              onChange={(color) => {
+                                const next = [...rules];
+                                next[safeSelectedIndex] = {
+                                  ...rule,
+                                  settings: { ...rule.settings, eta_label_color: color },
+                                };
+                                setRules(next);
+                              }}
+                            />
+                          </div>
+                        </div>
                       </div>
                       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
                         <label>
@@ -6301,28 +6145,22 @@ export default function Index() {
 
                       <div style={{ marginTop: 8 }}>
                         <s-text size="small" style={{ fontWeight: 600 }}>Dates (Jan 20, Jan 21-24)</s-text>
-                        <s-color-field
-                          label="Date color"
-                          value={rule.settings?.eta_date_color || "#6b7280"}
-                          onInput={(e) => {
-                            const val = e.target.value || e.detail?.value || "#6b7280";
-                            const next = [...rules];
-                            next[safeSelectedIndex] = {
-                              ...rule,
-                              settings: { ...rule.settings, eta_date_color: val },
-                            };
-                            setRules(next);
-                          }}
-                          onChange={(e) => {
-                            const val = e.target.value || e.detail?.value || "#6b7280";
-                            const next = [...rules];
-                            next[safeSelectedIndex] = {
-                              ...rule,
-                              settings: { ...rule.settings, eta_date_color: val },
-                            };
-                            setRules(next);
-                          }}
-                        />
+                        <div style={{ marginTop: 4 }}>
+                          <s-text size="small">Date color</s-text>
+                          <div style={{ marginTop: 4 }}>
+                            <ColorPicker
+                              color={rule.settings?.eta_date_color || "#6b7280"}
+                              onChange={(color) => {
+                                const next = [...rules];
+                                next[safeSelectedIndex] = {
+                                  ...rule,
+                                  settings: { ...rule.settings, eta_date_color: color },
+                                };
+                                setRules(next);
+                              }}
+                            />
+                          </div>
+                        </div>
                       </div>
                       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
                         <label>
@@ -6641,28 +6479,22 @@ export default function Index() {
                                   <s-text>Use main icon color</s-text>
                                 </label>
                                 {rule.settings?.special_delivery_use_main_icon_color === false && (
-                                  <s-color-field
-                                    label="SVG icon color"
-                                    value={rule.settings?.special_delivery_icon_color || "#111827"}
-                                    onInput={(e) => {
-                                      const val = e.detail?.value ?? e.target?.value ?? "#111827";
-                                      const next = [...rules];
-                                      next[safeSelectedIndex] = {
-                                        ...rule,
-                                        settings: { ...rule.settings, special_delivery_icon_color: val },
-                                      };
-                                      setRules(next);
-                                    }}
-                                    onChange={(e) => {
-                                      const val = e.detail?.value ?? e.target?.value ?? "#111827";
-                                      const next = [...rules];
-                                      next[safeSelectedIndex] = {
-                                        ...rule,
-                                        settings: { ...rule.settings, special_delivery_icon_color: val },
-                                      };
-                                      setRules(next);
-                                    }}
-                                  />
+                                  <div>
+                                    <s-text size="small">SVG icon color</s-text>
+                                    <div style={{ marginTop: 4 }}>
+                                      <ColorPicker
+                                        color={rule.settings?.special_delivery_icon_color || "#111827"}
+                                        onChange={(color) => {
+                                          const next = [...rules];
+                                          next[safeSelectedIndex] = {
+                                            ...rule,
+                                            settings: { ...rule.settings, special_delivery_icon_color: color },
+                                          };
+                                          setRules(next);
+                                        }}
+                                      />
+                                    </div>
+                                  </div>
                                 )}
                               </>
                             );
@@ -6732,54 +6564,39 @@ export default function Index() {
                               />
                             </label>
                           </div>
-                          <s-color-field
-                            label="Border color"
-                            value={rule.settings?.special_delivery_border_color || "#e5e7eb"}
-                            onInput={(e) => {
-                              const val = e.detail?.value ?? e.target?.value ?? "#e5e7eb";
-                              const next = [...rules];
-                              next[safeSelectedIndex] = {
-                                ...rule,
-                                settings: { ...rule.settings, special_delivery_border_color: val },
-                              };
-                              setRules(next);
-                            }}
-                            onChange={(e) => {
-                              const val = e.detail?.value ?? e.target?.value ?? "#e5e7eb";
-                              const next = [...rules];
-                              next[safeSelectedIndex] = {
-                                ...rule,
-                                settings: { ...rule.settings, special_delivery_border_color: val },
-                              };
-                              setRules(next);
-                            }}
-                          />
-
-                          <div style={{ display: "flex", alignItems: "flex-end", gap: 8 }}>
-                            <div style={{ flex: 1 }}>
-                              <s-color-field
-                                label="Background color"
-                                placeholder="transparent"
-                                value={rule.settings?.special_delivery_background_color || ""}
-                                onInput={(e) => {
-                                  const val = e.detail?.value ?? e.target?.value ?? "";
+                          <div>
+                            <s-text size="small">Border color</s-text>
+                            <div style={{ marginTop: 4 }}>
+                              <ColorPicker
+                                color={rule.settings?.special_delivery_border_color || "#e5e7eb"}
+                                onChange={(color) => {
                                   const next = [...rules];
                                   next[safeSelectedIndex] = {
                                     ...rule,
-                                    settings: { ...rule.settings, special_delivery_background_color: val },
-                                  };
-                                  setRules(next);
-                                }}
-                                onChange={(e) => {
-                                  const val = e.detail?.value ?? e.target?.value ?? "";
-                                  const next = [...rules];
-                                  next[safeSelectedIndex] = {
-                                    ...rule,
-                                    settings: { ...rule.settings, special_delivery_background_color: val },
+                                    settings: { ...rule.settings, special_delivery_border_color: color },
                                   };
                                   setRules(next);
                                 }}
                               />
+                            </div>
+                          </div>
+
+                          <div style={{ display: "flex", alignItems: "flex-end", gap: 8 }}>
+                            <div style={{ flex: 1 }}>
+                              <s-text size="small">Background color</s-text>
+                              <div style={{ marginTop: 4 }}>
+                                <ColorPicker
+                                  color={rule.settings?.special_delivery_background_color || ""}
+                                  onChange={(color) => {
+                                    const next = [...rules];
+                                    next[safeSelectedIndex] = {
+                                      ...rule,
+                                      settings: { ...rule.settings, special_delivery_background_color: color },
+                                    };
+                                    setRules(next);
+                                  }}
+                                />
+                              </div>
                             </div>
                             {rule.settings?.special_delivery_background_color && (
                               <button
@@ -6907,28 +6724,19 @@ export default function Index() {
                             <s-text size="small" style={{ fontWeight: 600 }}>Header (optional)</s-text>
                             <div>
                               <s-text size="small">Color</s-text>
-                              <s-color-field
-                                label=""
-                                value={rule.settings?.special_delivery_header_color || "#111827"}
-                                onInput={(e) => {
-                                  const val = e.detail?.value ?? e.target?.value ?? "#111827";
-                                  const next = [...rules];
-                                  next[safeSelectedIndex] = {
-                                    ...rule,
-                                    settings: { ...rule.settings, special_delivery_header_color: val },
-                                  };
-                                  setRules(next);
-                                }}
-                                onChange={(e) => {
-                                  const val = e.detail?.value ?? e.target?.value ?? "#111827";
-                                  const next = [...rules];
-                                  next[safeSelectedIndex] = {
-                                    ...rule,
-                                    settings: { ...rule.settings, special_delivery_header_color: val },
-                                  };
-                                  setRules(next);
-                                }}
-                              />
+                              <div style={{ marginTop: 4 }}>
+                                <ColorPicker
+                                  color={rule.settings?.special_delivery_header_color || "#111827"}
+                                  onChange={(color) => {
+                                    const next = [...rules];
+                                    next[safeSelectedIndex] = {
+                                      ...rule,
+                                      settings: { ...rule.settings, special_delivery_header_color: color },
+                                    };
+                                    setRules(next);
+                                  }}
+                                />
+                              </div>
                             </div>
                             <div>
                               <s-text size="small">Font size ({normalizeFontSize(rule.settings?.special_delivery_header_font_size, 16)}px)</s-text>
@@ -6973,28 +6781,19 @@ export default function Index() {
                             <s-text size="small" style={{ fontWeight: 600 }}>Message</s-text>
                             <div>
                               <s-text size="small">Color</s-text>
-                              <s-color-field
-                                label=""
-                                value={rule.settings?.special_delivery_text_color || "#374151"}
-                                onInput={(e) => {
-                                  const val = e.detail?.value ?? e.target?.value ?? "#374151";
-                                  const next = [...rules];
-                                  next[safeSelectedIndex] = {
-                                    ...rule,
-                                    settings: { ...rule.settings, special_delivery_text_color: val },
-                                  };
-                                  setRules(next);
-                                }}
-                                onChange={(e) => {
-                                  const val = e.detail?.value ?? e.target?.value ?? "#374151";
-                                  const next = [...rules];
-                                  next[safeSelectedIndex] = {
-                                    ...rule,
-                                    settings: { ...rule.settings, special_delivery_text_color: val },
-                                  };
-                                  setRules(next);
-                                }}
-                              />
+                              <div style={{ marginTop: 4 }}>
+                                <ColorPicker
+                                  color={rule.settings?.special_delivery_text_color || "#374151"}
+                                  onChange={(color) => {
+                                    const next = [...rules];
+                                    next[safeSelectedIndex] = {
+                                      ...rule,
+                                      settings: { ...rule.settings, special_delivery_text_color: color },
+                                    };
+                                    setRules(next);
+                                  }}
+                                />
+                              </div>
                             </div>
                             <div>
                               <s-text size="small">Font size ({normalizeFontSize(rule.settings?.special_delivery_font_size, 16)}px)</s-text>
@@ -7580,15 +7379,67 @@ export default function Index() {
                   overflow: "hidden",
                 }}
               >
-                {/* Fixed header */}
+                {/* Fixed header with rule name + buttons */}
                 <div
                   style={{
-                    padding: "12px 16px",
+                    padding: "10px 16px",
                     borderBottom: "1px solid var(--p-color-border, #e5e7eb)",
                     background: "var(--p-color-bg-surface, #ffffff)",
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    gap: 12,
                   }}
                 >
-                  <s-heading>Rules (priority order)</s-heading>
+                  {/* Rule name input with pencil icon - LEFT */}
+                  <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                    <input
+                      value={rule?.name || ""}
+                      onChange={(e) => {
+                        const next = [...rules];
+                        next[safeSelectedIndex] = {
+                          ...rule,
+                          name: e.target.value,
+                        };
+                        setRules(next);
+                      }}
+                      maxLength={22}
+                      aria-label="Rule name"
+                      style={{
+                        fontSize: "14px",
+                        fontWeight: 500,
+                        fontFamily: "inherit",
+                        color: "#374151",
+                        border: "1px solid var(--p-color-border, #e5e7eb)",
+                        borderRadius: "4px",
+                        padding: "6px 10px",
+                        width: "160px",
+                        outline: "none",
+                        background: "var(--p-color-bg-surface-secondary, #f9fafb)",
+                      }}
+                      onFocus={(e) => {
+                        e.target.style.borderColor = "var(--p-color-border-emphasis, #111827)";
+                        e.target.style.boxShadow = "0 0 0 1px var(--p-color-border-emphasis, #111827)";
+                      }}
+                      onBlur={(e) => {
+                        e.target.style.borderColor = "var(--p-color-border, #e5e7eb)";
+                        e.target.style.boxShadow = "none";
+                      }}
+                      placeholder="Rule name"
+                    />
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" style={{ color: "#4b5563", flexShrink: 0 }}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10" />
+                    </svg>
+                  </div>
+                  {/* Add + Copy buttons - RIGHT */}
+                  <div style={{ display: "flex", gap: 8 }}>
+                    <s-button onClick={addRule}>
+                      Add rule
+                    </s-button>
+                    <s-button onClick={duplicateRule}>
+                      Copy rule
+                    </s-button>
+                  </div>
                 </div>
 
                 {/* Scrollable content */}

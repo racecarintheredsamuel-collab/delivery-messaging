@@ -9,6 +9,7 @@ import { safeLogError, validateSettings } from "../utils/validation";
 import { generateIconsMetafield, getIconSvg, getConfiguredUtilityIcons, getUtilityIconSvg } from "../utils/icons";
 import { ChevronDownIcon, ChevronRightIcon } from "../components/icons/ChevronIcons";
 import { FontSelector } from "../components/FontSelector";
+import { ColorPicker } from "../components/ColorPicker";
 import {
   GET_SHOP_DELIVERY_DATA,
   GET_SHOP_ID,
@@ -708,14 +709,15 @@ export default function FreeDeliveryPage() {
       background: "var(--p-color-bg-surface, #ffffff)",
       display: "flex",
       alignItems: "center",
+      justifyContent: "space-between",
       gap: 12,
     }}>
-      {/* Profile selectors + Save - RIGHT */}
-      <div style={{ display: "flex", alignItems: "center", gap: 8, marginLeft: "auto" }}>
+      {/* Profile selectors - LEFT */}
+      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
         {/* Profile selectors - only show if we have profiles (v3) */}
         {profiles.length > 0 && config.version === 3 && (
           <>
-            {/* Live profile selector - FIRST */}
+            {/* Live profile selector */}
             <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
               <span style={{ color: "var(--p-color-text-subdued, #6b7280)", fontSize: "14px" }}>Live:</span>
               <select
@@ -737,7 +739,7 @@ export default function FreeDeliveryPage() {
               </select>
             </div>
 
-            {/* Editing profile selector - SECOND */}
+            {/* Editing profile selector */}
             <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
               <span style={{ color: "var(--p-color-text-subdued, #6b7280)", fontSize: "14px" }}>Editing:</span>
               <select
@@ -760,25 +762,25 @@ export default function FreeDeliveryPage() {
             </div>
           </>
         )}
+      </div>
 
-        {/* Save indicator and button */}
-        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 24 24"
-            width="24"
-            height="24"
-            aria-hidden="true"
-          >
-            <g fill={saveStatus === "Saving..." ? "#22c55e" : "#9ca3af"} fillRule="evenodd" clipRule="evenodd">
-              <path d="M5 3a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V7.414A2 2 0 0 0 20.414 6L18 3.586A2 2 0 0 0 16.586 3zm3 11a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v6H8zm1-7V5h6v2a1 1 0 0 1-1 1h-4a1 1 0 0 1-1-1" />
-              <path d="M14 17h-4v-2h4z" />
-            </g>
-          </svg>
-          <s-button variant="primary" onClick={handleSave}>
-            Save
-          </s-button>
-        </div>
+      {/* Save indicator and button - RIGHT */}
+      <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 24 24"
+          width="24"
+          height="24"
+          aria-hidden="true"
+        >
+          <g fill={saveStatus === "Saving..." ? "#22c55e" : "#9ca3af"} fillRule="evenodd" clipRule="evenodd">
+            <path d="M5 3a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V7.414A2 2 0 0 0 20.414 6L18 3.586A2 2 0 0 0 16.586 3zm3 11a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v6H8zm1-7V5h6v2a1 1 0 0 1-1 1h-4a1 1 0 0 1-1-1" />
+            <path d="M14 17h-4v-2h4z" />
+          </g>
+        </svg>
+        <s-button variant="primary" onClick={handleSave}>
+          Save
+        </s-button>
       </div>
     </div>
   );
@@ -2188,18 +2190,24 @@ export default function FreeDeliveryPage() {
                   <div style={{ padding: "16px", display: "grid", gap: 12 }}>
 
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-                  <s-color-field
-                    label="Background color"
-                    value={settings.fd_announcement_bg_color || "#1f2937"}
-                    onInput={(e) => setSettings({ ...settings, fd_announcement_bg_color: e.detail?.value ?? e.target?.value ?? "#1f2937" })}
-                    onChange={(e) => setSettings({ ...settings, fd_announcement_bg_color: e.detail?.value ?? e.target?.value ?? "#1f2937" })}
-                  />
-                  <s-color-field
-                    label="Text color"
-                    value={settings.fd_announcement_text_color || "#ffffff"}
-                    onInput={(e) => setSettings({ ...settings, fd_announcement_text_color: e.detail?.value ?? e.target?.value ?? "#ffffff" })}
-                    onChange={(e) => setSettings({ ...settings, fd_announcement_text_color: e.detail?.value ?? e.target?.value ?? "#ffffff" })}
-                  />
+                  <div>
+                    <s-text size="small">Background color</s-text>
+                    <div style={{ marginTop: 4 }}>
+                      <ColorPicker
+                        color={settings.fd_announcement_bg_color || "#1f2937"}
+                        onChange={(color) => setSettings({ ...settings, fd_announcement_bg_color: color })}
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <s-text size="small">Text color</s-text>
+                    <div style={{ marginTop: 4 }}>
+                      <ColorPicker
+                        color={settings.fd_announcement_text_color || "#ffffff"}
+                        onChange={(color) => setSettings({ ...settings, fd_announcement_text_color: color })}
+                      />
+                    </div>
+                  </div>
                 </div>
 
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
@@ -2340,12 +2348,12 @@ export default function FreeDeliveryPage() {
                   {/* Color - full width */}
                   <div>
                     <s-text size="small">Color</s-text>
-                    <s-color-field
-                      label=""
-                      value={settings.fd_announcement_link_color || "#ffffff"}
-                      onInput={(e) => setSettings({ ...settings, fd_announcement_link_color: e.detail?.value ?? e.target?.value ?? "#ffffff" })}
-                      onChange={(e) => setSettings({ ...settings, fd_announcement_link_color: e.detail?.value ?? e.target?.value ?? "#ffffff" })}
-                    />
+                    <div style={{ marginTop: 4 }}>
+                      <ColorPicker
+                        color={settings.fd_announcement_link_color || "#ffffff"}
+                        onChange={(color) => setSettings({ ...settings, fd_announcement_link_color: color })}
+                      />
+                    </div>
                   </div>
 
                   {/* Decoration + Thickness - 50% each */}
@@ -2382,12 +2390,12 @@ export default function FreeDeliveryPage() {
                     {/* Hover Color - full width */}
                     <div>
                       <s-text size="small">Color</s-text>
-                      <s-color-field
-                        label=""
-                        value={settings.fd_announcement_link_hover_color || "#e5e7eb"}
-                        onInput={(e) => setSettings({ ...settings, fd_announcement_link_hover_color: e.detail?.value ?? e.target?.value ?? "#e5e7eb" })}
-                        onChange={(e) => setSettings({ ...settings, fd_announcement_link_hover_color: e.detail?.value ?? e.target?.value ?? "#e5e7eb" })}
-                      />
+                      <div style={{ marginTop: 4 }}>
+                        <ColorPicker
+                          color={settings.fd_announcement_link_hover_color || "#e5e7eb"}
+                          onChange={(color) => setSettings({ ...settings, fd_announcement_link_hover_color: color })}
+                        />
+                      </div>
                     </div>
 
                     {/* Hover Decoration + Thickness - 50% each */}
