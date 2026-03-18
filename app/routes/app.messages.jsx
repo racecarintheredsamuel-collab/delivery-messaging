@@ -2355,7 +2355,7 @@ export default function Index() {
                     <s-text size="small" style={{ color: "#6b7280", marginLeft: 24 }}><em>📌 Current rule is using custom text styling</em></s-text>
                   )}
                   {globalSettings?.eta_use_theme_text_styling === false && (
-                  <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) minmax(0, 1fr)", gap: 16 }}>
+                  <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) minmax(0, 1fr)", gap: 16, overflow: "hidden" }}>
                     {/* Labels */}
                     <div style={{ display: "grid", gap: 8, minWidth: 0 }}>
                       <div style={{ minHeight: 40 }}><s-text size="small" style={{ fontWeight: 600 }}>Labels (Ordered, Shipped, Delivered)</s-text></div>
@@ -2376,7 +2376,7 @@ export default function Index() {
                           max="18"
                           value={globalSettings?.eta_label_font_size ?? 12}
                           onChange={(e) => setGlobalSettings({ ...globalSettings, eta_label_font_size: Number(e.target.value) })}
-                          style={{ width: "100%" }}
+                          style={{ width: "100%", maxWidth: 175 }}
                         />
                       </div>
                       <div>
@@ -2411,7 +2411,7 @@ export default function Index() {
                           max="18"
                           value={globalSettings?.eta_date_font_size ?? 11}
                           onChange={(e) => setGlobalSettings({ ...globalSettings, eta_date_font_size: Number(e.target.value) })}
-                          style={{ width: "100%" }}
+                          style={{ width: "100%", maxWidth: 175 }}
                         />
                       </div>
                       <div>
@@ -2464,7 +2464,7 @@ export default function Index() {
                     <s-text size="small" style={{ color: "#6b7280", marginLeft: 24 }}><em>📌 Current rule is using custom text styling</em></s-text>
                   )}
                   {globalSettings?.special_delivery_use_theme_text_styling === false && (
-                  <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) minmax(0, 1fr)", gap: 16 }}>
+                  <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) minmax(0, 1fr)", gap: 16, overflow: "hidden" }}>
                     {/* Header */}
                     <div style={{ display: "grid", gap: 8, minWidth: 0 }}>
                       <s-text size="small" style={{ fontWeight: 600 }}>Header (optional)</s-text>
@@ -2485,7 +2485,7 @@ export default function Index() {
                           max="24"
                           value={globalSettings?.special_delivery_header_font_size ?? 16}
                           onChange={(e) => setGlobalSettings({ ...globalSettings, special_delivery_header_font_size: Number(e.target.value) })}
-                          style={{ width: "100%" }}
+                          style={{ width: "100%", maxWidth: 175 }}
                         />
                       </div>
                       <div>
@@ -2520,7 +2520,7 @@ export default function Index() {
                           max="22"
                           value={globalSettings?.special_delivery_font_size ?? 16}
                           onChange={(e) => setGlobalSettings({ ...globalSettings, special_delivery_font_size: Number(e.target.value) })}
-                          style={{ width: "100%" }}
+                          style={{ width: "100%", maxWidth: 175 }}
                         />
                       </div>
                       <div>
@@ -2546,7 +2546,7 @@ export default function Index() {
                     Default border settings for all blocks. Individual rules can override using "Use custom border styling".
                   </s-text>
 
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                  <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) minmax(0, 1fr)", gap: 12, overflow: "hidden" }}>
                     <div>
                       <s-text size="small">Border thickness ({globalSettings?.global_border_thickness ?? 0}px)</s-text>
                       <input
@@ -2555,7 +2555,7 @@ export default function Index() {
                         max="10"
                         value={globalSettings?.global_border_thickness ?? 0}
                         onChange={(e) => setGlobalSettings({ ...globalSettings, global_border_thickness: Number(e.target.value) })}
-                        style={{ width: "100%" }}
+                        style={{ width: "100%", maxWidth: 175 }}
                       />
                     </div>
                     <div>
@@ -2566,7 +2566,7 @@ export default function Index() {
                         max="50"
                         value={globalSettings?.global_border_radius ?? 8}
                         onChange={(e) => setGlobalSettings({ ...globalSettings, global_border_radius: Number(e.target.value) })}
-                        style={{ width: "100%" }}
+                        style={{ width: "100%", maxWidth: 175 }}
                       />
                     </div>
                   </div>
@@ -2582,7 +2582,7 @@ export default function Index() {
                   </div>
 
                   <div style={{ display: "flex", alignItems: "flex-end", gap: 8 }}>
-                    <div style={{ flex: 1 }}>
+                    <div>
                       <s-text size="small">Background color</s-text>
                       <div style={{ marginTop: 4 }}>
                         <ColorPicker
@@ -4568,7 +4568,7 @@ export default function Index() {
                           </div>
 
                           <div style={{ display: "flex", alignItems: "flex-end", gap: 8 }}>
-                            <div style={{ flex: 1 }}>
+                            <div>
                               <s-text size="small">Background color</s-text>
                               <div style={{ marginTop: 4 }}>
                                 <ColorPicker
@@ -5004,7 +5004,7 @@ export default function Index() {
                           </select>
                         </div>
                         <div style={{ display: "flex", alignItems: "flex-end", gap: 8 }}>
-                          <div style={{ flex: 1 }}>
+                          <div>
                             <ColorPicker
                               color={rule.settings?.icon_line_1_color || ""}
                               onChange={(color) => {
@@ -5110,7 +5110,7 @@ export default function Index() {
                           </select>
                         </div>
                         <div style={{ display: "flex", alignItems: "flex-end", gap: 8 }}>
-                          <div style={{ flex: 1 }}>
+                          <div>
                             <ColorPicker
                               color={rule.settings?.icon_line_2_color || ""}
                               onChange={(color) => {
@@ -5216,7 +5216,7 @@ export default function Index() {
                           </select>
                         </div>
                         <div style={{ display: "flex", alignItems: "flex-end", gap: 8 }}>
-                          <div style={{ flex: 1 }}>
+                          <div>
                             <ColorPicker
                               color={rule.settings?.icon_line_3_color || ""}
                               onChange={(color) => {
@@ -5322,7 +5322,7 @@ export default function Index() {
                           </select>
                         </div>
                         <div style={{ display: "flex", alignItems: "flex-end", gap: 8 }}>
-                          <div style={{ flex: 1 }}>
+                          <div>
                             <ColorPicker
                               color={rule.settings?.icon_line_4_color || ""}
                               onChange={(color) => {
@@ -6017,7 +6017,7 @@ export default function Index() {
                   </div>
 
                   <div style={{ display: "flex", alignItems: "flex-end", gap: 8 }}>
-                    <div style={{ flex: 1 }}>
+                    <div>
                       <s-text size="small">Background color</s-text>
                       <div style={{ marginTop: 4 }}>
                         <ColorPicker
@@ -6582,7 +6582,7 @@ export default function Index() {
                           </div>
 
                           <div style={{ display: "flex", alignItems: "flex-end", gap: 8 }}>
-                            <div style={{ flex: 1 }}>
+                            <div>
                               <s-text size="small">Background color</s-text>
                               <div style={{ marginTop: 4 }}>
                                 <ColorPicker
@@ -6718,7 +6718,7 @@ export default function Index() {
                       </label>
 
                       {rule.settings?.special_delivery_override_global_text_styling === true && (
-                        <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) minmax(0, 1fr)", gap: 16 }}>
+                        <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) minmax(0, 1fr)", gap: 16, overflow: "hidden" }}>
                           {/* Header */}
                           <div style={{ display: "grid", gap: 8, minWidth: 0 }}>
                             <s-text size="small" style={{ fontWeight: 600 }}>Header (optional)</s-text>
@@ -6754,7 +6754,7 @@ export default function Index() {
                                   };
                                   setRules(next);
                                 }}
-                                style={{ width: "100%" }}
+                                style={{ width: "100%", maxWidth: 175 }}
                               />
                             </div>
                             <div>
@@ -6811,7 +6811,7 @@ export default function Index() {
                                   };
                                   setRules(next);
                                 }}
-                                style={{ width: "100%" }}
+                                style={{ width: "100%", maxWidth: 175 }}
                               />
                             </div>
                             <div>

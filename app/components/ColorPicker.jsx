@@ -54,7 +54,7 @@ export function ColorPicker({ color, onChange }) {
   };
 
   return (
-    <div style={{ position: "relative", minWidth: 0, maxWidth: "100%" }}>
+    <div style={{ position: "relative", minWidth: 0, width: 175 }}>
       {/* Input container with swatch inside */}
       <div
         ref={containerRef}
@@ -79,27 +79,45 @@ export function ColorPicker({ color, onChange }) {
             borderRadius: 4,
             border: "none",
             boxShadow: "inset 0 0 0 1px rgba(0,0,0,0.1)",
-            backgroundColor: color,
+            backgroundColor: color || "transparent",
+            backgroundImage: !color ? "linear-gradient(45deg, #ccc 25%, transparent 25%), linear-gradient(-45deg, #ccc 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #ccc 75%), linear-gradient(-45deg, transparent 75%, #ccc 75%)" : "none",
+            backgroundSize: "8px 8px",
+            backgroundPosition: "0 0, 0 4px, 4px -4px, -4px 0px",
             cursor: "pointer",
             flexShrink: 0,
             padding: 0,
           }}
         />
-        <HexColorInput
-          color={color}
-          onChange={handleChange}
-          prefixed
-          style={{
-            flex: 1,
-            border: "none",
-            outline: "none",
-            fontSize: 13,
-            fontFamily: "inherit",
-            padding: 0,
-            minWidth: 0,
-            textTransform: "uppercase",
-          }}
-        />
+        {color ? (
+          <HexColorInput
+            color={color}
+            onChange={handleChange}
+            prefixed
+            style={{
+              flex: 1,
+              border: "none",
+              outline: "none",
+              fontSize: 13,
+              fontFamily: "inherit",
+              padding: 0,
+              minWidth: 0,
+              textTransform: "uppercase",
+            }}
+          />
+        ) : (
+          <span
+            onClick={handleOpen}
+            style={{
+              flex: 1,
+              fontSize: 13,
+              fontFamily: "inherit",
+              color: "#6b7280",
+              cursor: "pointer",
+            }}
+          >
+            Transparent
+          </span>
+        )}
       </div>
 
       {/* Popover with picker - rendered via portal to body */}
