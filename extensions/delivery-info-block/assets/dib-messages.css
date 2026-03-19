@@ -139,9 +139,9 @@
   display: none;
 }
 
-/* Hide container when no visible lines */
+/* Hide container when no visible lines (use visibility to reserve space and prevent layout shift) */
 .dib-messages .dib-container:not(:has(.dib-line:not(.dib-has-countdown), .dib-has-countdown.is-ready)) {
-  display: none;
+  visibility: hidden;
 }
 
 /* Stable line height to prevent layout shift on load */
