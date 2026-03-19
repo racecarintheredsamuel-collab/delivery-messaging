@@ -1,0 +1,22 @@
+# Production config - forces correct URLs
+client_id = "30cd8404cf689c75a189b4f2b4bfcea8"
+name = "Delivery Messaging"
+application_url = "https://delivery-messaging.app"
+embedded = true
+
+[build]
+automatically_update_urls_on_dev = false
+
+[webhooks]
+api_version = "2025-10"
+
+  [[webhooks.subscriptions]]
+  topics = [ "app/uninstalled", "app/scopes_update" ]
+  uri = "/webhooks"
+  compliance_topics = [ "customers/data_request", "customers/redact", "shop/redact" ]
+
+[access_scopes]
+scopes = "read_customers,write_products"
+
+[auth]
+redirect_urls = [ "https://delivery-messaging.app/auth/callback" ]
