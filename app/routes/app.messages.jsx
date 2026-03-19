@@ -5475,7 +5475,7 @@ export default function Index() {
                     </div>
 
                   <s-text style={{ fontWeight: 600, marginTop: 12 }}>Stage Labels</s-text>
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8 }}>
+                  <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr)", gap: 8 }}>
                     <label>
                       <s-text size="small">Order</s-text>
                       <input
@@ -5489,7 +5489,7 @@ export default function Index() {
                           };
                           setRules(next);
                         }}
-                        style={{ width: "100%" }}
+                        style={{ width: "100%", maxWidth: 110 }}
                         placeholder="Ordered"
                         maxLength={10}
                       />
@@ -5507,7 +5507,7 @@ export default function Index() {
                           };
                           setRules(next);
                         }}
-                        style={{ width: "100%" }}
+                        style={{ width: "100%", maxWidth: 110 }}
                         placeholder="Shipped"
                         maxLength={10}
                       />
@@ -5525,7 +5525,7 @@ export default function Index() {
                           };
                           setRules(next);
                         }}
-                        style={{ width: "100%" }}
+                        style={{ width: "100%", maxWidth: 110 }}
                         placeholder="Delivered"
                         maxLength={10}
                       />
@@ -5762,6 +5762,7 @@ export default function Index() {
                         <s-text size="small">Order</s-text>
                         <div style={{ marginTop: 4 }}>
                           <ColorPicker
+                            compact
                             color={rule.settings?.eta_order_icon_color || "#111827"}
                             onChange={(color) => {
                               const next = [...rules];
@@ -5778,6 +5779,7 @@ export default function Index() {
                         <s-text size="small">Shipping</s-text>
                         <div style={{ marginTop: 4 }}>
                           <ColorPicker
+                            compact
                             color={rule.settings?.eta_shipping_icon_color || "#111827"}
                             onChange={(color) => {
                               const next = [...rules];
@@ -5794,6 +5796,7 @@ export default function Index() {
                         <s-text size="small">Delivery</s-text>
                         <div style={{ marginTop: 4 }}>
                           <ColorPicker
+                            compact
                             color={rule.settings?.eta_delivery_icon_color || "#111827"}
                             onChange={(color) => {
                               const next = [...rules];

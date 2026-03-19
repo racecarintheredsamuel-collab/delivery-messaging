@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { HexColorPicker, HexColorInput } from "react-colorful";
 
-export function ColorPicker({ color, onChange }) {
+export function ColorPicker({ color, onChange, compact = false }) {
   const [isOpen, setIsOpen] = useState(false);
   const [popoverStyle, setPopoverStyle] = useState({});
   const popoverRef = useRef(null);
@@ -54,7 +54,7 @@ export function ColorPicker({ color, onChange }) {
   };
 
   return (
-    <div style={{ position: "relative", minWidth: 0, width: 175 }}>
+    <div style={{ position: "relative", minWidth: 0, width: compact ? 110 : 175 }}>
       {/* Input container with swatch inside */}
       <div
         ref={containerRef}
