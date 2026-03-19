@@ -135,10 +135,6 @@
   visibility: visible;
 }
 
-.dib-messages .dib-has-countdown.is-expired {
-  display: none;
-}
-
 /* Hide container when no visible lines (use visibility to reserve space and prevent layout shift) */
 .dib-messages .dib-container:not(:has(.dib-line:not(.dib-has-countdown), .dib-has-countdown.is-ready)) {
   visibility: hidden;

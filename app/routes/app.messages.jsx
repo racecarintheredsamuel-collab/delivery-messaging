@@ -822,6 +822,7 @@ function defaultRule() {
       message_line_2: "",
       message_line_3: "",
       message_line_4: "",
+      cutoff_fallback_message: "",
       show_icon: false,
       icon: "truck",
       icon_style: "solid",
@@ -4481,6 +4482,33 @@ export default function Index() {
                         placeholder="Optional fourth line"
                       />
                     </label>
+
+                    {/* Cutoff fallback - only show if any message line uses {countdown} */}
+                    {(rule.settings?.message_line_1?.includes("{countdown}") ||
+                      rule.settings?.message_line_2?.includes("{countdown}") ||
+                      rule.settings?.message_line_3?.includes("{countdown}") ||
+                      rule.settings?.message_line_4?.includes("{countdown}")) && (
+                      <label>
+                        <s-text>Cutoff passed message</s-text>
+                        <input
+                          value={rule.settings?.cutoff_fallback_message || ""}
+                          onChange={(e) => {
+                            const next = [...rules];
+                            next[safeSelectedIndex] = {
+                              ...rule,
+                              settings: { ...rule.settings, cutoff_fallback_message: e.target.value },
+                            };
+                            setRules(next);
+                          }}
+                          maxLength={100}
+                          style={{ width: "100%" }}
+                          placeholder="Order ships {shipped}"
+                        />
+                        <s-text variant="subdued" style={{ fontSize: "12px", marginTop: "4px" }}>
+                          Shown when cutoff has passed. Use {"{shipped}"} for shipping date. Leave empty for default.
+                        </s-text>
+                      </label>
+                    )}
 
                     {/* Border Styling sub-section */}
                     <div style={{ borderTop: "1px solid var(--p-color-border, #e5e7eb)", paddingTop: 16, display: "grid", gap: 12 }}>
