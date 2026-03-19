@@ -29,9 +29,12 @@ export function PreviewLine({ rule, globalSettings, lineNumber, children }) {
     return iconValue;
   };
 
+  // Only use per-line overrides when the override checkbox is checked
+  const usePerLineOverrides = rule.settings?.show_icon_per_line_overrides === true;
+
   // Check for per-line icon override, fall back to main icon
   const perLineIconKey = `icon_line_${lineNumber}`;
-  const perLineIcon = rule.settings?.[perLineIconKey];
+  const perLineIcon = usePerLineOverrides ? rule.settings?.[perLineIconKey] : null;
   const mainIcon = rule.settings?.icon;
 
   // "none" explicitly hides the icon (no space), different from "spacer" (keeps space)
@@ -40,13 +43,13 @@ export function PreviewLine({ rule, globalSettings, lineNumber, children }) {
 
   // Check for per-line style override, fall back to main style
   const perLineStyleKey = `icon_line_${lineNumber}_style`;
-  const perLineStyle = rule.settings?.[perLineStyleKey];
+  const perLineStyle = usePerLineOverrides ? rule.settings?.[perLineStyleKey] : null;
   const mainStyle = rule.settings?.icon_style || "solid";
   const effectiveStyle = perLineStyle || mainStyle;
 
   // Check for per-line color override, fall back to main color
   const perLineColorKey = `icon_line_${lineNumber}_color`;
-  const perLineColor = rule.settings?.[perLineColorKey];
+  const perLineColor = usePerLineOverrides ? rule.settings?.[perLineColorKey] : null;
   const mainColor = rule.settings?.icon_color ?? "#111827";
   const effectiveColor = perLineColor || mainColor;
 

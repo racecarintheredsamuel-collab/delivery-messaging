@@ -827,6 +827,7 @@ function defaultRule() {
       icon_style: "solid",
       icon_color: "#111827",
       icon_layout: "per-line",
+      show_icon_per_line_overrides: false,
       single_icon_size: "medium",
       icon_vertical_align: "top",
       border_thickness: 0,
@@ -4936,8 +4937,24 @@ export default function Index() {
                   {/* Per-line icon overrides - only show when "per-line" layout */}
                   {(rule.settings?.icon_layout || "per-line") === "per-line" && (
                     <div style={{ display: "grid", gap: 12, marginTop: 4 }}>
-                      <s-text variant="subdued" style={{ fontSize: 12 }}>Override icon per line (optional):</s-text>
+                      <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }}>
+                        <input
+                          type="checkbox"
+                          checked={rule.settings?.show_icon_per_line_overrides === true}
+                          onChange={(e) => {
+                            const next = [...rules];
+                            next[safeSelectedIndex] = {
+                              ...rule,
+                              settings: { ...rule.settings, show_icon_per_line_overrides: e.target.checked },
+                            };
+                            setRules(next);
+                          }}
+                        />
+                        <s-text>Override icon per line</s-text>
+                      </label>
 
+                      {rule.settings?.show_icon_per_line_overrides === true && (
+                      <>
                       {/* Line 1 */}
                       <div style={{ display: "grid", gap: 6 }}>
                         <s-text fontWeight="semibold">Line 1</s-text>
@@ -4996,7 +5013,7 @@ export default function Index() {
                             }}
                             style={{ width: "100%" }}
                             title="Style"
-                            disabled={rule.settings?.icon_line_1?.startsWith("custom-")}
+                            disabled={rule.settings?.icon_line_1?.startsWith("custom-") || rule.settings?.icon_line_1 === "spacer" || rule.settings?.icon_line_1 === "none"}
                           >
                             <option value="">(Main style)</option>
                             <option value="solid">Solid</option>
@@ -5015,6 +5032,9 @@ export default function Index() {
                                 };
                                 setRules(next);
                               }}
+                              fallbackColor={rule.settings?.icon_color || "#111827"}
+                              fallbackLabel="Main icon color"
+                              disabled={rule.settings?.icon_line_1 === "spacer" || rule.settings?.icon_line_1 === "none"}
                             />
                           </div>
                           {rule.settings?.icon_line_1_color && (
@@ -5102,7 +5122,7 @@ export default function Index() {
                             }}
                             style={{ width: "100%" }}
                             title="Style"
-                            disabled={rule.settings?.icon_line_2?.startsWith("custom-")}
+                            disabled={rule.settings?.icon_line_2?.startsWith("custom-") || rule.settings?.icon_line_2 === "spacer" || rule.settings?.icon_line_2 === "none"}
                           >
                             <option value="">(Main style)</option>
                             <option value="solid">Solid</option>
@@ -5121,6 +5141,9 @@ export default function Index() {
                                 };
                                 setRules(next);
                               }}
+                              fallbackColor={rule.settings?.icon_color || "#111827"}
+                              fallbackLabel="Main icon color"
+                              disabled={rule.settings?.icon_line_2 === "spacer" || rule.settings?.icon_line_2 === "none"}
                             />
                           </div>
                           {rule.settings?.icon_line_2_color && (
@@ -5208,7 +5231,7 @@ export default function Index() {
                             }}
                             style={{ width: "100%" }}
                             title="Style"
-                            disabled={rule.settings?.icon_line_3?.startsWith("custom-")}
+                            disabled={rule.settings?.icon_line_3?.startsWith("custom-") || rule.settings?.icon_line_3 === "spacer" || rule.settings?.icon_line_3 === "none"}
                           >
                             <option value="">(Main style)</option>
                             <option value="solid">Solid</option>
@@ -5227,6 +5250,9 @@ export default function Index() {
                                 };
                                 setRules(next);
                               }}
+                              fallbackColor={rule.settings?.icon_color || "#111827"}
+                              fallbackLabel="Main icon color"
+                              disabled={rule.settings?.icon_line_3 === "spacer" || rule.settings?.icon_line_3 === "none"}
                             />
                           </div>
                           {rule.settings?.icon_line_3_color && (
@@ -5314,7 +5340,7 @@ export default function Index() {
                             }}
                             style={{ width: "100%" }}
                             title="Style"
-                            disabled={rule.settings?.icon_line_4?.startsWith("custom-")}
+                            disabled={rule.settings?.icon_line_4?.startsWith("custom-") || rule.settings?.icon_line_4 === "spacer" || rule.settings?.icon_line_4 === "none"}
                           >
                             <option value="">(Main style)</option>
                             <option value="solid">Solid</option>
@@ -5333,6 +5359,9 @@ export default function Index() {
                                 };
                                 setRules(next);
                               }}
+                              fallbackColor={rule.settings?.icon_color || "#111827"}
+                              fallbackLabel="Main icon color"
+                              disabled={rule.settings?.icon_line_4 === "spacer" || rule.settings?.icon_line_4 === "none"}
                             />
                           </div>
                           {rule.settings?.icon_line_4_color && (
@@ -5361,6 +5390,8 @@ export default function Index() {
                           )}
                         </div>
                       </div>
+                      </>
+                      )}
                     </div>
                   )}
 
@@ -5385,8 +5416,8 @@ export default function Index() {
                       />
                     </label>
                   )}
-                  </div>
-                  )}
+                </div>
+                )}
                 </div>
 
                 {/* ETA Timeline Section */}

@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { HexColorPicker, HexColorInput } from "react-colorful";
 
-export function ColorPicker({ color, onChange, compact = false }) {
+export function ColorPicker({ color, onChange, compact = false, fallbackColor = null, fallbackLabel = null, disabled = false }) {
   const [isOpen, setIsOpen] = useState(false);
   const [popoverStyle, setPopoverStyle] = useState({});
   const popoverRef = useRef(null);
@@ -67,23 +67,26 @@ export function ColorPicker({ color, onChange, compact = false }) {
           borderRadius: 7,
           padding: "5px 8px 5px 5px",
           gap: 8,
-          background: "#fff",
+          background: disabled ? "#f3f4f6" : "#fff",
+          opacity: disabled ? 0.5 : 1,
+          pointerEvents: disabled ? "none" : "auto",
         }}
       >
         <button
           type="button"
-          onClick={handleOpen}
+          onClick={disabled ? undefined : handleOpen}
+          disabled={disabled}
           style={{
             width: 22,
             height: 22,
             borderRadius: 4,
             border: "none",
             boxShadow: "inset 0 0 0 1px rgba(0,0,0,0.1)",
-            backgroundColor: color || "transparent",
-            backgroundImage: !color ? "linear-gradient(45deg, #ccc 25%, transparent 25%), linear-gradient(-45deg, #ccc 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #ccc 75%), linear-gradient(-45deg, transparent 75%, #ccc 75%)" : "none",
+            backgroundColor: color || fallbackColor || "transparent",
+            backgroundImage: !color && !fallbackColor ? "linear-gradient(45deg, #ccc 25%, transparent 25%), linear-gradient(-45deg, #ccc 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #ccc 75%), linear-gradient(-45deg, transparent 75%, #ccc 75%)" : "none",
             backgroundSize: "8px 8px",
             backgroundPosition: "0 0, 0 4px, 4px -4px, -4px 0px",
-            cursor: "pointer",
+            cursor: disabled ? "not-allowed" : "pointer",
             flexShrink: 0,
             padding: 0,
           }}
@@ -115,7 +118,7 @@ export function ColorPicker({ color, onChange, compact = false }) {
               cursor: "pointer",
             }}
           >
-            Transparent
+            {fallbackLabel || "Transparent"}
           </span>
         )}
       </div>
