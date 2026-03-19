@@ -4,7 +4,7 @@
   {%- assign global_settings = global_settings_json | parse_json -%}{%- assign gs = global_settings -%}
 {%- endif -%}
 {%- assign cj = shop.metafields.delivery_rules.config.value -%}{%- assign lp = nil -%}{%- if cj != blank -%}{%- assign cfg = cj | parse_json -%}{%- if cfg.profiles -%}{%- assign lpid = cfg.liveProfileId | strip -%}{%- for p in cfg.profiles -%}{%- if p.id == lpid -%}{%- assign lp = p -%}{%- break -%}{%- endif -%}{%- endfor -%}{%- if lp == nil and cfg.profiles.size > 0 -%}{%- assign lp = cfg.profiles.first -%}{%- endif -%}{%- endif -%}{%- endif -%}
-{%- assign show_bar = lp.fd_show_announcement_bar | default: gs.fd_show_announcement_bar -%}{%- unless show_bar == false -%}
+{%- assign show_bar = lp.fd_show_announcement_bar | default: gs.fd_show_announcement_bar -%}{%- if show_bar == true -%}
 {%- assign fth = 5000 -%}
 {%- assign fer = '' -%}
 {%- assign fet = '' -%}
@@ -109,7 +109,7 @@
 <script src="{{ 'delivery-messaging.js' | asset_url }}" defer></script>
 <script src="{{ 'dib-announcement-cycling.js' | asset_url }}" defer></script>
 
-{%- endunless -%}
+{%- endif -%}
 
 {% schema %}
 {
