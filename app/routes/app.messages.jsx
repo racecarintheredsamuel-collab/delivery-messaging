@@ -7007,6 +7007,7 @@ export default function Index() {
                             backgroundColor: rule.settings?.use_custom_border
                               ? (rule.settings?.background_color || "transparent")
                               : (globalSettings?.global_background_color || "transparent"),
+                            backgroundClip: "padding-box",
                             // Width constraint: match ETA timeline width or use custom max_width
                             // Case 1: match_eta_width ON - force exact ETA width (content wraps)
                             // Case 2: max_width = 0 - fit to content
@@ -7312,7 +7313,7 @@ export default function Index() {
                                     border: `${borderThickness}px solid ${borderColor}`,
                                     borderRadius: borderRadius,
                                   } : {}),
-                                  ...(backgroundColor ? { backgroundColor, borderRadius: borderRadius } : {}),
+                                  ...(backgroundColor ? { backgroundColor, borderRadius: borderRadius, backgroundClip: "padding-box" } : {}),
                                   // Width constraint: match ETA or custom max_width
                                   ...widthStyle,
                                   color: textColor,

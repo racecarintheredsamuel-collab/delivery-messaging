@@ -490,7 +490,7 @@ export function ETATimelinePreview({ rule, globalSettings }) {
             border: `${borderWidth}px solid ${borderColor}`,
             borderRadius: borderRadius,
           } : {}),
-          ...(backgroundColor ? { backgroundColor, borderRadius: borderRadius } : {}),
+          ...(backgroundColor ? { backgroundColor, borderRadius: borderRadius, backgroundClip: "padding-box" } : {}),
         }}
       >
         <Stage label={rule.settings?.eta_label_order || "Ordered"} date={formatDate(today)} icon="order" />
