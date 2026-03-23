@@ -7,6 +7,7 @@ import { newRuleId } from "../utils/idGenerators";
 import { HOLIDAY_DEFINITIONS } from "../utils/holidays";
 import { getIconSvg, generateIconsMetafield } from "../utils/icons";
 import { ColorPicker } from "../components/ColorPicker";
+import { FontSelector } from "../components/FontSelector";
 import {
   GET_SHOP_DELIVERY_DATA,
   SET_METAFIELDS,
@@ -201,18 +202,37 @@ export const action = async ({ request }) => {
       activeProfile.rules.push(ruleData);
     }
 
-    const setRes = await admin.graphql(SET_METAFIELDS_MINIMAL, {
-      variables: {
-        metafields: [
-          {
-            ownerId: shopId,
-            namespace: METAFIELD_NAMESPACE,
-            key: CONFIG_KEY,
-            type: "json",
-            value: JSON.stringify(config),
-          },
-        ],
+    // Build metafields to save
+    const metafields = [
+      {
+        ownerId: shopId,
+        namespace: METAFIELD_NAMESPACE,
+        key: CONFIG_KEY,
+        type: "json",
+        value: JSON.stringify(config),
       },
+    ];
+
+    // If applying border to global settings, merge with existing settings
+    const globalBorderStr = formData.get("globalBorder");
+    if (globalBorderStr) {
+      const globalBorder = JSON.parse(globalBorderStr);
+      // Fetch existing settings to merge
+      const existingSettings = formData.get("existingSettings");
+      let settingsData = {};
+      try { settingsData = existingSettings ? JSON.parse(existingSettings) : {}; } catch (e) { settingsData = {}; }
+      Object.assign(settingsData, globalBorder);
+      metafields.push({
+        ownerId: shopId,
+        namespace: METAFIELD_NAMESPACE,
+        key: SETTINGS_KEY,
+        type: "json",
+        value: JSON.stringify(settingsData),
+      });
+    }
+
+    const setRes = await admin.graphql(SET_METAFIELDS_MINIMAL, {
+      variables: { metafields },
     });
 
     const setJson = await setRes.json();
@@ -255,6 +275,22 @@ function FlipCard({ value, label }) {
 }
 
 // Message preview helper - renders message with placeholders and bold text
+function WizardStageIcon({ icon, color }) {
+  const c = color || "#111827";
+  if (icon === "none") {
+    return <span style={{ width: 36, height: 36, display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "50%", border: "1px dashed #d1d5db", color: "#9ca3af", fontSize: 12 }}>—</span>;
+  }
+  return <span dangerouslySetInnerHTML={{ __html: getIconSvg(icon, "solid") || "" }} style={{ width: 36, height: 36, display: "block", color: c }} />;
+}
+
+function WizardConnector({ style: connStyle, color }) {
+  const c = color || "#111827";
+  if (connStyle === "line") return <span style={{ display: "block", width: 32, borderTop: `1.5px solid ${c}` }} />;
+  if (connStyle === "big-arrow") return <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill={c} style={{ width: 20, height: 20 }}><path fillRule="evenodd" d="M16.72 7.72a.75.75 0 0 1 1.06 0l3.75 3.75a.75.75 0 0 1 0 1.06l-3.75 3.75a.75.75 0 1 1-1.06-1.06l2.47-2.47H3a.75.75 0 0 1 0-1.5h16.19l-2.47-2.47a.75.75 0 0 1 0-1.06Z" clipRule="evenodd" /></svg>;
+  if (connStyle === "arrow-dot") return <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" fill={c} style={{ width: 20, height: 20 }}><path d="M780-380q-31 0-56-17t-36-43H80v-80h608q11-26 36-43t56-17q42 0 71 29t29 71q0 42-29 71t-71 29Z" /></svg>;
+  return <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke={c} style={{ width: 20, height: 20 }}><path strokeLinecap="round" strokeLinejoin="round" d="m5.25 4.5 7.5 7.5-7.5 7.5m6-15 7.5 7.5-7.5 7.5" /></svg>;
+}
+
 function MessagePreview({ text }) {
   if (!text) return null;
 
@@ -277,6 +313,8 @@ function MessagePreview({ text }) {
         borderRadius: "6px",
         fontSize: "14px",
         color: "#374151",
+        wordBreak: "break-word",
+        overflow: "hidden",
       }}
       dangerouslySetInnerHTML={{ __html: preview }}
     />
@@ -285,6 +323,7 @@ function MessagePreview({ text }) {
 
 // Setup step accordion component
 function SetupStep({ step, isExpanded, isComplete, onToggle, onMarkComplete, onMarkIncomplete, onAction }) {
+  const navigate = useNavigate();
   return (
     <div
       style={{
@@ -413,21 +452,7 @@ function SetupStep({ step, isExpanded, isComplete, onToggle, onMarkComplete, onM
                 });
               })()}
             </div>
-          ) : (
-            <div
-              style={{
-                border: "2px dashed #d1d5db",
-                borderRadius: 8,
-                padding: "32px 16px",
-                textAlign: "center",
-                background: "#fafafa",
-                marginBottom: 16,
-              }}
-            >
-              <span style={{ fontSize: 24, display: "block", marginBottom: 8 }}>📷</span>
-              <span style={{ color: "#9ca3af", fontSize: 13 }}>Screenshot Coming Soon</span>
-            </div>
-          )}
+          ) : null}
 
           {/* Action buttons */}
           <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
@@ -474,16 +499,27 @@ function SetupStep({ step, isExpanded, isComplete, onToggle, onMarkComplete, onM
             ) : null}
 
             {step.secondaryUrl && (
-              <a
-                href={step.secondaryUrl}
+              <button
+                onClick={() => navigate(step.secondaryUrl)}
                 style={{
                   color: "#2563eb",
                   fontSize: 14,
                   textDecoration: "none",
+                  background: "none",
+                  border: "none",
+                  cursor: "pointer",
+                  padding: 0,
                 }}
               >
                 {step.secondaryLabel}
-              </a>
+              </button>
+            )}
+
+            {step.footerNote && (
+              <div style={{ display: "flex", alignItems: "center", gap: 6, color: "var(--p-color-text-subdued, #6b7280)", width: "100%", marginTop: 4 }}>
+                <span style={{ fontSize: 12, flexShrink: 0 }}>💡</span>
+                <span style={{ fontSize: 12 }}>{step.footerNote}</span>
+              </div>
             )}
 
             {!step.autoComplete && (
@@ -545,10 +581,21 @@ export default function DashboardPage() {
   const [showSettingsWizard, setShowSettingsWizard] = useState(false);
   const [settingsStep, setSettingsStep] = useState(1);
   const [settingsData, setSettingsData] = useState({
+    preview_timezone: settings?.preview_timezone || "",
+    courier_delivery_days_min: settings?.courier_delivery_days_min ?? 3,
+    courier_delivery_days_max: settings?.courier_delivery_days_max ?? 5,
+    express_delivery_days_min: settings?.express_delivery_days_min ?? 1,
+    express_delivery_days_max: settings?.express_delivery_days_max ?? 1,
     closed_days: settings?.closed_days || ["sat", "sun"],
     courier_no_delivery_days: settings?.courier_no_delivery_days || ["sat", "sun"],
     cutoff_time: settings?.cutoff_time || "14:00",
+    lead_time: settings?.lead_time ?? 0,
     bank_holiday_country: settings?.bank_holiday_country || "",
+    fd_threshold: settings?.fd_threshold ?? 0,
+    preview_body_font: settings?.preview_body_font || "",
+    preview_text_color: settings?.preview_text_color || "#000000",
+    preview_bg_color: settings?.preview_bg_color || "#ffffff",
+    main_icon_color: settings?.icon_color || "#111827",
   });
 
   // Rule wizard state
@@ -565,15 +612,20 @@ export default function DashboardPage() {
     message_line_2: "Upgrade to express delivery & get it by **{express}**",
     // Step 4: Icon
     icon: "truck",
-    icon_color: "#111827",
-    // Step 5: ETA Timeline
-    eta_delivery_days_min: 3,
-    eta_delivery_days_max: 5,
+    icon_color: settings?.icon_color || "#111827",
+    // Step 5: ETA Timeline Icons
+    eta_order_icon: "shopping-bag",
+    eta_shipping_icon: "truck",
+    eta_delivery_icon: "pin",
+    eta_connector_style: "double-chevron",
+    // Step 6: Border Styling
     eta_border_width: 1,
     eta_border_radius: 8,
     eta_border_color: "#e5e7eb",
+    background_color: "",
+    border_apply_global: !hasRules,
   });
-  const ruleTotalSteps = 5;
+  const ruleTotalSteps = 6;
 
   // Setup guide state
   const [expandedStep, setExpandedStep] = useState(null);
@@ -626,6 +678,12 @@ export default function DashboardPage() {
     setSettingsData(prev => ({ ...prev, [field]: value }));
   };
 
+  const openRuleWizard = () => {
+    setRuleData(prev => ({ ...prev, icon_color: settings?.icon_color || settingsData.main_icon_color || "#111827" }));
+    setRuleStep(1);
+    setShowRuleWizard(true);
+  };
+
   const handleRuleChange = (field, value) => {
     setRuleData(prev => ({ ...prev, [field]: value }));
   };
@@ -634,10 +692,21 @@ export default function DashboardPage() {
     // Build global settings to save
     const newSettings = {
       ...(settings || {}),
+      preview_timezone: settingsData.preview_timezone,
+      courier_delivery_days_min: settingsData.courier_delivery_days_min,
+      courier_delivery_days_max: settingsData.courier_delivery_days_max,
+      express_delivery_days_min: settingsData.express_delivery_days_min,
+      express_delivery_days_max: settingsData.express_delivery_days_max,
       closed_days: settingsData.closed_days,
       courier_no_delivery_days: settingsData.courier_no_delivery_days,
       cutoff_time: settingsData.cutoff_time,
+      lead_time: settingsData.lead_time,
       bank_holiday_country: settingsData.bank_holiday_country,
+      fd_threshold: settingsData.fd_threshold,
+      preview_body_font: settingsData.preview_body_font,
+      preview_text_color: settingsData.preview_text_color,
+      preview_bg_color: settingsData.preview_bg_color,
+      icon_color: settingsData.main_icon_color,
     };
 
     // Submit to action - save settings only
@@ -695,14 +764,14 @@ export default function DashboardPage() {
         single_icon_size: "medium",
         icon_vertical_align: "center",
 
-        // Border defaults - use global settings
+        // Border - per-rule override if not applying to global
         show_border: ruleData.eta_border_width > 0,
         border_thickness: ruleData.eta_border_width,
         border_color: ruleData.eta_border_color,
         border_radius: ruleData.eta_border_radius,
-        max_width: 600,
-        use_custom_border: false,
-        match_eta_width: true,
+        max_width: 0,
+        background_color: ruleData.background_color,
+        use_custom_border: !ruleData.border_apply_global,
 
         // Dispatch - use global settings
         override_cutoff_times: false,
@@ -720,7 +789,7 @@ export default function DashboardPage() {
         show_eta_timeline: true,
         eta_left_padding: 0,
         eta_icon_size: 36,
-        eta_connector_style: "arrows",
+        eta_connector_style: ruleData.eta_connector_style,
         eta_connector_color: ruleData.icon_color,
         eta_connector_use_main_color: true,
         eta_connector_alignment: "full",
@@ -730,12 +799,19 @@ export default function DashboardPage() {
         eta_border_width: ruleData.eta_border_width,
         eta_border_color: ruleData.eta_border_color,
         eta_border_radius: ruleData.eta_border_radius,
-        eta_delivery_days_min: ruleData.eta_delivery_days_min,
-        eta_delivery_days_max: ruleData.eta_delivery_days_max,
+        eta_background_color: ruleData.background_color,
+        eta_use_custom_border: !ruleData.border_apply_global,
+
+        // Special Delivery border - not enabled but border settings applied
+        special_delivery_use_custom_border: !ruleData.border_apply_global,
+        special_delivery_border_thickness: ruleData.eta_border_width,
+        special_delivery_border_color: ruleData.eta_border_color,
+        special_delivery_border_radius: ruleData.eta_border_radius,
+        special_delivery_background_color: ruleData.background_color,
         eta_timeline_initialized: true,  // Wizard syncs both, so mark as initialized
-        eta_order_icon: "shopping-bag",
-        eta_shipping_icon: "truck",
-        eta_delivery_icon: "pin",
+        eta_order_icon: ruleData.eta_order_icon,
+        eta_shipping_icon: ruleData.eta_shipping_icon,
+        eta_delivery_icon: ruleData.eta_delivery_icon,
         eta_order_icon_style: "solid",
         eta_shipping_icon_style: "solid",
         eta_delivery_icon_style: "solid",
@@ -760,35 +836,42 @@ export default function DashboardPage() {
       },
     };
 
-    // Submit to action - save rule only
-    fetcher.submit(
-      {
-        shopId,
-        action: "saveRule",
-        ruleData: JSON.stringify(rule),
-        config: JSON.stringify(config),
-      },
-      { method: "POST" }
-    );
+    // Submit to action - save rule (and optionally global border settings)
+    const submitData = {
+      shopId,
+      action: "saveRule",
+      ruleData: JSON.stringify(rule),
+      config: JSON.stringify(config),
+    };
+    if (ruleData.border_apply_global) {
+      submitData.globalBorder = JSON.stringify({
+        border_thickness: ruleData.eta_border_width,
+        border_color: ruleData.eta_border_color,
+        border_radius: ruleData.eta_border_radius,
+        show_border: ruleData.eta_border_width > 0,
+        global_background_color: ruleData.background_color,
+      });
+      submitData.existingSettings = JSON.stringify(settings || {});
+    }
+    fetcher.submit(submitData, { method: "POST" });
   };
+
+  const settingsTotalSteps = 8;
 
   // Handle successful saves
   const [lastAction, setLastAction] = useState(null);
 
-  if (fetcher.data?.ok && fetcher.data.action !== lastAction) {
-    if (fetcher.data.action === "saveSettings") {
-      setLastAction("saveSettings");
-      setShowSettingsWizard(false);
-      // Reload page to show updated settings
-      window.location.reload();
-    } else if (fetcher.data.action === "saveRule") {
-      setLastAction("saveRule");
-      // Navigate to editor with the newly created rule selected
-      navigate(createdRuleId ? `/app/messages?selectRule=${createdRuleId}` : "/app/messages");
+  useEffect(() => {
+    if (fetcher.data?.ok && fetcher.data.action !== lastAction) {
+      if (fetcher.data.action === "saveSettings") {
+        setLastAction("saveSettings");
+        setSettingsStep(settingsTotalSteps + 1);
+      } else if (fetcher.data.action === "saveRule") {
+        setLastAction("saveRule");
+        setRuleStep(ruleTotalSteps + 1);
+      }
     }
-  }
-
-  const settingsTotalSteps = 3;
+  }, [fetcher.data]);
 
   return (
     <s-page heading="Dashboard">
@@ -855,7 +938,6 @@ export default function DashboardPage() {
               {(() => {
                 const setupSteps = [
                   { id: "product_page", countsForProgress: true },
-                  { id: "cart_messaging", countsForProgress: true },
                   { id: "announcement_bar", countsForProgress: true },
                   { id: "configure_settings", countsForProgress: true, autoComplete: !!settings?.cutoff_time },
                   { id: "create_rule", countsForProgress: false, autoComplete: hasRules },
@@ -943,33 +1025,7 @@ export default function DashboardPage() {
                 onMarkIncomplete={() => setManualCompleted(prev => { const next = new Set(prev); next.delete("product_page"); return next; })}
               />
 
-              {/* Step 2: Cart Messaging Setup */}
-              <SetupStep
-                step={{
-                  id: "cart_messaging",
-                  title: "Cart Messaging Setup",
-                  description: "Enable the Cart Messaging app embed to show free delivery progress in your cart drawer and cart page.",
-                  actionLabel: "Open App Embeds",
-                  actionUrl: freeDeliveryEditorUrl,
-                  images: [
-                    {
-                      src: "/images/setup/cart-messaging-setup-1.png",
-                      steps: [
-                        "Select App Embeds from the left hand menu",
-                        "Enable the Cart Messaging App Embed",
-                      ],
-                    },
-                  ],
-                  onImageClick: setLightboxImage,
-                }}
-                isExpanded={expandedStep === "cart_messaging"}
-                isComplete={manualCompleted.has("cart_messaging")}
-                onToggle={() => setExpandedStep(expandedStep === "cart_messaging" ? null : "cart_messaging")}
-                onMarkComplete={() => setManualCompleted(prev => new Set([...prev, "cart_messaging"]))}
-                onMarkIncomplete={() => setManualCompleted(prev => { const next = new Set(prev); next.delete("cart_messaging"); return next; })}
-              />
-
-              {/* Step 3: Announcement Bar Setup */}
+              {/* Step 2: Announcement Bar Setup */}
               <SetupStep
                 step={{
                   id: "announcement_bar",
@@ -1004,26 +1060,16 @@ export default function DashboardPage() {
                 onMarkIncomplete={() => setManualCompleted(prev => { const next = new Set(prev); next.delete("announcement_bar"); return next; })}
               />
 
-              {/* Step 4: Configure Store Settings */}
+              {/* Step 3: Configure Store Settings */}
               <SetupStep
                 step={{
                   id: "configure_settings",
                   title: "Configure Store Settings",
-                  description: "Set your business hours, cutoff times, and bank holidays. These settings apply to all rules.",
+                  description: "Configure your timezone, delivery windows, cutoff times, lead times, closed days, and bank holidays. These global settings apply to all rules and control how delivery dates, countdowns, and ETA timelines are calculated across your storefront. Use the Configure Settings wizard below to get started — you can always adjust these later in Global Settings.",
                   actionLabel: "Configure Settings",
                   onAction: () => setShowSettingsWizard(true),
                   secondaryLabel: "Go to Settings",
-                  secondaryUrl: "/app?openSettings=true",
-                  images: [
-                    {
-                      src: "/images/setup/settings-1.png",
-                      steps: [
-                        "Go into the Messages section of the app by pressing the Messages button in the main menu",
-                        "Select Global Settings from the top menu, the Global Settings will appear in the editor window",
-                      ],
-                    },
-                  ],
-                  onImageClick: setLightboxImage,
+                  secondaryUrl: "/app/messages?openSettings=true",
                   autoComplete: true,
                 }}
                 isExpanded={expandedStep === "configure_settings"}
@@ -1051,33 +1097,18 @@ export default function DashboardPage() {
                   id: "create_rule",
                   title: "Create a Messages Rule",
                   isAdditional: true,
-                  description: "Rules determine what delivery information is shown for different products. Create your first rule to get started.",
+                  description: "Rules determine what delivery information is shown for different products. Each rule can target specific products using tags or stock status, and display its own set of delivery messages, icons, and ETA timeline. Use the Create Rule wizard below to set up your first rule — it will guide you through product matching, messages, icons, and styling in a few quick steps.",
                   actionLabel: "Create Rule",
-                  onAction: () => setShowRuleWizard(true),
-                  secondaryLabel: "Go to Messages",
+                  onAction: () => openRuleWizard(),
+                  secondaryLabel: "Go to Messages Editor",
                   secondaryUrl: "/app/messages",
-                  images: [
-                    {
-                      src: "/images/setup/create-a-rule-1.png",
-                      steps: [
-                        "Go to the Messages section by clicking Messages in the main menu",
-                        "Select Editor from the top menu (visible by default)",
-                        "Rename your rule here",
-                        "Use Editor blocks to match products and configure delivery messages",
-                        "The preview updates live as you make changes (may vary based on theme)",
-                        "Save your changes — auto-save triggers a few seconds after each edit",
-                        "Add a new rule or duplicate an existing one",
-                        "View rule priority order in the Rules panel",
-                      ],
-                    },
-                  ],
-                  onImageClick: setLightboxImage,
+                  footerNote: "Rules are added to the currently active profile.",
                   autoComplete: true,
                 }}
                 isExpanded={expandedStep === "create_rule"}
                 isComplete={hasRules}
                 onToggle={() => setExpandedStep(expandedStep === "create_rule" ? null : "create_rule")}
-                onAction={() => setShowRuleWizard(true)}
+                onAction={() => openRuleWizard()}
               />
             </div>
           </div>
@@ -1138,6 +1169,7 @@ export default function DashboardPage() {
             </div>
 
             {/* Progress indicator */}
+            {settingsStep <= settingsTotalSteps && (
             <div style={{ marginBottom: "24px" }}>
               <s-text variant="bodySm" tone="subdued">Step {settingsStep} of {settingsTotalSteps}</s-text>
               <div style={{ background: "#e5e7eb", borderRadius: "4px", height: "8px", marginTop: "8px" }}>
@@ -1152,10 +1184,214 @@ export default function DashboardPage() {
                 />
               </div>
             </div>
+            )}
 
             {/* Step Content */}
-            {/* Step 1: Business & Courier Days */}
+            {/* Step 1: Preview Timezone */}
             {settingsStep === 1 && (
+              <div>
+                <s-text variant="headingMd">Preview Timezone</s-text>
+                <s-box paddingBlockStart="base">
+                  <s-text tone="subdued">Match this to your Shopify store timezone so the preview matches your live storefront.</s-text>
+                </s-box>
+                <s-box paddingBlockStart="large">
+                  <label style={{ display: "block", marginBottom: "8px" }}>
+                    <s-text variant="bodySm">Timezone</s-text>
+                  </label>
+                  <select
+                    value={settingsData.preview_timezone}
+                    onChange={(e) => handleSettingsChange("preview_timezone", e.target.value)}
+                    style={{
+                      width: "75%",
+                      padding: "8px 12px",
+                      border: "1px solid #d1d5db",
+                      borderRadius: "6px",
+                      fontSize: "14px",
+                    }}
+                  >
+                    <option value="">Browser default</option>
+                    <optgroup label="UTC">
+                      <option value="UTC">UTC</option>
+                    </optgroup>
+                    <optgroup label="Europe">
+                      <option value="Europe/London">Europe/London (GMT+0/+1)</option>
+                      <option value="Europe/Dublin">Europe/Dublin (GMT+0/+1)</option>
+                      <option value="Europe/Paris">Europe/Paris (GMT+1/+2)</option>
+                      <option value="Europe/Berlin">Europe/Berlin (GMT+1/+2)</option>
+                      <option value="Europe/Amsterdam">Europe/Amsterdam (GMT+1/+2)</option>
+                      <option value="Europe/Madrid">Europe/Madrid (GMT+1/+2)</option>
+                      <option value="Europe/Rome">Europe/Rome (GMT+1/+2)</option>
+                      <option value="Europe/Stockholm">Europe/Stockholm (GMT+1/+2)</option>
+                      <option value="Europe/Helsinki">Europe/Helsinki (GMT+2/+3)</option>
+                      <option value="Europe/Athens">Europe/Athens (GMT+2/+3)</option>
+                      <option value="Europe/Moscow">Europe/Moscow (GMT+3)</option>
+                    </optgroup>
+                    <optgroup label="Americas">
+                      <option value="America/New_York">America/New_York (GMT-5/-4)</option>
+                      <option value="America/Chicago">America/Chicago (GMT-6/-5)</option>
+                      <option value="America/Denver">America/Denver (GMT-7/-6)</option>
+                      <option value="America/Los_Angeles">America/Los_Angeles (GMT-8/-7)</option>
+                      <option value="America/Toronto">America/Toronto (GMT-5/-4)</option>
+                      <option value="America/Vancouver">America/Vancouver (GMT-8/-7)</option>
+                      <option value="America/Sao_Paulo">America/Sao_Paulo (GMT-3)</option>
+                    </optgroup>
+                    <optgroup label="Asia / Pacific">
+                      <option value="Asia/Dubai">Asia/Dubai (GMT+4)</option>
+                      <option value="Asia/Kolkata">Asia/Kolkata (GMT+5:30)</option>
+                      <option value="Asia/Singapore">Asia/Singapore (GMT+8)</option>
+                      <option value="Asia/Tokyo">Asia/Tokyo (GMT+9)</option>
+                      <option value="Asia/Shanghai">Asia/Shanghai (GMT+8)</option>
+                      <option value="Asia/Hong_Kong">Asia/Hong_Kong (GMT+8)</option>
+                    </optgroup>
+                    <optgroup label="Oceania">
+                      <option value="Australia/Sydney">Australia/Sydney (GMT+10/+11)</option>
+                      <option value="Australia/Melbourne">Australia/Melbourne (GMT+10/+11)</option>
+                      <option value="Australia/Perth">Australia/Perth (GMT+8)</option>
+                      <option value="Pacific/Auckland">Pacific/Auckland (GMT+12/+13)</option>
+                    </optgroup>
+                    <optgroup label="Africa">
+                      <option value="Africa/Johannesburg">Africa/Johannesburg (GMT+2)</option>
+                      <option value="Africa/Lagos">Africa/Lagos (GMT+1)</option>
+                    </optgroup>
+                  </select>
+                </s-box>
+              </div>
+            )}
+
+            {/* Step 2: Delivery Windows */}
+            {settingsStep === 2 && (
+              <div>
+                <s-text variant="headingMd">Delivery Windows</s-text>
+                <s-box paddingBlockStart="base">
+                  <s-text tone="subdued">Set the estimated delivery timeframes for standard and express shipping.</s-text>
+                </s-box>
+
+                {/* Courier Delivery Window */}
+                <s-box paddingBlockStart="large">
+                  <label style={{ display: "block", marginBottom: "8px" }}>
+                    <s-text variant="bodySm">Courier Delivery Window</s-text>
+                  </label>
+                  <s-text variant="bodySm" tone="subdued" style={{ marginBottom: "8px" }}>
+                    Days from shipping to delivery (used by &#123;arrival&#125; and ETA Timeline)
+                  </s-text>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginTop: "8px" }}>
+                    <label>
+                      <s-text variant="bodySm">Min days</s-text>
+                      <input
+                        type="number"
+                        min="0"
+                        value={settingsData.courier_delivery_days_min}
+                        onChange={(e) => {
+                          const newMin = Math.max(0, parseInt(e.target.value) || 0);
+                          handleSettingsChange("courier_delivery_days_min", newMin);
+                          if (newMin > settingsData.courier_delivery_days_max) {
+                            handleSettingsChange("courier_delivery_days_max", newMin);
+                          }
+                        }}
+                        style={{
+                          width: "100%",
+                          padding: "6px 8px",
+                          border: "1px solid #d1d5db",
+                          borderRadius: "6px",
+                          fontSize: "13px",
+                          boxSizing: "border-box",
+                        }}
+                      />
+                    </label>
+                    <label>
+                      <s-text variant="bodySm">Max days</s-text>
+                      <input
+                        type="number"
+                        min="0"
+                        value={settingsData.courier_delivery_days_max}
+                        onChange={(e) => {
+                          const newMax = Math.max(0, parseInt(e.target.value) || 0);
+                          handleSettingsChange("courier_delivery_days_max", newMax);
+                          if (newMax < settingsData.courier_delivery_days_min) {
+                            handleSettingsChange("courier_delivery_days_min", newMax);
+                          }
+                        }}
+                        style={{
+                          width: "100%",
+                          padding: "6px 8px",
+                          border: "1px solid #d1d5db",
+                          borderRadius: "6px",
+                          fontSize: "13px",
+                          boxSizing: "border-box",
+                        }}
+                      />
+                    </label>
+                  </div>
+                </s-box>
+
+                {/* Express Delivery Window */}
+                <s-box paddingBlockStart="large">
+                  <label style={{ display: "block", marginBottom: "8px" }}>
+                    <s-text variant="bodySm">Express Delivery Window</s-text>
+                  </label>
+                  <s-text variant="bodySm" tone="subdued" style={{ marginBottom: "8px" }}>
+                    Days from shipping to express delivery (used by &#123;express&#125; placeholder)
+                  </s-text>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginTop: "8px" }}>
+                    <label>
+                      <s-text variant="bodySm">Min days</s-text>
+                      <input
+                        type="number"
+                        min="1"
+                        value={settingsData.express_delivery_days_min}
+                        onChange={(e) => {
+                          const newMin = Math.max(1, parseInt(e.target.value) || 1);
+                          handleSettingsChange("express_delivery_days_min", newMin);
+                          if (newMin > settingsData.express_delivery_days_max) {
+                            handleSettingsChange("express_delivery_days_max", newMin);
+                          }
+                        }}
+                        style={{
+                          width: "100%",
+                          padding: "6px 8px",
+                          border: "1px solid #d1d5db",
+                          borderRadius: "6px",
+                          fontSize: "13px",
+                          boxSizing: "border-box",
+                        }}
+                      />
+                    </label>
+                    <label>
+                      <s-text variant="bodySm">Max days</s-text>
+                      <input
+                        type="number"
+                        min="1"
+                        value={settingsData.express_delivery_days_max}
+                        onChange={(e) => {
+                          const newMax = Math.max(1, parseInt(e.target.value) || 1);
+                          handleSettingsChange("express_delivery_days_max", newMax);
+                          if (newMax < settingsData.express_delivery_days_min) {
+                            handleSettingsChange("express_delivery_days_min", newMax);
+                          }
+                        }}
+                        style={{
+                          width: "100%",
+                          padding: "6px 8px",
+                          border: "1px solid #d1d5db",
+                          borderRadius: "6px",
+                          fontSize: "13px",
+                          boxSizing: "border-box",
+                        }}
+                      />
+                    </label>
+                  </div>
+                </s-box>
+
+                {/* Info tooltip */}
+                <div style={{ display: "flex", alignItems: "flex-start", gap: 6, color: "var(--p-color-text-subdued, #6b7280)", marginTop: 16 }}>
+                  <span style={{ fontSize: 12, flexShrink: 0, lineHeight: "32px" }}>💡</span>
+                  <span style={{ fontSize: 12, lineHeight: "16px" }}>Set both min and max to the same value for a single date.<br />Can be configured in Settings, or set per-rule in the Editor.</span>
+                </div>
+              </div>
+            )}
+
+            {/* Step 3: Business & Courier Days */}
+            {settingsStep === 3 && (
               <div>
                 <s-text variant="headingMd">Business & Courier Days</s-text>
                 <s-box paddingBlockStart="base">
@@ -1217,17 +1453,15 @@ export default function DashboardPage() {
                 </s-box>
 
                 {/* Info tooltip */}
-                <div style={{ display: "flex", alignItems: "center", gap: "6px", marginTop: "16px" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 6, color: "var(--p-color-text-subdued, #6b7280)", marginTop: 16 }}>
                   <span style={{ fontSize: 12, flexShrink: 0 }}>💡</span>
-                  <s-text variant="bodySm" tone="subdued">
-                    These can be customized for individual rules in the Editor.
-                  </s-text>
+                  <span style={{ fontSize: 12 }}>Can be configured in Settings, or set per-rule in the Editor.</span>
                 </div>
               </div>
             )}
 
-            {/* Step 2: Cutoff Time */}
-            {settingsStep === 2 && (
+            {/* Step 4: Cutoff Time */}
+            {settingsStep === 4 && (
               <div>
                 <s-text variant="headingMd">Cutoff Time</s-text>
                 <s-box paddingBlockStart="base">
@@ -1251,18 +1485,51 @@ export default function DashboardPage() {
                   />
                 </s-box>
 
-                {/* Info note */}
-                <div style={{ display: "flex", alignItems: "center", gap: "6px", marginTop: "16px" }}>
-                  <span style={{ fontSize: 12, flexShrink: 0 }}>💡</span>
-                  <s-text variant="bodySm" tone="subdued">
-                    Different cutoff times for weekends can be configured in Settings, or set per-rule in the Editor.
-                  </s-text>
+                {/* Info tooltip */}
+                <div style={{ display: "flex", alignItems: "flex-start", gap: 6, color: "var(--p-color-text-subdued, #6b7280)", marginTop: 16 }}>
+                  <span style={{ fontSize: 12, flexShrink: 0, lineHeight: "32px" }}>💡</span>
+                  <span style={{ fontSize: 12, lineHeight: "16px" }}>Different cutoff times for weekends.<br />Can be configured in Settings, or set per-rule in the Editor.</span>
                 </div>
               </div>
             )}
 
-            {/* Step 3: Bank Holidays */}
-            {settingsStep === 3 && (
+            {/* Step 5: Lead Time */}
+            {settingsStep === 5 && (
+              <div>
+                <s-text variant="headingMd">Lead Time</s-text>
+                <s-box paddingBlockStart="base">
+                  <s-text tone="subdued">Add extra business days before dispatch to account for processing, handling, or manufacturing time.</s-text>
+                </s-box>
+                <s-box paddingBlockStart="large">
+                  <label style={{ display: "block", marginBottom: "8px" }}>
+                    <s-text variant="bodySm">Lead Time (business days)</s-text>
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    max="30"
+                    value={settingsData.lead_time}
+                    onChange={(e) => handleSettingsChange("lead_time", Math.max(0, Math.min(30, parseInt(e.target.value) || 0)))}
+                    style={{
+                      width: "75%",
+                      padding: "8px 12px",
+                      border: "1px solid #d1d5db",
+                      borderRadius: "6px",
+                      fontSize: "14px",
+                    }}
+                  />
+                </s-box>
+
+                {/* Info tooltip */}
+                <div style={{ display: "flex", alignItems: "flex-start", gap: 6, color: "var(--p-color-text-subdued, #6b7280)", marginTop: 16 }}>
+                  <span style={{ fontSize: 12, flexShrink: 0, lineHeight: "32px" }}>💡</span>
+                  <span style={{ fontSize: 12, lineHeight: "16px" }}>Use 0 for same-day dispatch (before cutoff).<br />Can be configured in Settings, or set per-rule in the Editor.</span>
+                </div>
+              </div>
+            )}
+
+            {/* Step 6: Bank Holidays */}
+            {settingsStep === 6 && (
               <div>
                 <s-text variant="headingMd">Bank Holidays</s-text>
                 <s-box paddingBlockStart="base">
@@ -1293,16 +1560,162 @@ export default function DashboardPage() {
                 </s-box>
 
                 {/* Info tooltip */}
-                <div style={{ display: "flex", alignItems: "center", gap: "6px", marginTop: "16px" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 6, color: "var(--p-color-text-subdued, #6b7280)", marginTop: 16 }}>
                   <span style={{ fontSize: 12, flexShrink: 0 }}>💡</span>
-                  <s-text variant="bodySm" tone="subdued">
-                    Additional custom holidays can be added in Settings.
-                  </s-text>
+                  <span style={{ fontSize: 12 }}>Additional custom holidays can be added in Settings.</span>
+                </div>
+              </div>
+            )}
+
+            {/* Step 7: Free Delivery Threshold */}
+            {settingsStep === 7 && (
+              <div>
+                <s-text variant="headingMd">Free Delivery Threshold</s-text>
+                <s-box paddingBlockStart="base">
+                  <s-text tone="subdued">Set the minimum order value for free delivery. This is used by the announcement bar and pricing displays.</s-text>
+                </s-box>
+                <s-box paddingBlockStart="large">
+                  <label style={{ display: "block", marginBottom: "8px" }}>
+                    <s-text variant="bodySm">Threshold Amount (£)</s-text>
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={(settingsData.fd_threshold || 0) / 100}
+                    onChange={(e) => handleSettingsChange("fd_threshold", Math.round(parseFloat(e.target.value || 0) * 100))}
+                    style={{
+                      width: "75%",
+                      padding: "8px 12px",
+                      border: "1px solid #d1d5db",
+                      borderRadius: "6px",
+                      fontSize: "14px",
+                    }}
+                  />
+                </s-box>
+
+                {/* Info tooltip */}
+                <div style={{ display: "flex", alignItems: "flex-start", gap: 6, color: "var(--p-color-text-subdued, #6b7280)", marginTop: 16 }}>
+                  <span style={{ fontSize: 12, flexShrink: 0, lineHeight: "32px" }}>💡</span>
+                  <span style={{ fontSize: 12, lineHeight: "16px" }}>Set to 0 to disable free delivery threshold features.<br />Can be configured in Free Delivery.</span>
+                </div>
+              </div>
+            )}
+
+            {/* Step 8: Theme Styling for Preview */}
+            {settingsStep === 8 && (
+              <div>
+                <s-text variant="headingMd">Theme Styling for Preview</s-text>
+                <s-box paddingBlockStart="base">
+                  <s-text tone="subdued">Match the admin preview to your Shopify theme so you can see how your blocks will look on your storefront.</s-text>
+                </s-box>
+                <s-box paddingBlockStart="large">
+                  <label style={{ display: "block", marginBottom: "8px" }}>
+                    <s-text variant="bodySm">Store Font</s-text>
+                  </label>
+                  <FontSelector
+                    value={settingsData.preview_body_font}
+                    onChange={(font) => handleSettingsChange("preview_body_font", font)}
+                    placeholder="Search fonts..."
+                  />
+                </s-box>
+                <s-box paddingBlockStart="large">
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                    <div>
+                      <label style={{ display: "block", marginBottom: "8px" }}>
+                        <s-text variant="bodySm">Theme Font Colour</s-text>
+                      </label>
+                      <ColorPicker
+                        color={settingsData.preview_text_color}
+                        onChange={(color) => handleSettingsChange("preview_text_color", color)}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ display: "block", marginBottom: "8px" }}>
+                        <s-text variant="bodySm">Theme Background Colour</s-text>
+                      </label>
+                      <ColorPicker
+                        color={settingsData.preview_bg_color}
+                        onChange={(color) => handleSettingsChange("preview_bg_color", color)}
+                      />
+                    </div>
+                  </div>
+                </s-box>
+                <s-box paddingBlockStart="large">
+                  <label style={{ display: "block", marginBottom: "8px" }}>
+                    <s-text variant="bodySm">Main Theme Colour</s-text>
+                  </label>
+                  <ColorPicker
+                    color={settingsData.main_icon_color}
+                    onChange={(color) => handleSettingsChange("main_icon_color", color)}
+                  />
+                  <div style={{ display: "flex", alignItems: "flex-start", gap: 6, color: "var(--p-color-text-subdued, #6b7280)", marginTop: 8 }}>
+                    <span style={{ fontSize: 12, flexShrink: 0, lineHeight: "32px" }}>💡</span>
+                    <span style={{ fontSize: 12, lineHeight: "16px" }}>Applied to message icons, ETA timeline stages, connector, and special delivery icons.<br />Can be configured in Editor.</span>
+                  </div>
+                </s-box>
+              </div>
+            )}
+
+            {/* Success Screen */}
+            {settingsStep === settingsTotalSteps + 1 && (
+              <div style={{ textAlign: "center", padding: "16px 0" }}>
+                <div style={{ width: 48, height: 48, borderRadius: "50%", background: "#16a34a", display: "inline-flex", alignItems: "center", justifyContent: "center", marginBottom: 16 }}>
+                  <svg width="28" height="28" viewBox="0 0 14 14" fill="none">
+                    <path d="M2.5 7L5.5 10L11.5 4" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                </div>
+                <div style={{ fontSize: 20, fontWeight: 600, color: "#111827", marginBottom: 8 }}>Settings Saved</div>
+                <div style={{ fontSize: 14, color: "#6b7280" }}>Your store settings have been saved successfully.</div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 20 }}>
+                  <button
+                    onClick={() => { setShowSettingsWizard(false); setSettingsStep(1); }}
+                    style={{
+                      padding: "10px 16px",
+                      background: "white",
+                      border: "1px solid #d1d5db",
+                      borderRadius: 6,
+                      fontSize: 14,
+                      cursor: "pointer",
+                      color: "#111827",
+                    }}
+                  >
+                    Back to Dashboard
+                  </button>
+                  <button
+                    onClick={() => { setShowSettingsWizard(false); setSettingsStep(1); openRuleWizard(); }}
+                    style={{
+                      padding: "10px 16px",
+                      background: "white",
+                      border: "1px solid #d1d5db",
+                      borderRadius: 6,
+                      fontSize: 14,
+                      cursor: "pointer",
+                      color: "#111827",
+                    }}
+                  >
+                    Create a Messages Rule
+                  </button>
+                  <button
+                    onClick={() => { setShowSettingsWizard(false); setSettingsStep(1); navigate("/app/messages"); }}
+                    style={{
+                      padding: "10px 16px",
+                      background: "white",
+                      border: "1px solid #d1d5db",
+                      borderRadius: 6,
+                      fontSize: 14,
+                      cursor: "pointer",
+                      color: "#111827",
+                    }}
+                  >
+                    Go to Messages Editor
+                  </button>
                 </div>
               </div>
             )}
 
             {/* Navigation buttons */}
+            {settingsStep <= settingsTotalSteps && (
             <div style={{ display: "flex", justifyContent: "space-between", marginTop: "24px", paddingTop: "16px", borderTop: "1px solid #e5e7eb" }}>
               <s-button
                 onClick={() => setSettingsStep(prev => prev - 1)}
@@ -1324,6 +1737,7 @@ export default function DashboardPage() {
                 </s-button>
               )}
             </div>
+            )}
           </div>
         </div>
       )}
@@ -1364,6 +1778,7 @@ export default function DashboardPage() {
             </div>
 
             {/* Progress indicator */}
+            {ruleStep <= ruleTotalSteps && (
             <div style={{ marginBottom: "24px" }}>
               <s-text variant="bodySm" tone="subdued">Step {ruleStep} of {ruleTotalSteps}</s-text>
               <div style={{ background: "#e5e7eb", borderRadius: "4px", height: "8px", marginTop: "8px" }}>
@@ -1378,6 +1793,7 @@ export default function DashboardPage() {
                 />
               </div>
             </div>
+            )}
 
             {/* Step 1: Rule Name */}
             {ruleStep === 1 && (
@@ -1410,11 +1826,9 @@ export default function DashboardPage() {
                 </s-box>
 
                 {/* Info tooltip */}
-                <div style={{ display: "flex", alignItems: "center", gap: "6px", marginTop: "16px" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 6, color: "var(--p-color-text-subdued, #6b7280)", marginTop: 16 }}>
                   <span style={{ fontSize: 12, flexShrink: 0 }}>💡</span>
-                  <s-text variant="bodySm" tone="subdued">
-                    You can change this anytime in the Editor.
-                  </s-text>
+                  <span style={{ fontSize: 12 }}>You can change this anytime in the Messages Editor.</span>
                 </div>
               </div>
             )}
@@ -1472,11 +1886,9 @@ export default function DashboardPage() {
                 </s-box>
 
                 {/* Info tooltip */}
-                <div style={{ display: "flex", alignItems: "center", gap: "6px", marginTop: "16px" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 6, color: "var(--p-color-text-subdued, #6b7280)", marginTop: 16 }}>
                   <span style={{ fontSize: 12, flexShrink: 0 }}>💡</span>
-                  <s-text variant="bodySm" tone="subdued">
-                    Leave tags empty to create a fallback rule that matches all products.
-                  </s-text>
+                  <span style={{ fontSize: 12 }}>Leave tags empty to create a fallback rule that matches all products.</span>
                 </div>
               </div>
             )}
@@ -1506,6 +1918,7 @@ export default function DashboardPage() {
                       border: "1px solid #d1d5db",
                       borderRadius: "6px",
                       fontSize: "14px",
+                      boxSizing: "border-box",
                     }}
                   />
                   <MessagePreview text={ruleData.message_line_1} />
@@ -1526,17 +1939,16 @@ export default function DashboardPage() {
                       border: "1px solid #d1d5db",
                       borderRadius: "6px",
                       fontSize: "14px",
+                      boxSizing: "border-box",
                     }}
                   />
                   <MessagePreview text={ruleData.message_line_2} />
                 </s-box>
 
                 {/* Info tooltip */}
-                <div style={{ display: "flex", alignItems: "center", gap: "6px", marginTop: "16px" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 6, color: "var(--p-color-text-subdued, #6b7280)", marginTop: 16 }}>
                   <span style={{ fontSize: 12, flexShrink: 0 }}>💡</span>
-                  <s-text variant="bodySm" tone="subdued">
-                    Use {"{countdown}"} for live timer, {"{arrival}"} for delivery date, {"{express}"} for next-day date, **text** for bold.
-                  </s-text>
+                  <span style={{ fontSize: 12 }}>Use {"{countdown}"} for live timer, {"{arrival}"} for delivery date, {"{express}"} for next-day date, **text** for bold.</span>
                 </div>
               </div>
             )}
@@ -1613,65 +2025,112 @@ export default function DashboardPage() {
                 </s-box>
 
                 {/* Info tooltip */}
-                <div style={{ display: "flex", alignItems: "center", gap: "6px", marginTop: "16px" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 6, color: "var(--p-color-text-subdued, #6b7280)", marginTop: 16 }}>
                   <span style={{ fontSize: 12, flexShrink: 0 }}>💡</span>
-                  <s-text variant="bodySm" tone="subdued">
-                    This color will also be used for the ETA timeline icons and connectors.
-                  </s-text>
+                  <span style={{ fontSize: 12 }}>This color will also be used for ETA timeline icons and connectors.</span>
                 </div>
               </div>
             )}
 
-            {/* Step 5: ETA Timeline */}
+            {/* Step 5: ETA Timeline Icons */}
             {ruleStep === 5 && (
               <div>
-                <s-text variant="headingMd">ETA Timeline</s-text>
+                <s-text variant="headingMd">ETA Timeline Icons</s-text>
                 <s-box paddingBlockStart="base">
                   <s-text tone="subdued">
-                    Configure the delivery timeline that shows order → shipped → delivered stages.
+                    Choose icons for each stage of the delivery timeline and a connector style.
                   </s-text>
                 </s-box>
 
-                {/* Delivery Days - Side by Side */}
+                {/* Icon + Connector Preview */}
                 <s-box paddingBlockStart="large">
-                  <div style={{ display: "flex", gap: "24px" }}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 12, padding: "16px", background: "#f9fafb", borderRadius: 8, border: "1px solid #e5e7eb" }}>
+                    <WizardStageIcon icon={ruleData.eta_order_icon} color={ruleData.icon_color} />
+                    <WizardConnector style={ruleData.eta_connector_style} color={ruleData.icon_color} />
+                    <WizardStageIcon icon={ruleData.eta_shipping_icon} color={ruleData.icon_color} />
+                    <WizardConnector style={ruleData.eta_connector_style} color={ruleData.icon_color} />
+                    <WizardStageIcon icon={ruleData.eta_delivery_icon} color={ruleData.icon_color} />
+                  </div>
+                </s-box>
+
+                {/* Stage Icons */}
+                <s-box paddingBlockStart="large">
+                  <div style={{ display: "flex", gap: "16px" }}>
                     <label style={{ flex: 1 }}>
-                      <s-text variant="bodySm">Min days (after shipping)</s-text>
-                      <input
-                        type="number"
-                        min="1"
-                        max="30"
-                        value={ruleData.eta_delivery_days_min}
-                        onChange={(e) => handleRuleChange("eta_delivery_days_min", parseInt(e.target.value) || 1)}
-                        style={{
-                          width: "75%",
-                          marginTop: "8px",
-                          padding: "8px 12px",
-                          border: "1px solid #d1d5db",
-                          borderRadius: "6px",
-                          fontSize: "14px",
-                        }}
-                      />
+                      <s-text variant="bodySm">Ordered</s-text>
+                      <select
+                        value={ruleData.eta_order_icon}
+                        onChange={(e) => handleRuleChange("eta_order_icon", e.target.value)}
+                        style={{ width: "100%", marginTop: 8, padding: "8px 12px", border: "1px solid #d1d5db", borderRadius: 6, fontSize: 14 }}
+                      >
+                        <option value="none">None</option>
+                        {WIZARD_ICON_OPTIONS.map(opt => (
+                          <option key={opt.value} value={opt.value}>{opt.label}</option>
+                        ))}
+                      </select>
                     </label>
                     <label style={{ flex: 1 }}>
-                      <s-text variant="bodySm">Max days (after shipping)</s-text>
-                      <input
-                        type="number"
-                        min="1"
-                        max="30"
-                        value={ruleData.eta_delivery_days_max}
-                        onChange={(e) => handleRuleChange("eta_delivery_days_max", parseInt(e.target.value) || 1)}
-                        style={{
-                          width: "75%",
-                          marginTop: "8px",
-                          padding: "8px 12px",
-                          border: "1px solid #d1d5db",
-                          borderRadius: "6px",
-                          fontSize: "14px",
-                        }}
-                      />
+                      <s-text variant="bodySm">Shipped</s-text>
+                      <select
+                        value={ruleData.eta_shipping_icon}
+                        onChange={(e) => handleRuleChange("eta_shipping_icon", e.target.value)}
+                        style={{ width: "100%", marginTop: 8, padding: "8px 12px", border: "1px solid #d1d5db", borderRadius: 6, fontSize: 14 }}
+                      >
+                        <option value="none">None</option>
+                        {WIZARD_ICON_OPTIONS.map(opt => (
+                          <option key={opt.value} value={opt.value}>{opt.label}</option>
+                        ))}
+                      </select>
+                    </label>
+                    <label style={{ flex: 1 }}>
+                      <s-text variant="bodySm">Delivered</s-text>
+                      <select
+                        value={ruleData.eta_delivery_icon}
+                        onChange={(e) => handleRuleChange("eta_delivery_icon", e.target.value)}
+                        style={{ width: "100%", marginTop: 8, padding: "8px 12px", border: "1px solid #d1d5db", borderRadius: 6, fontSize: 14 }}
+                      >
+                        <option value="none">None</option>
+                        {WIZARD_ICON_OPTIONS.map(opt => (
+                          <option key={opt.value} value={opt.value}>{opt.label}</option>
+                        ))}
+                      </select>
                     </label>
                   </div>
+                </s-box>
+
+                {/* Connector Style */}
+                <s-box paddingBlockStart="large">
+                  <label>
+                    <s-text variant="bodySm">Connector style</s-text>
+                    <select
+                      value={ruleData.eta_connector_style}
+                      onChange={(e) => handleRuleChange("eta_connector_style", e.target.value)}
+                      style={{ width: "75%", marginTop: 8, padding: "8px 12px", border: "1px solid #d1d5db", borderRadius: 6, fontSize: 14, display: "block" }}
+                    >
+                      <option value="double-chevron">Chevrons</option>
+                      <option value="big-arrow">Arrow</option>
+                      <option value="line">Line</option>
+                      <option value="arrow-dot">Line dot</option>
+                    </select>
+                  </label>
+                </s-box>
+
+                {/* Info tooltip */}
+                <div style={{ display: "flex", alignItems: "center", gap: 6, color: "var(--p-color-text-subdued, #6b7280)", marginTop: 16 }}>
+                  <span style={{ fontSize: 12, flexShrink: 0 }}>💡</span>
+                  <span style={{ fontSize: 12 }}>Icons use the main icon color from Step 4. Can be configured in the Messages Editor.</span>
+                </div>
+              </div>
+            )}
+
+            {/* Step 6: Border Styling */}
+            {ruleStep === 6 && (
+              <div>
+                <s-text variant="headingMd">Border & Background Styling</s-text>
+                <s-box paddingBlockStart="base">
+                  <s-text tone="subdued">
+                    Set the border and background for Messages, ETA Timeline, and Special Delivery blocks.
+                  </s-text>
                 </s-box>
 
                 {/* Border Settings - Side by Side */}
@@ -1685,14 +2144,7 @@ export default function DashboardPage() {
                         max="10"
                         value={ruleData.eta_border_width}
                         onChange={(e) => handleRuleChange("eta_border_width", parseInt(e.target.value) || 0)}
-                        style={{
-                          width: "75%",
-                          marginTop: "8px",
-                          padding: "8px 12px",
-                          border: "1px solid #d1d5db",
-                          borderRadius: "6px",
-                          fontSize: "14px",
-                        }}
+                        style={{ width: "75%", marginTop: 8, padding: "8px 12px", border: "1px solid #d1d5db", borderRadius: 6, fontSize: 14 }}
                       />
                     </label>
                     <label style={{ flex: 1 }}>
@@ -1703,49 +2155,136 @@ export default function DashboardPage() {
                         max="24"
                         value={ruleData.eta_border_radius}
                         onChange={(e) => handleRuleChange("eta_border_radius", parseInt(e.target.value) || 0)}
-                        style={{
-                          width: "75%",
-                          marginTop: "8px",
-                          padding: "8px 12px",
-                          border: "1px solid #d1d5db",
-                          borderRadius: "6px",
-                          fontSize: "14px",
-                        }}
+                        style={{ width: "75%", marginTop: 8, padding: "8px 12px", border: "1px solid #d1d5db", borderRadius: 6, fontSize: 14 }}
                       />
                     </label>
                   </div>
                 </s-box>
 
-                {/* Border Color */}
+                {/* Border Color & Background Color */}
                 <s-box paddingBlockStart="large">
-                  <div>
-                    <s-text size="small">Border color</s-text>
-                    <div style={{ marginTop: 4 }}>
-                      <ColorPicker
-                        color={ruleData.eta_border_color || "#e5e7eb"}
-                        onChange={(color) => handleRuleChange("eta_border_color", color)}
-                      />
+                  <div style={{ display: "flex", gap: 24 }}>
+                    <div>
+                      <s-text size="small">Border color</s-text>
+                      <div style={{ marginTop: 4 }}>
+                        <ColorPicker
+                          color={ruleData.eta_border_color || "#e5e7eb"}
+                          onChange={(color) => handleRuleChange("eta_border_color", color)}
+                        />
+                      </div>
+                    </div>
+                    <div style={{ display: "flex", alignItems: "flex-end", gap: 8 }}>
+                      <div>
+                        <s-text size="small">Background color</s-text>
+                        <div style={{ marginTop: 4 }}>
+                          <ColorPicker
+                            color={ruleData.background_color || ""}
+                            onChange={(color) => handleRuleChange("background_color", color)}
+                          />
+                        </div>
+                      </div>
+                      {ruleData.background_color && (
+                        <button
+                          type="button"
+                          onClick={() => handleRuleChange("background_color", "")}
+                          style={{
+                            padding: "6px 10px",
+                            fontSize: 12,
+                            border: "1px solid #d1d5db",
+                            borderRadius: 4,
+                            background: "white",
+                            cursor: "pointer",
+                            marginBottom: 4,
+                          }}
+                        >
+                          Clear
+                        </button>
+                      )}
                     </div>
                   </div>
                 </s-box>
 
-                {/* Info tooltips */}
-                <div style={{ display: "flex", alignItems: "center", gap: "6px", marginTop: "16px" }}>
+                {/* Info tooltip */}
+                <div style={{ display: "flex", alignItems: "center", gap: 6, color: "var(--p-color-text-subdued, #6b7280)", marginTop: 16 }}>
                   <span style={{ fontSize: 12, flexShrink: 0 }}>💡</span>
-                  <s-text variant="bodySm" tone="subdued">
-                    Set border thickness to 0 for no border.
-                  </s-text>
+                  <span style={{ fontSize: 12 }}>Set border thickness to 0 for no border. These settings apply to Messages, ETA Timeline, and Special Delivery blocks.</span>
                 </div>
-                <div style={{ display: "flex", alignItems: "center", gap: "6px", marginTop: "8px" }}>
-                  <span style={{ fontSize: 12, flexShrink: 0 }}>💡</span>
-                  <s-text variant="bodySm" tone="subdued">
-                    Message block border will match these settings (can be changed later in the Editor).
-                  </s-text>
+
+                {/* Apply globally or per-rule */}
+                <s-box paddingBlockStart="large">
+                  <s-text variant="bodySm" style={{ marginBottom: 8, display: "block" }}>How should these border settings be applied?</s-text>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 8 }}>
+                    <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }}>
+                      <input
+                        type="radio"
+                        name="border_scope"
+                        checked={ruleData.border_apply_global}
+                        onChange={() => handleRuleChange("border_apply_global", true)}
+                        style={{ width: 16, height: 16, cursor: "pointer" }}
+                      />
+                      <span style={{ fontSize: 13 }}>Apply as default for all rules <span style={{ color: "#6b7280" }}>(saves to Global Settings)</span></span>
+                    </label>
+                    <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }}>
+                      <input
+                        type="radio"
+                        name="border_scope"
+                        checked={!ruleData.border_apply_global}
+                        onChange={() => handleRuleChange("border_apply_global", false)}
+                        style={{ width: 16, height: 16, cursor: "pointer" }}
+                      />
+                      <span style={{ fontSize: 13 }}>Apply as per-rule override <span style={{ color: "#6b7280" }}>(this rule only)</span></span>
+                    </label>
+                  </div>
+                </s-box>
+
+              </div>
+            )}
+
+            {/* Success Screen */}
+            {ruleStep === ruleTotalSteps + 1 && (
+              <div style={{ textAlign: "center", padding: "16px 0" }}>
+                <div style={{ width: 48, height: 48, borderRadius: "50%", background: "#16a34a", display: "inline-flex", alignItems: "center", justifyContent: "center", marginBottom: 16 }}>
+                  <svg width="28" height="28" viewBox="0 0 14 14" fill="none">
+                    <path d="M2.5 7L5.5 10L11.5 4" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                </div>
+                <div style={{ fontSize: 20, fontWeight: 600, color: "#111827", marginBottom: 8 }}>Rule Saved</div>
+                <div style={{ fontSize: 14, color: "#6b7280" }}>Your rule has been created successfully.</div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 20 }}>
+                  <button
+                    onClick={() => { if (createdRuleId) sessionStorage.setItem("dib_select_rule", createdRuleId); setShowRuleWizard(false); setRuleStep(1); navigate("/app/messages"); }}
+                    style={{
+                      padding: "10px 16px",
+                      background: "white",
+                      border: "1px solid #d1d5db",
+                      borderRadius: 6,
+                      fontSize: 14,
+                      cursor: "pointer",
+                      color: "#111827",
+                    }}
+                  >
+                    Go to Messages Editor
+                  </button>
+                  <button
+                    onClick={() => { setShowRuleWizard(false); setRuleStep(1); }}
+                    style={{
+                      padding: "10px 16px",
+                      background: "white",
+                      border: "1px solid #d1d5db",
+                      borderRadius: 6,
+                      fontSize: 14,
+                      cursor: "pointer",
+                      color: "#111827",
+                    }}
+                  >
+                    Back to Dashboard
+                  </button>
                 </div>
               </div>
             )}
 
             {/* Navigation buttons */}
+            {ruleStep <= ruleTotalSteps && (
             <div style={{ display: "flex", justifyContent: "space-between", marginTop: "24px", paddingTop: "16px", borderTop: "1px solid #e5e7eb" }}>
               <s-button
                 onClick={() => setRuleStep(prev => prev - 1)}
@@ -1767,6 +2306,7 @@ export default function DashboardPage() {
                 </s-button>
               )}
             </div>
+            )}
           </div>
         </div>
       )}
@@ -1803,18 +2343,40 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* Already have rules? */}
-      {hasRules && (
-        <s-section>
-          <s-box padding="base" background="success-subdued" borderRadius="base">
-            <s-text>
-              You already have rules set up! Visit the{" "}
-              <s-link href="/app/messages">Editor</s-link>
-              {" "}to manage them.
-            </s-text>
-          </s-box>
-        </s-section>
-      )}
+      {/* Contact Support */}
+      <s-section>
+        <div
+          style={{
+            background: "white",
+            border: "1px solid #e5e7eb",
+            borderRadius: 12,
+            padding: "20px",
+            textAlign: "center",
+          }}
+        >
+          <h3 style={{ margin: "0 0 4px 0", fontSize: 16, fontWeight: 600, color: "#111827" }}>Need help?</h3>
+          <p style={{ margin: "0 0 12px 0", fontSize: 14, color: "#6b7280" }}>
+            Get in touch with our support team
+          </p>
+          <a
+            href="mailto:support@delivery-messaging.app"
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              padding: "8px 16px",
+              background: "#2563eb",
+              color: "white",
+              borderRadius: 6,
+              fontSize: 14,
+              fontWeight: 500,
+              textDecoration: "none",
+              gap: 6,
+            }}
+          >
+            ✉ Contact Support
+          </a>
+        </div>
+      </s-section>
     </s-page>
   );
 }

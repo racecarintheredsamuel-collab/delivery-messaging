@@ -8,6 +8,7 @@ import { boundary } from "@shopify/shopify-app-react-router/server";
 import { authenticate } from "../shopify.server";
 import { safeLogError, friendlyError, validateSettings } from "../utils/validation";
 import { getIconSvg, PRESET_ICONS } from "../utils/icons";
+import { HelpLink } from "../components/HelpLink";
 import {
   GET_SHOP_DELIVERY_DATA,
   GET_SHOP_ID,
@@ -509,11 +510,14 @@ export default function IconsPage() {
             background: "var(--p-color-bg-surface, #ffffff)",
           }}
         >
-          <div>
-            <s-heading>Custom SVG Icons (Recommended)</s-heading>
-            <s-text size="small" style={{ color: "var(--p-color-text-subdued, #6b7280)", marginTop: 4, display: "block" }}>
-              Paste SVG code directly. These icons will inherit the icon color setting from each rule.
-            </s-text>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <div>
+              <s-heading>Custom SVG Icons (Recommended)</s-heading>
+              <s-text size="small" style={{ color: "var(--p-color-text-subdued, #6b7280)", marginTop: 4, display: "block" }}>
+                Paste SVG code directly. These icons will inherit the icon color setting from each rule.
+              </s-text>
+            </div>
+            <HelpLink anchor="icons" />
           </div>
 
           {[0, 1, 2, 3].map((index) => (

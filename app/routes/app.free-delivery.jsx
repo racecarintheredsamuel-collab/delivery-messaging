@@ -8,6 +8,7 @@ import { authenticate } from "../shopify.server";
 import { safeLogError, validateSettings } from "../utils/validation";
 import { generateIconsMetafield, getIconSvg, getConfiguredUtilityIcons, getUtilityIconSvg } from "../utils/icons";
 import { ChevronDownIcon, ChevronRightIcon } from "../components/icons/ChevronIcons";
+import { HelpLink } from "../components/HelpLink";
 import { FontSelector } from "../components/FontSelector";
 import { ColorPicker } from "../components/ColorPicker";
 import {
@@ -868,6 +869,7 @@ export default function FreeDeliveryPage() {
                   }}
                 >
                   <s-text style={{ fontWeight: 600 }}>Pricing Displays</s-text>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                   {pricingConfigs.length > 0 && (
                     <div style={{ display: "flex", gap: 8 }}>
                       <s-button
@@ -899,6 +901,8 @@ export default function FreeDeliveryPage() {
                       </s-button>
                     </div>
                   )}
+                  <HelpLink anchor="pricing-displays" />
+                  </div>
                 </div>
                 {/* Content */}
                 <div style={{ padding: "16px", display: "grid", gap: 16 }}>
@@ -1451,7 +1455,7 @@ export default function FreeDeliveryPage() {
                                   )}
                                   <div style={{ display: "flex", alignItems: "center", gap: 6, color: "var(--p-color-text-subdued, #6b7280)", marginTop: 4 }}>
                                     <span style={{ fontSize: 12, flexShrink: 0 }}>💡</span>
-                                    <span style={{ fontSize: 12 }}>Displays in place of pricing line when free delivery threshold is met</span>
+                                    <span style={{ fontSize: 12 }}>Displays in place of pricing line when free delivery threshold is met. Leave blank for default message.</span>
                                   </div>
                                 </div>
 
@@ -1469,7 +1473,7 @@ export default function FreeDeliveryPage() {
                                             : c
                                         ));
                                       }}
-                                      placeholder="Checking delivery rates... (default)"
+                                      placeholder="Checking delivery rates..."
                                       style={{ width: "100%", marginTop: 4 }}
                                       maxLength={100}
                                     />
@@ -1672,14 +1676,17 @@ export default function FreeDeliveryPage() {
               }}
             >
               <s-text style={{ fontWeight: 600 }}>Announcement Bar</s-text>
-              <label style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                <s-text size="small">{settings.fd_show_announcement_bar ? "Enabled" : "Disabled"}</s-text>
-                <input
-                  type="checkbox"
-                  checked={settings.fd_show_announcement_bar || false}
-                  onChange={(e) => setSettings({ ...settings, fd_show_announcement_bar: e.target.checked })}
-                />
-              </label>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <label style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  <s-text size="small">{settings.fd_show_announcement_bar ? "Enabled" : "Disabled"}</s-text>
+                  <input
+                    type="checkbox"
+                    checked={settings.fd_show_announcement_bar || false}
+                    onChange={(e) => setSettings({ ...settings, fd_show_announcement_bar: e.target.checked })}
+                  />
+                </label>
+                <HelpLink anchor="announcement-bar" />
+              </div>
             </div>
 
             {/* Content */}
@@ -1729,6 +1736,10 @@ export default function FreeDeliveryPage() {
                       placeholder="Spend {remaining} more for free delivery"
                       style={{ width: "100%" }}
                     />
+                    <div style={{ display: "flex", alignItems: "center", gap: 6, color: "var(--p-color-text-subdued, #6b7280)", marginTop: 4 }}>
+                      <span style={{ fontSize: 12, flexShrink: 0 }}>💡</span>
+                      <span style={{ fontSize: 12 }}>Leave blank for default message.</span>
+                    </div>
                   </label>
                   <label style={{ display: "block" }}>
                     <s-text>Timer</s-text>
@@ -1756,6 +1767,10 @@ export default function FreeDeliveryPage() {
                       placeholder="You've unlocked free delivery!"
                       style={{ width: "100%" }}
                     />
+                    <div style={{ display: "flex", alignItems: "center", gap: 6, color: "var(--p-color-text-subdued, #6b7280)", marginTop: 4 }}>
+                      <span style={{ fontSize: 12, flexShrink: 0 }}>💡</span>
+                      <span style={{ fontSize: 12 }}>Leave blank for default message.</span>
+                    </div>
                   </label>
                   <label style={{ display: "block" }}>
                     <s-text>Timer</s-text>
@@ -1780,7 +1795,7 @@ export default function FreeDeliveryPage() {
                       type="text"
                       value={settings.fd_announcement_empty_message || ""}
                       onChange={(e) => setSettings({ ...settings, fd_announcement_empty_message: e.target.value })}
-                      placeholder="Free delivery on orders over £50"
+                      placeholder="Free delivery on orders over {threshold}"
                       style={{ width: "100%" }}
                     />
                   </label>
@@ -1799,7 +1814,7 @@ export default function FreeDeliveryPage() {
                   </label>
                 </div>
                 <div style={{ display: "flex", alignItems: "center", gap: 6, color: "var(--p-color-text-subdued, #6b7280)", marginTop: -8 }}>
-                  <span style={{ fontSize: 12, flexShrink: 0 }}>📝</span>
+                  <span style={{ fontSize: 12, flexShrink: 0 }}>💡</span>
                   <span style={{ fontSize: 12 }}>Defaults to "Free delivery on orders over {"{threshold}"}" if blank and no additional messages</span>
                 </div>
                 </>
@@ -2014,7 +2029,7 @@ export default function FreeDeliveryPage() {
                       type="text"
                       value={settings.fd_utility_left_label || ""}
                       onChange={(e) => setSettings({ ...settings, fd_utility_left_label: e.target.value.slice(0, 30) })}
-                      placeholder="e.g. Call us"
+                      placeholder="Call us"
                       maxLength={30}
                       style={{ width: "100%" }}
                     />
@@ -2026,7 +2041,7 @@ export default function FreeDeliveryPage() {
                     type="text"
                     value={settings.fd_utility_left_url || ""}
                     onChange={(e) => setSettings({ ...settings, fd_utility_left_url: e.target.value })}
-                    placeholder="/pages/contact, tel:, mailto:"
+                    placeholder="tel:01234567890"
                     style={{ width: "100%" }}
                   />
                   {settings.fd_utility_left_url && !/^(\/|tel:|mailto:)/i.test(settings.fd_utility_left_url) && (
@@ -2091,7 +2106,7 @@ export default function FreeDeliveryPage() {
                       type="text"
                       value={settings.fd_utility_right_label || ""}
                       onChange={(e) => setSettings({ ...settings, fd_utility_right_label: e.target.value.slice(0, 30) })}
-                      placeholder="e.g. Track"
+                      placeholder="Email us"
                       maxLength={30}
                       style={{ width: "100%" }}
                     />
@@ -2103,7 +2118,7 @@ export default function FreeDeliveryPage() {
                     type="text"
                     value={settings.fd_utility_right_url || ""}
                     onChange={(e) => setSettings({ ...settings, fd_utility_right_url: e.target.value })}
-                    placeholder="/pages/tracking, tel:, mailto:"
+                    placeholder="mailto:example@example.com"
                     style={{ width: "100%" }}
                   />
                   {settings.fd_utility_right_url && !/^(\/|tel:|mailto:)/i.test(settings.fd_utility_right_url) && (
@@ -2476,10 +2491,6 @@ export default function FreeDeliveryPage() {
                   <s-text size="small" style={{ color: "var(--p-color-text-subdued, #6b7280)" }}>
                     Show different messages for specific product types. Use unique tags/handles per rule.
                   </s-text>
-                  <div style={{ display: "flex", alignItems: "center", gap: 6, color: "var(--p-color-text-subdued, #6b7280)", marginTop: -4 }}>
-                    <span style={{ fontSize: 12, flexShrink: 0 }}>📝</span>
-                    <span style={{ fontSize: 12 }}>Leave messages blank to use default: "Some items in your cart aren't eligible for free delivery"</span>
-                  </div>
 
                   {/* Exclusion Rules List */}
                   {exclusionRules.map((rule, index) => {
@@ -2545,7 +2556,7 @@ export default function FreeDeliveryPage() {
                                   const tags = e.target.value.split(",").map(s => s.trim()).filter(Boolean);
                                   setExclusionRules(prev => prev.map(r => r.id === rule.id ? { ...r, tags } : r));
                                 }}
-                                placeholder="e.g., bulky, oversized"
+                                placeholder=""
                                 style={{ width: "100%" }}
                               />
                             </label>
@@ -2559,7 +2570,7 @@ export default function FreeDeliveryPage() {
                                   const handles = e.target.value.split(",").map(s => s.trim()).filter(Boolean);
                                   setExclusionRules(prev => prev.map(r => r.id === rule.id ? { ...r, handles } : r));
                                 }}
-                                placeholder="e.g., large-pond-kit"
+                                placeholder=""
                                 style={{ width: "100%" }}
                               />
                             </label>
@@ -2573,9 +2584,13 @@ export default function FreeDeliveryPage() {
                                   onChange={(e) => {
                                     setExclusionRules(prev => prev.map(r => r.id === rule.id ? { ...r, announcement_message: e.target.value } : r));
                                   }}
-                                  placeholder="Leave blank for default message"
+                                  placeholder="Some items in your cart aren't eligible for free delivery"
                                   style={{ width: "100%" }}
                                 />
+                                <div style={{ display: "flex", alignItems: "center", gap: 6, color: "var(--p-color-text-subdued, #6b7280)", marginTop: 4 }}>
+                                  <span style={{ fontSize: 12, flexShrink: 0 }}>💡</span>
+                                  <span style={{ fontSize: 12 }}>Leave announcement message blank for default message.</span>
+                                </div>
                               </label>
                               <label style={{ display: "block" }}>
                                 <s-text size="small">Timer</s-text>

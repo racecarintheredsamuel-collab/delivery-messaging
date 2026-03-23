@@ -331,8 +331,11 @@ export function ETATimelinePreview({ rule, globalSettings }) {
 
   const Connector = ({ marginLeft = 0 }) => {
     // When alignment is "icon", apply margin-top to center connector with icons
-    const mtLine = connectorAlignment === "icon" ? iconPx / 2 - 1 : 0;
-    const mtBigArrow = connectorAlignment === "icon" ? iconPx / 2 - connectorSize / 2 : 0;
+    // When alignment is "custom", use user-specified offset
+    const stageHeight = iconPx + gapIconLabel + Math.round(etaLabelFontSize * 1.3) + gapLabelDate + Math.round(etaDateFontSize * 1.3) - 2;
+    const customOffsetPx = Math.round(((rule.settings?.eta_connector_offset ?? 0) / 100) * stageHeight);
+    const mtLine = connectorAlignment === "custom" ? customOffsetPx : connectorAlignment === "icon" ? iconPx / 2 - 1 : 0;
+    const mtBigArrow = connectorAlignment === "custom" ? customOffsetPx : connectorAlignment === "icon" ? iconPx / 2 - connectorSize / 2 : 0;
     if (connectorStyle === "line") {
       const lineWidth = connectorSize + 16;
       return (
@@ -369,7 +372,7 @@ export function ETATimelinePreview({ rule, globalSettings }) {
       );
     }
     if (connectorStyle === "custom" && globalSettings?.custom_connector_svg) {
-      const mtCustom = connectorAlignment === "icon" ? iconPx / 2 - connectorSize / 2 : 0;
+      const mtCustom = connectorAlignment === "custom" ? customOffsetPx : connectorAlignment === "icon" ? iconPx / 2 - connectorSize / 2 : 0;
       return (
         <div style={{ display: "flex", alignItems: "center", justifyContent: "center", flex: `0 1 ${connectorSize}px`, minWidth: 0, color: connectorColor, marginTop: mtCustom, marginLeft: marginLeft }}>
           <span
@@ -448,15 +451,17 @@ export function ETATimelinePreview({ rule, globalSettings }) {
 
     return (
       <div style={{ flex: 1, minWidth: 0, marginLeft: marginLeft, marginRight: extraMarginRight, display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center" }}>
-        <div style={{ width: iconPx, height: iconPx, marginBottom: gapIconLabel, color: stageIconColor }}>
-          {isCustomIcon ? (
-            customIconContent
-          ) : (
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" style={{ width: "100%", height: "100%" }}>
-              {getEtaIconPaths(iconName, iconStyle)}
-            </svg>
-          )}
-        </div>
+        {iconName !== "none" && (
+          <div style={{ width: iconPx, height: iconPx, marginBottom: gapIconLabel, color: stageIconColor }}>
+            {isCustomIcon ? (
+              customIconContent
+            ) : (
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" style={{ width: "100%", height: "100%" }}>
+                {getEtaIconPaths(iconName, iconStyle)}
+              </svg>
+            )}
+          </div>
+        )}
         <div style={{ fontSize: etaLabelFontSize, fontWeight: etaLabelFontWeight, lineHeight: 1.3, marginBottom: gapLabelDate, fontFamily: etaLabelFontFamily, color: etaLabelColor }}>{label}</div>
         <div style={{ fontSize: etaDateFontSize, fontWeight: etaDateFontWeight, lineHeight: 1.3, color: etaDateColor, fontFamily: etaDateFontFamily, whiteSpace: "nowrap" }}>{date}</div>
       </div>
@@ -480,7 +485,7 @@ export function ETATimelinePreview({ rule, globalSettings }) {
       <div
         style={{
           display: "flex",
-          alignItems: connectorAlignment === "icon" ? "flex-start" : "center",
+          alignItems: (connectorAlignment === "icon" || connectorAlignment === "custom") ? "flex-start" : "center",
           justifySelf: "start",
           
           maxWidth: "100%",

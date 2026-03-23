@@ -18,6 +18,7 @@ import { FontSelector } from "../components/FontSelector";
 import { PreviewLine } from "../components/PreviewLine";
 import { ETATimelinePreview } from "../components/ETATimelinePreview";
 import { ColorPicker } from "../components/ColorPicker";
+import { HelpLink } from "../components/HelpLink";
 import {
   GET_SHOP_DELIVERY_DATA,
   GET_SHOP_ID,
@@ -535,7 +536,7 @@ function replaceDatePlaceholders(text, rule, globalSettings, shopCurrency = 'GBP
     text = text.replace(/{threshold}/g, formatCurrency(thresholdAmount));
   }
 
-  if (!text.includes('{arrival}') && !text.includes('{express}') && !text.includes('{countdown}')) return text;
+  if (!text.includes('{arrival}') && !text.includes('{express}') && !text.includes('{countdown}') && !text.includes('{shipped}')) return text;
 
   // Import the same business day logic used by ETATimelinePreview
   const weekdayNames = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"];
@@ -676,6 +677,9 @@ function replaceDatePlaceholders(text, rule, globalSettings, shopCurrency = 'GBP
   if (text.includes('{countdown}')) {
     // Real-time countdown based on cutoff time settings
     text = text.replace('{countdown}', countdownText);
+  }
+  if (text.includes('{shipped}')) {
+    text = text.replace('{shipped}', formatDate(shippingDate));
   }
   // Note: {lb} is handled in rendering, not here (needs to become actual <br /> element)
   return text;
@@ -1097,9 +1101,6 @@ export default function Index() {
     return iconValue;
   };
 
-  // ETA timeline width measurement for "Match ETA timeline width" feature
-  const etaTimelineRef = useRef(null);
-  const [etaTimelineWidth, setEtaTimelineWidth] = useState(null);
 
   // --------------------------------------------------------------------------
   // Refs & Effects
@@ -1125,23 +1126,6 @@ export default function Index() {
     };
   }, []);
 
-  // Measure ETA timeline width for "Match ETA timeline width" feature
-  // Uses ResizeObserver for proper measurement without feedback loops
-  useEffect(() => {
-    const measureWidth = () => {
-      if (etaTimelineRef.current) {
-        const width = etaTimelineRef.current.offsetWidth;
-        // Only update if width actually changed to prevent re-render loops
-        setEtaTimelineWidth((prev) => (prev !== width ? width : prev));
-      }
-    };
-
-    // Check periodically since the ref target may change
-    const interval = setInterval(measureWidth, 500);
-    measureWidth();
-
-    return () => clearInterval(interval);
-  }, []);
 
   // Refs for tags/handles inputs to enable programmatic blur before rule switch
   const tagsInputRef = useRef(null);
@@ -1323,7 +1307,13 @@ export default function Index() {
 
   // Track previous activeProfileId to reset selectedIndex when switching profiles
   const prevActiveProfileIdRef = useRef(activeProfileId);
+  const isInitialMount = useRef(true);
   useEffect(() => {
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      prevActiveProfileIdRef.current = activeProfileId;
+      return; // Don't reset on initial mount — let selectRule param work
+    }
     if (prevActiveProfileIdRef.current !== activeProfileId && activeProfileId !== null) {
       setSelectedIndex(0); // Reset to first rule when switching profiles
       sessionStorage.removeItem("messages_selectedRuleId"); // Clear saved selection
@@ -1375,35 +1365,30 @@ export default function Index() {
   // Handle query parameters (from wizard redirect)
   const [searchParams, setSearchParams] = useSearchParams();
   useEffect(() => {
-    const selectRuleId = searchParams.get("selectRule");
     const openSettings = searchParams.get("openSettings");
-    let changed = false;
-
-    if (selectRuleId && rules.length > 0) {
-      const ruleIndex = rules.findIndex(r => r.id === selectRuleId);
-      if (ruleIndex !== -1) {
-        setSelectedIndex(ruleIndex);
-      }
-      searchParams.delete("selectRule");
-      changed = true;
-    }
 
     if (openSettings === "true") {
       setShowGlobalSettingsPanel(true);
       searchParams.delete("openSettings");
-      changed = true;
-    }
-
-    if (changed) {
       setSearchParams(searchParams, { replace: true });
     }
-  }, [rules, searchParams, setSearchParams]);
+  }, [searchParams, setSearchParams]);
 
-  // Restore selected rule from sessionStorage on mount
+  // Restore selected rule from sessionStorage on mount (selectRule param takes priority)
   const hasRestoredSelection = useRef(false);
   useEffect(() => {
     if (!hasRestoredSelection.current && rules.length > 0) {
       hasRestoredSelection.current = true;
+      // Check sessionStorage for wizard redirect
+      const wizardRuleId = sessionStorage.getItem("dib_select_rule");
+      if (wizardRuleId) {
+        sessionStorage.removeItem("dib_select_rule");
+        const ruleIndex = rules.findIndex(r => r.id === wizardRuleId);
+        if (ruleIndex !== -1) {
+          setSelectedIndex(ruleIndex);
+          return;
+        }
+      }
       const savedRuleId = sessionStorage.getItem("messages_selectedRuleId");
       if (savedRuleId) {
         const ruleIndex = rules.findIndex(r => r.id === savedRuleId);
@@ -1971,7 +1956,7 @@ export default function Index() {
           }
         }
       `}</style>
-      <s-page heading="Messages">
+      <s-page heading="Messages Editor">
         <s-section>
           <s-box
             padding="base"
@@ -2204,7 +2189,10 @@ export default function Index() {
                 <div style={{ border: "1px solid var(--p-color-border, #e5e7eb)", borderRadius: 8, padding: 16, background: "var(--p-color-bg-surface, #ffffff)", display: "grid", gap: 16, minWidth: 0 }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                   <s-heading>Global Styling</s-heading>
-                  <s-button variant="plain" onClick={() => setShowTypographyPanel(false)}>Close</s-button>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <s-button variant="plain" onClick={() => setShowTypographyPanel(false)}>Close</s-button>
+                    <HelpLink anchor="global-styling" />
+                  </div>
                 </div>
 
                 {/* Theme Fonts for Preview */}
@@ -2724,7 +2712,10 @@ export default function Index() {
                 <div style={{ border: "1px solid var(--p-color-border, #e5e7eb)", borderRadius: 8, padding: 16, background: "var(--p-color-bg-surface, #ffffff)", display: "grid", gap: 16 }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                   <s-heading>Global Spacing & Alignment</s-heading>
-                  <s-button variant="plain" onClick={() => setShowAlignmentPanel(false)}>Close</s-button>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <s-button variant="plain" onClick={() => setShowAlignmentPanel(false)}>Close</s-button>
+                    <HelpLink anchor="global-alignment" />
+                  </div>
                 </div>
 
                 {/* Messages Spacing & Alignment */}
@@ -3066,7 +3057,10 @@ export default function Index() {
               <div style={{ border: "1px solid var(--p-color-border, #e5e7eb)", borderRadius: 8, padding: 16, background: "var(--p-color-bg-surface, #ffffff)", display: "grid", gap: 16 }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                   <s-heading>Global Settings</s-heading>
-                  <s-button variant="plain" onClick={() => { setShowGlobalSettingsPanel(false); setEditingProfileId(null); }}>Close</s-button>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <s-button variant="plain" onClick={() => { setShowGlobalSettingsPanel(false); setEditingProfileId(null); }}>Close</s-button>
+                    <HelpLink anchor="global-settings" />
+                  </div>
                 </div>
 
                 {/* Profiles Section */}
@@ -3266,6 +3260,10 @@ export default function Index() {
                       />
                     </label>
                   </div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 6, color: "var(--p-color-text-subdued, #6b7280)", marginTop: 4 }}>
+                    <span style={{ fontSize: 12, flexShrink: 0 }}>💡</span>
+                    <span style={{ fontSize: 12 }}>Set both min and max to the same value for a single date.</span>
+                  </div>
                 </div>
 
                 {/* Express Delivery Window */}
@@ -3314,6 +3312,10 @@ export default function Index() {
                         style={{ width: "100%" }}
                       />
                     </label>
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 6, color: "var(--p-color-text-subdued, #6b7280)", marginTop: 4 }}>
+                    <span style={{ fontSize: 12, flexShrink: 0 }}>💡</span>
+                    <span style={{ fontSize: 12 }}>Set both min and max to the same value for a single date.</span>
                   </div>
                 </div>
 
@@ -3611,6 +3613,7 @@ export default function Index() {
                       padding: "12px 16px",
                       display: "flex",
                       alignItems: "center",
+                      justifyContent: "space-between",
                       background: !collapsedPanels.product_matching ? "var(--p-color-bg-surface-hover, #f8fafc)" : "var(--p-color-bg-surface, #ffffff)",
                       borderBottom: !collapsedPanels.product_matching ? "1px solid var(--p-color-border, #e5e7eb)" : "none",
                       cursor: "pointer",
@@ -3631,6 +3634,7 @@ export default function Index() {
                       </span>
                       <s-heading>Product Matching</s-heading>
                     </div>
+                    <span onClick={(e) => e.stopPropagation()}><HelpLink anchor="product-matching" /></span>
                   </div>
 
                   {/* Content - only show when not collapsed */}
@@ -3848,6 +3852,7 @@ export default function Index() {
                       padding: "12px 16px",
                       display: "flex",
                       alignItems: "center",
+                      justifyContent: "space-between",
                       background: !collapsedPanels.dispatch_settings ? "var(--p-color-bg-surface-hover, #f8fafc)" : "var(--p-color-bg-surface, #ffffff)",
                       borderBottom: !collapsedPanels.dispatch_settings ? "1px solid var(--p-color-border, #e5e7eb)" : "none",
                       cursor: "pointer",
@@ -3868,6 +3873,7 @@ export default function Index() {
                       </span>
                       <s-heading>Dispatch Settings</s-heading>
                     </div>
+                    <span onClick={(e) => e.stopPropagation()}><HelpLink anchor="dispatch" /></span>
                   </div>
 
                   {/* Content - only show when not collapsed */}
@@ -4368,33 +4374,35 @@ export default function Index() {
                       </span>
                       <s-heading>Messages</s-heading>
                     </div>
-                    <label
-                      style={{ display: "flex", alignItems: "center", gap: 6 }}
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <s-text size="small">{rule.settings?.show_messages ? "Enabled" : "Disabled"}</s-text>
-                      <input
-                        type="checkbox"
-                        checked={!!rule.settings?.show_messages}
-                        onChange={(e) => {
-                          const next = [...rules];
-                          next[safeSelectedIndex] = {
-                            ...rule,
-                            settings: {
-                              ...rule.settings,
-                              show_messages: e.target.checked,
-                            },
-                          };
-                          setRules(next);
-                          // Auto-expand when enabled, auto-collapse when disabled
-                          if (rule?.id) {
-                            const newCollapsed = !e.target.checked;
-                            setCollapsedPanels(prev => ({ ...prev, countdown_messages: newCollapsed }));
-                            setCollapsedState(rule.id, 'countdown_messages', newCollapsed);
-                          }
-                        }}
-                      />
-                    </label>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <label
+                        style={{ display: "flex", alignItems: "center", gap: 6 }}
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <s-text size="small">{rule.settings?.show_messages ? "Enabled" : "Disabled"}</s-text>
+                        <input
+                          type="checkbox"
+                          checked={!!rule.settings?.show_messages}
+                          onChange={(e) => {
+                            const next = [...rules];
+                            next[safeSelectedIndex] = {
+                              ...rule,
+                              settings: {
+                                ...rule.settings,
+                                show_messages: e.target.checked,
+                              },
+                            };
+                            setRules(next);
+                            if (rule?.id) {
+                              const newCollapsed = !e.target.checked;
+                              setCollapsedPanels(prev => ({ ...prev, countdown_messages: newCollapsed }));
+                              setCollapsedState(rule.id, 'countdown_messages', newCollapsed);
+                            }
+                          }}
+                        />
+                      </label>
+                      <span onClick={(e) => e.stopPropagation()}><HelpLink anchor="messages" /></span>
+                    </div>
                   </div>
 
                   {/* Content - only show when not collapsed */}
@@ -4402,8 +4410,9 @@ export default function Index() {
                   <div style={{ padding: "16px", display: "grid", gap: 12 }}>
                     <div style={{ display: "grid", gap: 2, color: "var(--p-color-text-subdued, #6b7280)", fontSize: 12 }}>
                       <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
-                        💡 Placeholders: &#123;countdown&#125;, &#123;arrival&#125;, &#123;express&#125;, &#123;threshold&#125;, &#123;pricing:name&#125;
-                        <span title={"{countdown} = live countdown timer\n{arrival} = estimated delivery date\n{express} = express delivery date (configure in Dispatch Settings)\n{threshold} = free delivery threshold\n{pricing:name} = delivery pricing (configure in Free Delivery)"} style={{ cursor: "help" }}>ℹ️</span>
+                        💡 Placeholders: &#123;countdown&#125;, &#123;arrival&#125;, &#123;express&#125;, &#123;shipped&#125;, &#123;threshold&#125;, &#123;pricing:name&#125;
+                        <span title={"{countdown} = live countdown timer\n{arrival} = estimated delivery date\n{express} = express delivery date (configure in Dispatch Settings)\n{shipped} = shipping date\n{threshold} = free delivery threshold\n{pricing:name} = delivery pricing (configure in Free Delivery)"} style={{ cursor: "help" }}>ℹ️</span>
+                        <HelpLink anchor="messages-placeholders" />
                       </span>
                       <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
                         💡 Formatting: **bold**, [link](url), &#123;lb&#125;
@@ -4425,7 +4434,7 @@ export default function Index() {
                         }}
                         maxLength={100}
                         style={{ width: "100%" }}
-                        placeholder='e.g. "**Free Delivery:** Ships Monday via Royal Mail"'
+                        placeholder="Order within **{countdown}** for same-day shipping"
                       />
                     </label>
 
@@ -4443,7 +4452,7 @@ export default function Index() {
                         }}
                         maxLength={100}
                         style={{ width: "100%" }}
-                        placeholder='e.g. "**Note:** Order within 2hrs for same-day dispatch"'
+                        placeholder="Order estimated arrival - **{arrival}**"
                       />
                     </label>
 
@@ -4461,7 +4470,7 @@ export default function Index() {
                         }}
                         maxLength={100}
                         style={{ width: "100%" }}
-                        placeholder="Optional third line"
+                        placeholder="Upgrade to express and receive - **{express}**"
                       />
                     </label>
 
@@ -4479,7 +4488,7 @@ export default function Index() {
                         }}
                         maxLength={100}
                         style={{ width: "100%" }}
-                        placeholder="Optional fourth line"
+                        placeholder="{pricing:xxxxx}"
                       />
                     </label>
 
@@ -4504,9 +4513,10 @@ export default function Index() {
                           style={{ width: "100%" }}
                           placeholder="Order ships {shipped}"
                         />
-                        <s-text variant="subdued" style={{ fontSize: "12px", marginTop: "4px" }}>
-                          Shown when cutoff has passed. Use {"{shipped}"} for shipping date. Leave empty for default.
-                        </s-text>
+                        <div style={{ display: "flex", alignItems: "center", gap: 6, color: "var(--p-color-text-subdued, #6b7280)", marginTop: 4 }}>
+                          <span style={{ fontSize: 12, flexShrink: 0 }}>💡</span>
+                          <span style={{ fontSize: 12 }}>Shown when cutoff has passed. Use {"{shipped}"} for shipping date. Leave empty for default.</span>
+                        </div>
                       </label>
                     )}
 
@@ -4641,34 +4651,7 @@ export default function Index() {
                         </>
                       )}
 
-                      {rule.settings?.show_eta_timeline && (
-                        <label style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                          <input
-                            type="checkbox"
-                            checked={!!rule.settings?.match_eta_width}
-                            onChange={(e) => {
-                              const checked = e.target.checked;
-                              const next = [...rules];
-                              // Capture ETA width when enabling to avoid feedback loops
-                              const capturedWidth = checked && etaTimelineRef.current
-                                ? etaTimelineRef.current.offsetWidth
-                                : rule.settings?._captured_eta_width;
-                              next[safeSelectedIndex] = {
-                                ...rule,
-                                settings: {
-                                  ...rule.settings,
-                                  match_eta_width: checked,
-                                  _captured_eta_width: capturedWidth,
-                                },
-                              };
-                              setRules(next);
-                            }}
-                          />
-                          <s-text>Match ETA timeline width</s-text>
-                        </label>
-                      )}
-
-                      {(!rule.settings?.show_eta_timeline || !rule.settings?.match_eta_width) && (
+                      {(true) && (
                         <div>
                           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
                             <s-text size="small">
@@ -4683,7 +4666,7 @@ export default function Index() {
                             type="range"
                             min="0"
                             max="800"
-                            step="10"
+                            step="1"
                             value={rule.settings?.max_width ?? 600}
                             onChange={(e) => {
                               const next = [...rules];
@@ -4792,7 +4775,7 @@ export default function Index() {
                   )}
                 </div>
 
-                {/* Messages Icon Section */}
+                {/* Message Icons Section */}
                 <div
                   style={{
                     border: "1px solid var(--p-color-border, #e5e7eb)",
@@ -4812,6 +4795,7 @@ export default function Index() {
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "space-between",
+                      justifyContent: "space-between",
                       background: !collapsedPanels.countdown_icon ? "var(--p-color-bg-surface-hover, #f8fafc)" : "var(--p-color-bg-surface, #ffffff)",
                       borderBottom: !collapsedPanels.countdown_icon ? "1px solid var(--p-color-border, #e5e7eb)" : "none",
                       cursor: "pointer",
@@ -4829,35 +4813,37 @@ export default function Index() {
                       <span style={{ color: "var(--p-color-text-subdued, #6b7280)" }} aria-hidden="true">
                         {collapsedPanels.countdown_icon ? <ChevronRightIcon /> : <ChevronDownIcon />}
                       </span>
-                      <s-heading>Messages Icon</s-heading>
+                      <s-heading>Message Icons</s-heading>
                     </div>
-                    <label
-                      style={{ display: "flex", alignItems: "center", gap: 6 }}
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <s-text size="small">{rule.settings?.show_icon !== false ? "Enabled" : "Disabled"}</s-text>
-                      <input
-                        type="checkbox"
-                        checked={rule.settings?.show_icon !== false}
-                        onChange={(e) => {
-                          const next = [...rules];
-                          next[safeSelectedIndex] = {
-                            ...rule,
-                            settings: {
-                              ...rule.settings,
-                              show_icon: e.target.checked,
-                            },
-                          };
-                          setRules(next);
-                          // Auto-expand when enabled, auto-collapse when disabled
-                          if (rule?.id) {
-                            const newCollapsed = !e.target.checked;
-                            setCollapsedPanels(prev => ({ ...prev, countdown_icon: newCollapsed }));
-                            setCollapsedState(rule.id, 'countdown_icon', newCollapsed);
-                          }
-                        }}
-                      />
-                    </label>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <label
+                        style={{ display: "flex", alignItems: "center", gap: 6 }}
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <s-text size="small">{rule.settings?.show_icon !== false ? "Enabled" : "Disabled"}</s-text>
+                        <input
+                          type="checkbox"
+                          checked={rule.settings?.show_icon !== false}
+                          onChange={(e) => {
+                            const next = [...rules];
+                            next[safeSelectedIndex] = {
+                              ...rule,
+                              settings: {
+                                ...rule.settings,
+                                show_icon: e.target.checked,
+                              },
+                            };
+                            setRules(next);
+                            if (rule?.id) {
+                              const newCollapsed = !e.target.checked;
+                              setCollapsedPanels(prev => ({ ...prev, countdown_icon: newCollapsed }));
+                              setCollapsedState(rule.id, 'countdown_icon', newCollapsed);
+                            }
+                          }}
+                        />
+                      </label>
+                      <span onClick={(e) => e.stopPropagation()}><HelpLink anchor="messages-icons" /></span>
+                    </div>
                   </div>
 
                   {/* Content - only show when not collapsed */}
@@ -5487,42 +5473,42 @@ export default function Index() {
                       </span>
                       <s-heading>ETA Timeline</s-heading>
                     </div>
-                    <label
-                      style={{ display: "flex", alignItems: "center", gap: 6 }}
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <s-text size="small">{rule.settings?.show_eta_timeline ? "Enabled" : "Disabled"}</s-text>
-                      <input
-                        type="checkbox"
-                        checked={!!rule.settings?.show_eta_timeline}
-                        onChange={(e) => {
-                          const next = [...rules];
-                          const isFirstActivation = e.target.checked && !rule.settings?.eta_timeline_initialized;
-
-                          next[safeSelectedIndex] = {
-                            ...rule,
-                            settings: {
-                              ...rule.settings,
-                              show_eta_timeline: e.target.checked,
-                              // On first activation, inherit border settings from Messages
-                              ...(isFirstActivation ? {
-                                eta_timeline_initialized: true,
-                                eta_border_width: rule.settings?.border_thickness ?? 0,
-                                eta_border_radius: rule.settings?.border_radius ?? 8,
-                                eta_border_color: rule.settings?.border_color || "#e5e7eb",
-                              } : {}),
-                            },
-                          };
-                          setRules(next);
-                          // Auto-expand when enabled, auto-collapse when disabled
-                          if (rule?.id) {
-                            const newCollapsed = !e.target.checked;
-                            setCollapsedPanels(prev => ({ ...prev, eta_timeline: newCollapsed }));
-                            setCollapsedState(rule.id, 'eta_timeline', newCollapsed);
-                          }
-                        }}
-                      />
-                    </label>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <label
+                        style={{ display: "flex", alignItems: "center", gap: 6 }}
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <s-text size="small">{rule.settings?.show_eta_timeline ? "Enabled" : "Disabled"}</s-text>
+                        <input
+                          type="checkbox"
+                          checked={!!rule.settings?.show_eta_timeline}
+                          onChange={(e) => {
+                            const next = [...rules];
+                            const isFirstActivation = e.target.checked && !rule.settings?.eta_timeline_initialized;
+                            next[safeSelectedIndex] = {
+                              ...rule,
+                              settings: {
+                                ...rule.settings,
+                                show_eta_timeline: e.target.checked,
+                                ...(isFirstActivation ? {
+                                  eta_timeline_initialized: true,
+                                  eta_border_width: rule.settings?.border_thickness ?? 0,
+                                  eta_border_radius: rule.settings?.border_radius ?? 8,
+                                  eta_border_color: rule.settings?.border_color || "#e5e7eb",
+                                } : {}),
+                              },
+                            };
+                            setRules(next);
+                            if (rule?.id) {
+                              const newCollapsed = !e.target.checked;
+                              setCollapsedPanels(prev => ({ ...prev, eta_timeline: newCollapsed }));
+                              setCollapsedState(rule.id, 'eta_timeline', newCollapsed);
+                            }
+                          }}
+                        />
+                      </label>
+                      <span onClick={(e) => e.stopPropagation()}><HelpLink anchor="eta-timeline" /></span>
+                    </div>
                   </div>
 
                   {/* Content - only show when not collapsed */}
@@ -5539,7 +5525,7 @@ export default function Index() {
                       <s-text size="small">Order</s-text>
                       <input
                         type="text"
-                        value={rule.settings?.eta_label_order || "Ordered"}
+                        value={rule.settings?.eta_label_order ?? "Ordered"}
                         onChange={(e) => {
                           const next = [...rules];
                           next[safeSelectedIndex] = {
@@ -5557,7 +5543,7 @@ export default function Index() {
                       <s-text size="small">Shipping</s-text>
                       <input
                         type="text"
-                        value={rule.settings?.eta_label_shipping || "Shipped"}
+                        value={rule.settings?.eta_label_shipping ?? "Shipped"}
                         onChange={(e) => {
                           const next = [...rules];
                           next[safeSelectedIndex] = {
@@ -5575,7 +5561,7 @@ export default function Index() {
                       <s-text size="small">Delivery</s-text>
                       <input
                         type="text"
-                        value={rule.settings?.eta_label_delivery || "Delivered"}
+                        value={rule.settings?.eta_label_delivery ?? "Delivered"}
                         onChange={(e) => {
                           const next = [...rules];
                           next[safeSelectedIndex] = {
@@ -5607,6 +5593,7 @@ export default function Index() {
                         }}
                         style={{ width: "100%" }}
                       >
+                        <option value="none">None (no icon)</option>
                         <optgroup label="Preset">
                           <option value="truck">Truck</option>
                           <option value="truck-v2">Truck v2</option>
@@ -5648,6 +5635,7 @@ export default function Index() {
                         }}
                         style={{ width: "100%" }}
                       >
+                        <option value="none">None (no icon)</option>
                         <optgroup label="Preset">
                           <option value="truck">Truck</option>
                           <option value="truck-v2">Truck v2</option>
@@ -5689,6 +5677,7 @@ export default function Index() {
                         }}
                         style={{ width: "100%" }}
                       >
+                        <option value="none">None (no icon)</option>
                         <optgroup label="Preset">
                           <option value="truck">Truck</option>
                           <option value="truck-v2">Truck v2</option>
@@ -5938,9 +5927,36 @@ export default function Index() {
                       >
                         <option value="center">Center (full height)</option>
                         <option value="icon">Center (icon level)</option>
+                        <option value="custom">Custom position</option>
                       </select>
                     </label>
                   </div>
+
+                  {rule.settings?.eta_connector_alignment === "custom" && (
+                    <div>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
+                        <s-text size="small">
+                          Connector vertical offset ({rule.settings?.eta_connector_offset ?? 0}%)
+                        </s-text>
+                      </div>
+                      <input
+                        type="range"
+                        min="0"
+                        max="100"
+                        step="1"
+                        value={rule.settings?.eta_connector_offset ?? 0}
+                        onChange={(e) => {
+                          const next = [...rules];
+                          next[safeSelectedIndex] = {
+                            ...rule,
+                            settings: { ...rule.settings, eta_connector_offset: Number(e.target.value) },
+                          };
+                          setRules(next);
+                        }}
+                        style={{ width: "100%" }}
+                      />
+                    </div>
+                  )}
 
                   <label>
                     <s-text>Connector size ({rule.settings?.eta_connector_size || 24}px)</s-text>
@@ -6309,33 +6325,35 @@ export default function Index() {
                       </span>
                       <s-heading>Special Delivery</s-heading>
                     </div>
-                    <label
-                      style={{ display: "flex", alignItems: "center", gap: 6 }}
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <s-text size="small">{rule.settings?.show_special_delivery ? "Enabled" : "Disabled"}</s-text>
-                      <input
-                        type="checkbox"
-                        checked={!!rule.settings?.show_special_delivery}
-                        onChange={(e) => {
-                          const next = [...rules];
-                          next[safeSelectedIndex] = {
-                            ...rule,
-                            settings: {
-                              ...rule.settings,
-                              show_special_delivery: e.target.checked,
-                            },
-                          };
-                          setRules(next);
-                          // Auto-expand when enabled, auto-collapse when disabled
-                          if (rule?.id) {
-                            const newCollapsed = !e.target.checked;
-                            setCollapsedPanels(prev => ({ ...prev, special_delivery: newCollapsed }));
-                            setCollapsedState(rule.id, 'special_delivery', newCollapsed);
-                          }
-                        }}
-                      />
-                    </label>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <label
+                        style={{ display: "flex", alignItems: "center", gap: 6 }}
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <s-text size="small">{rule.settings?.show_special_delivery ? "Enabled" : "Disabled"}</s-text>
+                        <input
+                          type="checkbox"
+                          checked={!!rule.settings?.show_special_delivery}
+                          onChange={(e) => {
+                            const next = [...rules];
+                            next[safeSelectedIndex] = {
+                              ...rule,
+                              settings: {
+                                ...rule.settings,
+                                show_special_delivery: e.target.checked,
+                              },
+                            };
+                            setRules(next);
+                            if (rule?.id) {
+                              const newCollapsed = !e.target.checked;
+                              setCollapsedPanels(prev => ({ ...prev, special_delivery: newCollapsed }));
+                              setCollapsedState(rule.id, 'special_delivery', newCollapsed);
+                            }
+                          }}
+                        />
+                      </label>
+                      <span onClick={(e) => e.stopPropagation()}><HelpLink anchor="special-delivery" /></span>
+                    </div>
                   </div>
 
                   {/* Content - only show when not collapsed */}
@@ -6366,7 +6384,7 @@ export default function Index() {
                         }}
                         maxLength={100}
                         style={{ width: "100%" }}
-                        placeholder="e.g. Large Item Delivery"
+                        placeholder="Palletised Shipment"
                       />
                     </label>
 
@@ -6391,7 +6409,7 @@ export default function Index() {
                         maxLength={500}
                         rows={3}
                         style={{ width: "100%", resize: "vertical" }}
-                        placeholder="e.g. **Large Item:** This product ships via pallet delivery.{lb}Please ensure access for delivery vehicle."
+                        placeholder="This product arrives via kerbside pallet delivery.{lb}Your delivery will be booked into a convenient all-day slot."
                       />
                     </label>
 
@@ -6688,36 +6706,7 @@ export default function Index() {
                         </div>
                       )}
 
-                      {/* Match ETA timeline width - only when ETA enabled */}
-                      {rule.settings?.show_eta_timeline && (
-                        <label style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                          <input
-                            type="checkbox"
-                            checked={!!rule.settings?.special_delivery_match_eta_width}
-                            onChange={(e) => {
-                              const checked = e.target.checked;
-                              const next = [...rules];
-                              // Capture ETA width when enabling to avoid feedback loops
-                              const capturedWidth = checked && etaTimelineRef.current
-                                ? etaTimelineRef.current.offsetWidth
-                                : rule.settings?._captured_special_delivery_eta_width;
-                              next[safeSelectedIndex] = {
-                                ...rule,
-                                settings: {
-                                  ...rule.settings,
-                                  special_delivery_match_eta_width: checked,
-                                  _captured_special_delivery_eta_width: capturedWidth,
-                                },
-                              };
-                              setRules(next);
-                            }}
-                          />
-                          <s-text>Match ETA timeline width</s-text>
-                        </label>
-                      )}
-
-                      {/* Max width slider - only when not matching ETA width */}
-                      {(!rule.settings?.show_eta_timeline || !rule.settings?.special_delivery_match_eta_width) && (
+                      {(true) && (
                         <div>
                           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
                             <s-text size="small">
@@ -6732,7 +6721,7 @@ export default function Index() {
                             type="range"
                             min="0"
                             max="800"
-                            step="10"
+                            step="1"
                             value={rule.settings?.special_delivery_max_width ?? 600}
                             onChange={(e) => {
                               const next = [...rules];
@@ -7070,19 +7059,9 @@ export default function Index() {
                               ? (rule.settings?.background_color || "transparent")
                               : (globalSettings?.global_background_color || "transparent"),
                             backgroundClip: "padding-box",
-                            // Width constraint: match ETA timeline width or use custom max_width
-                            // Case 1: match_eta_width ON - force exact ETA width (content wraps)
-                            // Case 2: max_width = 0 - fit to content
-                            // Case 3: max_width > 0 - expand TO that width, but never smaller than content
-                            ...(rule.settings?.match_eta_width && rule.settings?.show_eta_timeline && etaTimelineWidth > 0
-                              ? {
-                                  width: etaTimelineWidth,
-                                  minWidth: etaTimelineWidth,
-                                  maxWidth: etaTimelineWidth,
-                                }
-                              : rule.settings?.max_width && rule.settings.max_width > 0
-                                ? { width: `min(${rule.settings.max_width}px, 100%)`, minWidth: 200, wordBreak: "break-word" }
-                                : { width: "fit-content" }),
+                            ...(rule.settings?.max_width && rule.settings.max_width > 0
+                              ? { width: `min(${rule.settings.max_width}px, 100%)`, minWidth: 200, wordBreak: "break-word" }
+                              : { width: "fit-content" }),
                             justifySelf: "start",
                             alignSelf: "start",
                             overflowWrap: "break-word",
@@ -7260,7 +7239,7 @@ export default function Index() {
 
                         {/* ETA Timeline Preview - shown below messages when enabled */}
                         {rule.settings?.show_eta_timeline && (
-                          <div ref={etaTimelineRef} style={{ display: "inline-block", minWidth: 0, maxWidth: "100%" }}>
+                          <div style={{ display: "inline-block", minWidth: 0, maxWidth: "100%" }}>
                             <ETATimelinePreview rule={rule} globalSettings={globalSettings} />
                           </div>
                         )}
@@ -7322,13 +7301,8 @@ export default function Index() {
                                 ? (rule.settings.special_delivery_background_color || "")
                                 : (globalSettings?.global_background_color || "");
 
-                              // Width constraint: match ETA timeline width or use custom max_width
-                              const matchEtaWidth = rule.settings.special_delivery_match_eta_width && rule.settings.show_eta_timeline && etaTimelineWidth > 0;
                               const sdMaxWidth = rule.settings.special_delivery_max_width;
-                              // For special delivery: match ETA = exact width (with box-sizing), max_width > 0 = expand TO width, 0 = fit content
-                              const widthStyle = matchEtaWidth
-                                ? { width: etaTimelineWidth, minWidth: etaTimelineWidth, maxWidth: etaTimelineWidth, boxSizing: "border-box" }
-                                : (sdMaxWidth > 0 ? { width: `min(${sdMaxWidth}px, 100%)`, minWidth: 200 } : { width: "fit-content" });
+                              const widthStyle = sdMaxWidth > 0 ? { width: `min(${sdMaxWidth}px, 100%)`, minWidth: 200 } : { width: "fit-content" };
 
                               // Text styling
                               const textColor = rule.settings.special_delivery_override_global_text_styling
