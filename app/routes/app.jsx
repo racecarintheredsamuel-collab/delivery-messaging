@@ -17,9 +17,11 @@ export const loader = async ({ request }) => {
   const { billing, redirect, session } = await authenticate.admin(request);
 
   // Check whether the store has an active subscription
-  const { hasActivePayment } = await billing.check({
+  const billingResult = await billing.check({
     plans: [MONTHLY_PLAN],
   });
+  const { hasActivePayment, appSubscriptions } = billingResult;
+  console.log("[BILLING] Shop:", session.shop, "hasActivePayment:", hasActivePayment, "subscriptions:", JSON.stringify(appSubscriptions));
 
   // Extract the store handle from the shop domain
   const shop = session.shop;
