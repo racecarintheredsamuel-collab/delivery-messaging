@@ -414,6 +414,35 @@ function SetupStep({ step, isExpanded, isComplete, onToggle, onMarkComplete, onM
             {step.description}
           </p>
 
+          {/* Video with steps */}
+          {step.video && (
+            <>
+              <div style={{ display: "flex", gap: 16, alignItems: "flex-start", marginBottom: 8 }}>
+                <video
+                  controls
+                  style={{ width: "50%", borderRadius: 8, border: "1px solid #e5e7eb" }}
+                >
+                  <source src={step.video} type="video/mp4" />
+                </video>
+                {step.videoSteps && (
+                  <div style={{ flex: 1, fontSize: 13 }}>
+                    <ol style={{ margin: 0, paddingLeft: 20 }}>
+                      {step.videoSteps.map((stepText, stepIdx) => (
+                        <li key={stepIdx} style={{ color: "#374151", marginBottom: 6 }}>
+                          {stepText}
+                        </li>
+                      ))}
+                    </ol>
+                  </div>
+                )}
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: 6, color: "var(--p-color-text-subdued, #6b7280)", marginBottom: 16 }}>
+                <span style={{ fontSize: 12, flexShrink: 0 }}>💡</span>
+                <span style={{ fontSize: 12 }}>To watch fullscreen (recommended), click the Picture-in-Picture button on the video player, then click the fullscreen button on the pop-out window.</span>
+              </div>
+            </>
+          )}
+
           {/* Images with steps or placeholder */}
           {step.images && step.images.length > 0 ? (
             <div style={{ display: "flex", flexDirection: "column", gap: 16, marginBottom: 16 }}>
@@ -939,7 +968,7 @@ export default function DashboardPage() {
                 const setupSteps = [
                   { id: "product_page", countsForProgress: true },
                   { id: "announcement_bar", countsForProgress: true },
-                  { id: "configure_settings", countsForProgress: true, autoComplete: !!settings?.cutoff_time },
+                  { id: "configure_settings", countsForProgress: true },
                   { id: "create_rule", countsForProgress: false, autoComplete: hasRules },
                 ];
                 const progressSteps = setupSteps.filter(s => s.countsForProgress);
@@ -999,24 +1028,15 @@ export default function DashboardPage() {
                   description: "Add Delivery Messaging, ETA Timeline, or Special Delivery blocks to your product page template.",
                   actionLabel: "Open Theme Editor",
                   actionUrl: themeEditorUrl,
-                  images: [
-                    {
-                      src: "/images/setup/product-page-setup-1.png",
-                      steps: [
-                        "Expand the Product Information block",
-                        "Select 'Add block', and one at a time add each of the Messages blocks (Delivery Messaging, ETA Timeline & Special Delivery)",
-                      ],
-                    },
-                    {
-                      src: "/images/setup/product-page-setup-2.png",
-                      steps: [
-                        "Drag the Delivery Messaging block to a suitable position",
-                        "Drag the ETA Timeline block to a suitable position",
-                        "Drag the Special Delivery block to a suitable position",
-                      ],
-                    },
+                  video: "/images/videos/product-page-setup.mp4",
+                  videoSteps: [
+                    "Edit Theme (open theme editor)",
+                    "Open Default Product page",
+                    "Expand the Product Information block",
+                    "Add blocks — Delivery Messaging, ETA Timeline & Special Delivery",
+                    "Position blocks as required (default positions shown)",
+                    "Save",
                   ],
-                  onImageClick: setLightboxImage,
                 }}
                 isExpanded={expandedStep === "product_page"}
                 isComplete={manualCompleted.has("product_page")}
@@ -1033,25 +1053,15 @@ export default function DashboardPage() {
                   description: "Add the Delivery Announcement block to your theme's header or announcement bar section.",
                   actionLabel: "Open Theme Editor",
                   actionUrl: shopDomain ? `https://${shopDomain}/admin/themes/current/editor` : "#",
-                  images: [
-                    {
-                      src: "/images/setup/announcement-bar-1.png",
-                      steps: [
-                        "Disable Shopify's built-in Announcement Bar",
-                        "Click 'Add section'",
-                        "Choose 'Delivery Announcement' from the Apps menu",
-                      ],
-                    },
-                    {
-                      src: "/images/setup/announcement-bar-2.png",
-                      steps: [
-                        "Drag the Apps block above the page header",
-                        "Adjust margins to page or container width",
-                        "Enable/disable 'Reveal sections on scroll' if available",
-                      ],
-                    },
+                  video: "/images/videos/delivery-messaging-announcement.mp4",
+                  videoSteps: [
+                    "Edit Theme (open theme editor)",
+                    "Disable Shopify Bar (theme built-in announcement bar)",
+                    "Add Apps / Delivery Announcement (installs app bar)",
+                    "Position App at top of header (moves app block above theme header)",
+                    "Disable App options (turn off 'make section margins the same as theme' and 'reveal sections on scroll')",
+                    "Save",
                   ],
-                  onImageClick: setLightboxImage,
                 }}
                 isExpanded={expandedStep === "announcement_bar"}
                 isComplete={manualCompleted.has("announcement_bar")}
@@ -1070,12 +1080,13 @@ export default function DashboardPage() {
                   onAction: () => setShowSettingsWizard(true),
                   secondaryLabel: "Go to Settings",
                   secondaryUrl: "/app/messages?openSettings=true",
-                  autoComplete: true,
                 }}
                 isExpanded={expandedStep === "configure_settings"}
-                isComplete={!!settings?.cutoff_time}
+                isComplete={manualCompleted.has("configure_settings")}
                 onToggle={() => setExpandedStep(expandedStep === "configure_settings" ? null : "configure_settings")}
                 onAction={() => setShowSettingsWizard(true)}
+                onMarkComplete={() => setManualCompleted(prev => new Set([...prev, "configure_settings"]))}
+                onMarkIncomplete={() => setManualCompleted(prev => { const next = new Set(prev); next.delete("configure_settings"); return next; })}
               />
 
               {/* Next Steps separator */}

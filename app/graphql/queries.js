@@ -99,6 +99,24 @@ export const DELETE_METAFIELDS = `#graphql
   }
 `;
 
+/**
+ * Query to check if the current shop has an active subscription
+ * Used by app.jsx layout loader to gate access for Shopify Managed Pricing
+ * activeSubscriptions already filters to ACTIVE status only; trials count as active
+ */
+export const CHECK_ACTIVE_SUBSCRIPTION = `#graphql
+  query CheckActiveSubscription {
+    currentAppInstallation {
+      activeSubscriptions {
+        id
+        name
+        status
+        test
+      }
+    }
+  }
+`;
+
 // ============================================================================
 // CONSTANTS
 // ============================================================================
