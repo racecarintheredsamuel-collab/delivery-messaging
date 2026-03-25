@@ -12,6 +12,12 @@ const APP_HANDLE = "delivery-info-block";
 // LOADER — authenticates and checks subscription status
 // ============================================================================
 
+// Prevent subscription check revalidation on child route POST actions
+export function shouldRevalidate({ formMethod, defaultShouldRevalidate }) {
+  if (formMethod === "POST") return false;
+  return defaultShouldRevalidate;
+}
+
 export const loader = async ({ request }) => {
   const { admin, session } = await authenticate.admin(request);
 
@@ -46,6 +52,7 @@ export const loader = async ({ request }) => {
 // ============================================================================
 
 function SubscriptionGate({ planUrl }) {
+  const font = "-apple-system, BlinkMacSystemFont, 'San Francisco', 'Segoe UI', Roboto, sans-serif";
   return (
     <div style={{
       display: "flex",
@@ -53,6 +60,7 @@ function SubscriptionGate({ planUrl }) {
       alignItems: "center",
       minHeight: "80vh",
       padding: 24,
+      fontFamily: font,
     }}>
       <div style={{
         maxWidth: 480,
@@ -60,55 +68,54 @@ function SubscriptionGate({ planUrl }) {
         textAlign: "center",
         background: "white",
         border: "1px solid #e5e7eb",
-        borderRadius: 16,
+        borderRadius: 12,
         padding: "48px 32px",
+        boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
       }}>
         {/* App icon */}
-        <div style={{
-          width: 56,
-          height: 56,
-          borderRadius: 14,
-          background: "#111827",
-          display: "inline-flex",
-          alignItems: "center",
-          justifyContent: "center",
-          marginBottom: 16,
-        }}>
-          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M8.25 18.75a1.5 1.5 0 0 1-3 0 1.5 1.5 0 0 1 3 0ZM15.75 18.75a1.5 1.5 0 0 1-3 0 1.5 1.5 0 0 1 3 0Z" />
-            <path d="M2.25 2.25h1.5l1.17 5.85a2.25 2.25 0 0 0 2.23 1.9h7.45a2.25 2.25 0 0 0 2.23-1.9L18 4.5H5.25" />
-          </svg>
-        </div>
+        <img
+          src="/images/icon/delivery_messaging_v4.png"
+          alt="Delivery Messaging"
+          style={{
+            width: 72,
+            height: 72,
+            borderRadius: 16,
+            marginBottom: 16,
+          }}
+        />
 
         <h1 style={{
-          fontSize: 22,
-          fontWeight: 700,
-          color: "#111827",
+          fontSize: 20,
+          fontWeight: 600,
+          color: "#303030",
           margin: "0 0 8px 0",
+          fontFamily: font,
         }}>
           Delivery Messaging
         </h1>
 
         <p style={{
-          fontSize: 15,
-          color: "#6b7280",
+          fontSize: 13,
+          color: "#616161",
           lineHeight: 1.6,
           margin: "0 0 24px 0",
+          fontFamily: font,
         }}>
           Show customers real-time delivery estimates, countdown timers, and ETA timelines on your product pages.
         </p>
 
         {/* Pricing card */}
         <div style={{
-          background: "#f9fafb",
-          borderRadius: 10,
-          padding: 16,
+          background: "#f7f7f7",
+          borderRadius: 8,
+          padding: "14px 16px",
           marginBottom: 24,
+          border: "1px solid #e5e7eb",
         }}>
-          <div style={{ fontSize: 28, fontWeight: 700, color: "#111827" }}>
-            $7.99<span style={{ fontSize: 15, fontWeight: 400, color: "#6b7280" }}>/month</span>
+          <div style={{ fontSize: 26, fontWeight: 650, color: "#303030", fontFamily: font }}>
+            $7.99<span style={{ fontSize: 14, fontWeight: 400, color: "#616161" }}>/month</span>
           </div>
-          <div style={{ fontSize: 14, color: "#059669", fontWeight: 500, marginTop: 4 }}>
+          <div style={{ fontSize: 13, color: "#008060", fontWeight: 500, marginTop: 4, fontFamily: font }}>
             14-day free trial
           </div>
         </div>
@@ -119,22 +126,24 @@ function SubscriptionGate({ planUrl }) {
           target="_top"
           style={{
             display: "inline-block",
-            padding: "12px 32px",
-            background: "#111827",
+            padding: "10px 24px",
+            background: "#303030",
             color: "white",
             borderRadius: 8,
-            fontWeight: 600,
-            fontSize: 15,
+            fontWeight: 500,
+            fontSize: 13,
             textDecoration: "none",
+            fontFamily: font,
           }}
         >
           Start free trial
         </a>
 
         <p style={{
-          fontSize: 13,
-          color: "#9ca3af",
+          fontSize: 12,
+          color: "#8c9196",
           margin: "16px 0 0 0",
+          fontFamily: font,
         }}>
           Managed by Shopify · Cancel anytime
         </p>

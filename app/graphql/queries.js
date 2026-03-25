@@ -118,6 +118,107 @@ export const CHECK_ACTIVE_SUBSCRIPTION = `#graphql
 `;
 
 // ============================================================================
+// PRODUCT TAG BROWSER — Queries & Mutations
+// ============================================================================
+
+/**
+ * Search products with filters and pagination
+ * Supports Shopify query syntax for vendor, product_type, tag, title filtering
+ */
+export const SEARCH_PRODUCTS = `#graphql
+  query SearchProducts($first: Int!, $after: String, $query: String) {
+    products(first: $first, after: $after, query: $query, sortKey: CREATED_AT, reverse: true) {
+      edges {
+        node {
+          id
+          title
+          handle
+          vendor
+          productType
+          tags
+          status
+          featuredMedia {
+            preview {
+              image {
+                url(transform: { maxWidth: 80, maxHeight: 80 })
+                altText
+              }
+            }
+          }
+        }
+      }
+      pageInfo {
+        hasNextPage
+        endCursor
+      }
+    }
+  }
+`;
+
+/**
+ * Fetch filter options for the product browser
+ * Gets vendors, product types, and collections in one request
+ */
+export const GET_FILTER_OPTIONS = `#graphql
+  query GetFilterOptions {
+    productVendors(first: 250) {
+      edges { node }
+    }
+    productTypes(first: 250) {
+      edges { node }
+    }
+    collections(first: 250) {
+      edges {
+        node {
+          id
+          title
+        }
+      }
+    }
+  }
+`;
+
+/**
+ * Add tags to a product
+ */
+export const TAGS_ADD = `#graphql
+  mutation TagsAdd($id: ID!, $tags: [String!]!) {
+    tagsAdd(id: $id, tags: $tags) {
+      node {
+        ... on Product {
+          id
+          tags
+        }
+      }
+      userErrors {
+        field
+        message
+      }
+    }
+  }
+`;
+
+/**
+ * Remove tags from a product
+ */
+export const TAGS_REMOVE = `#graphql
+  mutation TagsRemove($id: ID!, $tags: [String!]!) {
+    tagsRemove(id: $id, tags: $tags) {
+      node {
+        ... on Product {
+          id
+          tags
+        }
+      }
+      userErrors {
+        field
+        message
+      }
+    }
+  }
+`;
+
+// ============================================================================
 // CONSTANTS
 // ============================================================================
 
