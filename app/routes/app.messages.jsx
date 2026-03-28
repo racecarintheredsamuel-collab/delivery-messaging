@@ -3,7 +3,7 @@
 // ============================================================================
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useFetcher, useLoaderData, useNavigate, useRouteError, useSearchParams } from "react-router";
+import { Link, useFetcher, useLoaderData, useNavigate, useRouteError, useSearchParams } from "react-router";
 import { boundary } from "@shopify/shopify-app-react-router/server";
 import { authenticate } from "../shopify.server";
 import { ensureDeliveryRulesDefinition } from "../models/deliveryRules.server";
@@ -1537,6 +1537,8 @@ export default function Index() {
 
   // Add Tags modal state
   const [showAddTagsModal, setShowAddTagsModal] = useState(false);
+  const [addTagsStoreSearch, setAddTagsStoreSearch] = useState("");
+  const [addTagsShowAll, setAddTagsShowAll] = useState(false);
   const allProfileTags = useMemo(() => {
     const tagSet = new Set();
     for (const r of rules) {
@@ -3716,7 +3718,7 @@ export default function Index() {
                   {/* Add Tags + Tag Manager buttons */}
                   <div style={{ display: "flex", gap: 8 }}>
                     <button
-                      onClick={() => setShowAddTagsModal(true)}
+                      onClick={() => { setShowAddTagsModal(true); setAddTagsStoreSearch(""); setAddTagsShowAll(false); }}
                       style={{
                         flex: "6 1 0",
                         padding: "6px 12px",
@@ -3731,10 +3733,13 @@ export default function Index() {
                     >
                       Add Tags
                     </button>
-                    <button
-                      onClick={() => navigate("/app/tag-manager")}
+                    <Link
+                      to="/app/tag-manager"
                       style={{
                         flex: "4 1 0",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
                         padding: "6px 12px",
                         borderRadius: 6,
                         border: "1px solid #d1d5db",
@@ -3742,10 +3747,11 @@ export default function Index() {
                         fontSize: 13,
                         cursor: "pointer",
                         color: "#303030",
+                        textDecoration: "none",
                       }}
                     >
                       Open Tag Manager
-                    </button>
+                    </Link>
                   </div>
 
                   <label>
@@ -7831,7 +7837,7 @@ export default function Index() {
               {/* This rule */}
               {currentTags.length > 0 && (
                 <div style={{ marginBottom: 16 }}>
-                  <div style={{ fontSize: 12, color: "#8c9196", marginBottom: 6 }}>This rule (click to remove):</div>
+                  <div style={{ fontSize: 12, color: "#8c9196", marginBottom: 6 }}>Tags applied to this rule (click to remove):</div>
                   <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
                     {currentTags.map((t) => (
                       <button key={t} onClick={() => removeTagFromRule(t)}
@@ -7850,7 +7856,7 @@ export default function Index() {
               {/* Other rules */}
               {otherRuleTags.length > 0 && (
                 <div style={{ marginBottom: 16 }}>
-                  <div style={{ fontSize: 12, color: "#8c9196", marginBottom: 6 }}>Other rules (click to add):</div>
+                  <div style={{ fontSize: 12, color: "#8c9196", marginBottom: 6 }}>Tags applied to other rules (click to add):</div>
                   <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
                     {otherRuleTags.map((t) => (
                       <button key={t} onClick={() => addTagToRule(t)}
@@ -7866,22 +7872,59 @@ export default function Index() {
               )}
 
               {/* Store tags */}
-              {storeTagsFiltered.length > 0 && (
-                <div style={{ marginBottom: 16 }}>
-                  <div style={{ fontSize: 12, color: "#8c9196", marginBottom: 6 }}>Store tags (click to add):</div>
-                  <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                    {storeTagsFiltered.map((t) => (
-                      <button key={t} onClick={() => addTagToRule(t)}
+              {storeTagsFiltered.length > 0 && (() => {
+                const filtered = addTagsStoreSearch
+                  ? storeTagsFiltered.filter((t) => t.toLowerCase().includes(addTagsStoreSearch.toLowerCase()))
+                  : storeTagsFiltered;
+                const visible = addTagsShowAll ? filtered : filtered.slice(0, 20);
+                const hasMore = filtered.length > 20;
+                return (
+                  <div style={{ marginBottom: 16 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+                      <span style={{ fontSize: 12, color: "#8c9196" }}>Store tags (click to add):</span>
+                      <input
+                        type="text"
+                        placeholder="Search tags..."
+                        value={addTagsStoreSearch}
+                        onChange={(e) => setAddTagsStoreSearch(e.target.value)}
                         style={{
-                          padding: "4px 12px", borderRadius: 12, border: "1px solid #e5e7eb",
-                          background: "#f9fafb", color: "#6b7280", fontSize: 12, fontWeight: 500, cursor: "pointer",
-                        }}>
-                        {t}
-                      </button>
-                    ))}
+                          padding: "2px 8px", borderRadius: 6, border: "1px solid #d1d5db",
+                          fontSize: 11, width: 120, outline: "none",
+                        }}
+                      />
+                    </div>
+                    <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                      {visible.map((t) => (
+                        <button key={t} onClick={() => addTagToRule(t)}
+                          style={{
+                            padding: "4px 12px", borderRadius: 12, border: "1px solid #e5e7eb",
+                            background: "#f9fafb", color: "#6b7280", fontSize: 12, fontWeight: 500, cursor: "pointer",
+                          }}>
+                          {t}
+                        </button>
+                      ))}
+                      {hasMore && !addTagsShowAll && (
+                        <button onClick={() => setAddTagsShowAll(true)}
+                          style={{
+                            padding: "4px 12px", borderRadius: 12, border: "1px solid #d1d5db",
+                            background: "white", color: "#6b7280", fontSize: 12, cursor: "pointer",
+                          }}>
+                          +{filtered.length - 20} more
+                        </button>
+                      )}
+                      {hasMore && addTagsShowAll && (
+                        <button onClick={() => setAddTagsShowAll(false)}
+                          style={{
+                            padding: "4px 12px", borderRadius: 12, border: "1px solid #d1d5db",
+                            background: "white", color: "#6b7280", fontSize: 12, cursor: "pointer",
+                          }}>
+                          Show less
+                        </button>
+                      )}
+                    </div>
                   </div>
-                </div>
-              )}
+                );
+              })()}
             </div>
 
             {/* Custom tag input */}
@@ -7912,7 +7955,7 @@ export default function Index() {
                   }
                 }}
                 style={{
-                  padding: "6px 14px", borderRadius: 6, border: "1px solid #d1d5db",
+                  padding: "6px 14px", borderRadius: 8, border: "none",
                   background: "#0369a1", color: "white", fontSize: 13, fontWeight: 500, cursor: "pointer",
                 }}
               >
