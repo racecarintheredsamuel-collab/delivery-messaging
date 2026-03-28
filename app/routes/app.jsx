@@ -9,6 +9,9 @@ import prisma from "../db.server";
 // App handle from Partner Dashboard (locked after creation)
 const APP_HANDLE = "delivery-info-block";
 
+// In-memory subscription cache — avoids Prisma + GraphQL on every loader call
+const subscriptionCache = new Map(); // shop -> { active: boolean, checkedAt: number }
+
 // ============================================================================
 // LOADER — authenticates and checks subscription status
 // ============================================================================
@@ -25,41 +28,52 @@ export const loader = async ({ request }) => {
   const shop = session?.shop || "";
   const storeHandle = shop.replace(".myshopify.com", "");
 
-  // --- Subscription check with server-side caching ---
-  // Cache duration: 1 hour. Avoids GraphQL query on every page load.
-  // Fail-closed: if cache is empty AND query fails, block access.
+  // --- Subscription check with in-memory + Prisma caching ---
+  // In-memory cache first (instant), then Prisma (fast), then GraphQL (slow).
+  // Only cache active subscriptions. Fail-closed if everything fails.
   const CACHE_DURATION_MS = 60 * 60 * 1000; // 1 hour
   let hasActiveSubscription = false;
+  const now = Date.now();
 
   try {
-    // Check cache first
-    const cachedSession = await prisma.session.findFirst({ where: { shop } });
-    const now = new Date();
-    const cacheAge = cachedSession?.subscriptionCheckedAt
-      ? now.getTime() - new Date(cachedSession.subscriptionCheckedAt).getTime()
-      : Infinity;
-
-    if (cachedSession?.subscriptionActive === true && cacheAge < CACHE_DURATION_MS) {
-      // Use cached result — only cache active subscriptions
+    // 1. Check in-memory cache (zero I/O)
+    const memCached = subscriptionCache.get(shop);
+    if (memCached?.active === true && (now - memCached.checkedAt) < CACHE_DURATION_MS) {
       hasActiveSubscription = true;
-      console.log("[BILLING] Cache hit. Shop:", shop, "Active: true");
     } else {
-      // No cache, expired, or cached as inactive — always re-check
-      const res = await admin.graphql(CHECK_ACTIVE_SUBSCRIPTION);
-      const json = await res.json();
-      const subscriptions = json?.data?.currentAppInstallation?.activeSubscriptions ?? [];
-      hasActiveSubscription = subscriptions.length > 0;
-      console.log("[BILLING] Fresh check. Shop:", shop, "Active:", hasActiveSubscription, "Count:", subscriptions.length);
+      // 2. Check Prisma cache
+      const cachedSession = await prisma.session.findFirst({ where: { shop } });
+      const cacheAge = cachedSession?.subscriptionCheckedAt
+        ? now - new Date(cachedSession.subscriptionCheckedAt).getTime()
+        : Infinity;
 
-      // Only cache active subscriptions — never cache false
-      if (cachedSession) {
-        await prisma.session.updateMany({
-          where: { shop },
-          data: {
-            subscriptionActive: hasActiveSubscription || null,
-            subscriptionCheckedAt: hasActiveSubscription ? now : null,
-          },
-        });
+      if (cachedSession?.subscriptionActive === true && cacheAge < CACHE_DURATION_MS) {
+        hasActiveSubscription = true;
+        subscriptionCache.set(shop, { active: true, checkedAt: now });
+      } else {
+        // 3. Fresh GraphQL check
+        const res = await admin.graphql(CHECK_ACTIVE_SUBSCRIPTION);
+        const json = await res.json();
+        const subscriptions = json?.data?.currentAppInstallation?.activeSubscriptions ?? [];
+        hasActiveSubscription = subscriptions.length > 0;
+
+        // Cache in memory
+        if (hasActiveSubscription) {
+          subscriptionCache.set(shop, { active: true, checkedAt: now });
+        } else {
+          subscriptionCache.delete(shop);
+        }
+
+        // Cache in Prisma (only active)
+        if (cachedSession) {
+          await prisma.session.updateMany({
+            where: { shop },
+            data: {
+              subscriptionActive: hasActiveSubscription || null,
+              subscriptionCheckedAt: hasActiveSubscription ? new Date() : null,
+            },
+          });
+        }
       }
     }
   } catch (error) {

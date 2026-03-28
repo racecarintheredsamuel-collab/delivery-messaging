@@ -298,9 +298,10 @@ export const loader = async ({ request }) => {
 // ACTION - Save config to Shopify metafields
 // ============================================================================
 
-// Prevent loader revalidation for product tag operations
-export function shouldRevalidate({ defaultShouldRevalidate }) {
-  return defaultShouldRevalidate;
+// Prevent loader revalidation after saves — data is already in client state
+export function shouldRevalidate({ formMethod }) {
+  if (formMethod === "POST") return false;
+  return true;
 }
 
 export const action = async ({ request }) => {
@@ -5792,10 +5793,10 @@ export default function Index() {
                           };
                           setRules(next);
                         }}
-                        disabled={getEffectiveIcon(rule.settings?.eta_order_icon, "clipboard-document-check").startsWith("custom-")}
-                        style={{ width: "100%" }}
+                        disabled={getEffectiveIcon(rule.settings?.eta_order_icon, "clipboard-document-check").startsWith("custom-") || getEffectiveIcon(rule.settings?.eta_order_icon, "clipboard-document-check") === "none"}
+                        style={{ width: "100%", opacity: getEffectiveIcon(rule.settings?.eta_order_icon, "clipboard-document-check") === "none" ? 0.5 : 1 }}
                       >
-                        {getEffectiveIcon(rule.settings?.eta_order_icon, "clipboard-document-check").startsWith("custom-") ? (
+                        {(getEffectiveIcon(rule.settings?.eta_order_icon, "clipboard-document-check").startsWith("custom-") || getEffectiveIcon(rule.settings?.eta_order_icon, "clipboard-document-check") === "none") ? (
                           <option value="n/a">N/A</option>
                         ) : (
                           <>
@@ -5817,10 +5818,10 @@ export default function Index() {
                           };
                           setRules(next);
                         }}
-                        disabled={getEffectiveIcon(rule.settings?.eta_shipping_icon, "truck").startsWith("custom-")}
-                        style={{ width: "100%" }}
+                        disabled={getEffectiveIcon(rule.settings?.eta_shipping_icon, "truck").startsWith("custom-") || getEffectiveIcon(rule.settings?.eta_shipping_icon, "truck") === "none"}
+                        style={{ width: "100%", opacity: getEffectiveIcon(rule.settings?.eta_shipping_icon, "truck") === "none" ? 0.5 : 1 }}
                       >
-                        {getEffectiveIcon(rule.settings?.eta_shipping_icon, "truck").startsWith("custom-") ? (
+                        {(getEffectiveIcon(rule.settings?.eta_shipping_icon, "truck").startsWith("custom-") || getEffectiveIcon(rule.settings?.eta_shipping_icon, "truck") === "none") ? (
                           <option value="n/a">N/A</option>
                         ) : (
                           <>
@@ -5842,10 +5843,10 @@ export default function Index() {
                           };
                           setRules(next);
                         }}
-                        disabled={getEffectiveIcon(rule.settings?.eta_delivery_icon, "home").startsWith("custom-")}
-                        style={{ width: "100%" }}
+                        disabled={getEffectiveIcon(rule.settings?.eta_delivery_icon, "home").startsWith("custom-") || getEffectiveIcon(rule.settings?.eta_delivery_icon, "home") === "none"}
+                        style={{ width: "100%", opacity: getEffectiveIcon(rule.settings?.eta_delivery_icon, "home") === "none" ? 0.5 : 1 }}
                       >
-                        {getEffectiveIcon(rule.settings?.eta_delivery_icon, "home").startsWith("custom-") ? (
+                        {(getEffectiveIcon(rule.settings?.eta_delivery_icon, "home").startsWith("custom-") || getEffectiveIcon(rule.settings?.eta_delivery_icon, "home") === "none") ? (
                           <option value="n/a">N/A</option>
                         ) : (
                           <>
@@ -5857,6 +5858,9 @@ export default function Index() {
                     </label>
                   </div>
 
+                  {(getEffectiveIcon(rule.settings?.eta_order_icon, "clipboard-document-check") !== "none" ||
+                    getEffectiveIcon(rule.settings?.eta_shipping_icon, "truck") !== "none" ||
+                    getEffectiveIcon(rule.settings?.eta_delivery_icon, "home") !== "none") && (<>
                   <label style={{ display: "flex", gap: 8, alignItems: "center", marginTop: 12 }}>
                     <input
                       type="checkbox"
@@ -5951,6 +5955,7 @@ export default function Index() {
                       style={{ width: "100%" }}
                     />
                   </label>
+                  </>)}
 
                   {/* Divider before Connector section */}
                   <div style={{ borderTop: "1px solid var(--p-color-border, #e5e7eb)", margin: "8px 0" }} />
