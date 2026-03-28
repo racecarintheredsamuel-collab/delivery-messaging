@@ -270,7 +270,7 @@ export const loader = async ({ request }) => {
 
   const shopCurrency = json?.data?.shop?.currencyCode || 'GBP';
 
-  // Fetch store tags for the Add Tags modal
+  // Fetch store tags for the Tag Wizard modal
   let allStoreTags = [];
   try {
     const filtersRes = await admin.graphql(GET_FILTER_OPTIONS);
@@ -290,7 +290,7 @@ export const loader = async ({ request }) => {
     hasExistingConfig,
     hasExistingSettings,
     hasRules, // For empty state display
-    allStoreTags, // For Add Tags modal
+    allStoreTags, // For Tag Wizard modal
   };
 };
 
@@ -1535,7 +1535,7 @@ export default function Index() {
     return () => clearInterval(interval);
   }, [globalSettings?.cutoff_time, globalSettings?.cutoff_time_sat, globalSettings?.cutoff_time_sun, globalSettings?.preview_timezone, globalSettings?.closed_days, globalSettings?.custom_holidays, globalSettings?.bank_holiday_country, rule?.settings?.override_cutoff_times, rule?.settings?.cutoff_time, rule?.settings?.cutoff_time_sat, rule?.settings?.cutoff_time_sun, rule?.settings?.override_closed_days, rule?.settings?.closed_days]);
 
-  // Add Tags modal state
+  // Tag Wizard modal state
   const [showAddTagsModal, setShowAddTagsModal] = useState(false);
   const [addTagsStoreSearch, setAddTagsStoreSearch] = useState("");
   const [addTagsShowAll, setAddTagsShowAll] = useState(false);
@@ -3715,7 +3715,7 @@ export default function Index() {
                     />
                   </label>
 
-                  {/* Add Tags + Tag Manager buttons */}
+                  {/* Tag Wizard + Tag Manager buttons */}
                   <div style={{ display: "flex", gap: 8 }}>
                     <button
                       onClick={() => { setShowAddTagsModal(true); setAddTagsStoreSearch(""); setAddTagsShowAll(false); }}
@@ -3731,7 +3731,7 @@ export default function Index() {
                         color: "#0369a1",
                       }}
                     >
-                      Add Tags
+                      Tag Wizard
                     </button>
                     <Link
                       to="/app/tag-manager"
@@ -7773,7 +7773,7 @@ export default function Index() {
       </s-section>
     </s-page>
 
-    {/* ---- Add Tags Modal ---- */}
+    {/* ---- Tag Wizard Modal ---- */}
     {showAddTagsModal && (() => {
       const currentTags = rule?.match?.tags ?? [];
       const otherRuleTags = allProfileTags.filter((t) => !currentTags.some((ct) => ct.toLowerCase() === t.toLowerCase()));
@@ -7825,7 +7825,7 @@ export default function Index() {
               padding: "14px 20px", borderBottom: "1px solid #e5e7eb",
               display: "flex", justifyContent: "space-between", alignItems: "center",
             }}>
-              <h3 style={{ margin: 0, fontSize: 15, fontWeight: 600, color: "#303030" }}>Add Tags to Rule</h3>
+              <h3 style={{ margin: 0, fontSize: 15, fontWeight: 600, color: "#303030" }}>Tag Wizard</h3>
               <button onClick={() => setShowAddTagsModal(false)}
                 style={{ background: "none", border: "none", cursor: "pointer", fontSize: 18, color: "#6b7280", padding: 4, lineHeight: 1 }}>
                 ✕
