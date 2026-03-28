@@ -39,23 +39,26 @@ export const loader = async ({ request }) => {
       ? now.getTime() - new Date(cachedSession.subscriptionCheckedAt).getTime()
       : Infinity;
 
-    if (cachedSession?.subscriptionActive != null && cacheAge < CACHE_DURATION_MS) {
-      // Use cached result — skip GraphQL query
-      hasActiveSubscription = cachedSession.subscriptionActive;
-      console.log("[BILLING] Cache hit. Shop:", shop, "Active:", hasActiveSubscription);
+    if (cachedSession?.subscriptionActive === true && cacheAge < CACHE_DURATION_MS) {
+      // Use cached result — only cache active subscriptions
+      hasActiveSubscription = true;
+      console.log("[BILLING] Cache hit. Shop:", shop, "Active: true");
     } else {
-      // Cache miss or expired — run GraphQL query
+      // No cache, expired, or cached as inactive — always re-check
       const res = await admin.graphql(CHECK_ACTIVE_SUBSCRIPTION);
       const json = await res.json();
       const subscriptions = json?.data?.currentAppInstallation?.activeSubscriptions ?? [];
       hasActiveSubscription = subscriptions.length > 0;
-      console.log("[BILLING] Cache miss. Shop:", shop, "Active:", hasActiveSubscription, "Count:", subscriptions.length);
+      console.log("[BILLING] Fresh check. Shop:", shop, "Active:", hasActiveSubscription, "Count:", subscriptions.length);
 
-      // Update cache
+      // Only cache active subscriptions — never cache false
       if (cachedSession) {
         await prisma.session.updateMany({
           where: { shop },
-          data: { subscriptionActive: hasActiveSubscription, subscriptionCheckedAt: now },
+          data: {
+            subscriptionActive: hasActiveSubscription || null,
+            subscriptionCheckedAt: hasActiveSubscription ? now : null,
+          },
         });
       }
     }
