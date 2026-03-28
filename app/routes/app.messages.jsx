@@ -7809,7 +7809,7 @@ export default function Index() {
           <div
             onClick={(e) => e.stopPropagation()}
             style={{
-              background: "white", borderRadius: 12, maxWidth: 480, width: "100%", maxHeight: "70vh",
+              background: "white", borderRadius: 12, maxWidth: 600, width: "100%", maxHeight: "70vh", minHeight: 350,
               display: "flex", flexDirection: "column", overflow: "hidden",
               fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'San Francisco', 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif",
             }}
@@ -7836,10 +7836,11 @@ export default function Index() {
                     {currentTags.map((t) => (
                       <button key={t} onClick={() => removeTagFromRule(t)}
                         style={{
-                          padding: "4px 12px", borderRadius: 12, border: "1px solid #86efac",
+                          padding: "4px 8px 4px 12px", borderRadius: 12, border: "1px solid #86efac",
                           background: "#dcfce7", color: "#15803d", fontSize: 12, fontWeight: 500, cursor: "pointer",
+                          display: "inline-flex", alignItems: "center", gap: 4,
                         }}>
-                        {t} ✕
+                        {t}<span style={{ fontSize: 10, opacity: 0.7 }}>✕</span>
                       </button>
                     ))}
                   </div>

@@ -4,6 +4,7 @@ import { AppProvider } from "@shopify/shopify-app-react-router/react";
 import { authenticate } from "../shopify.server";
 import { CHECK_ACTIVE_SUBSCRIPTION } from "../graphql/queries";
 import { useEffect } from "react";
+import prisma from "../db.server";
 
 // App handle from Partner Dashboard (locked after creation)
 const APP_HANDLE = "delivery-info-block";
@@ -24,16 +25,40 @@ export const loader = async ({ request }) => {
   const shop = session?.shop || "";
   const storeHandle = shop.replace(".myshopify.com", "");
 
-  // --- Subscription check (Shopify Managed Pricing) ---
-  // Direct GraphQL query — no billing config needed, works with managed pricing.
-  // Default fail-closed: if the check fails, block access.
+  // --- Subscription check with server-side caching ---
+  // Cache duration: 1 hour. Avoids GraphQL query on every page load.
+  // Fail-closed: if cache is empty AND query fails, block access.
+  const CACHE_DURATION_MS = 60 * 60 * 1000; // 1 hour
   let hasActiveSubscription = false;
+
   try {
-    const res = await admin.graphql(CHECK_ACTIVE_SUBSCRIPTION);
-    const json = await res.json();
-    const subscriptions = json?.data?.currentAppInstallation?.activeSubscriptions ?? [];
-    hasActiveSubscription = subscriptions.length > 0;
-    console.log("[BILLING] Shop:", shop, "Active:", hasActiveSubscription, "Count:", subscriptions.length);
+    // Check cache first
+    const cachedSession = await prisma.session.findFirst({ where: { shop } });
+    const now = new Date();
+    const cacheAge = cachedSession?.subscriptionCheckedAt
+      ? now.getTime() - new Date(cachedSession.subscriptionCheckedAt).getTime()
+      : Infinity;
+
+    if (cachedSession?.subscriptionActive != null && cacheAge < CACHE_DURATION_MS) {
+      // Use cached result — skip GraphQL query
+      hasActiveSubscription = cachedSession.subscriptionActive;
+      console.log("[BILLING] Cache hit. Shop:", shop, "Active:", hasActiveSubscription);
+    } else {
+      // Cache miss or expired — run GraphQL query
+      const res = await admin.graphql(CHECK_ACTIVE_SUBSCRIPTION);
+      const json = await res.json();
+      const subscriptions = json?.data?.currentAppInstallation?.activeSubscriptions ?? [];
+      hasActiveSubscription = subscriptions.length > 0;
+      console.log("[BILLING] Cache miss. Shop:", shop, "Active:", hasActiveSubscription, "Count:", subscriptions.length);
+
+      // Update cache
+      if (cachedSession) {
+        await prisma.session.updateMany({
+          where: { shop },
+          data: { subscriptionActive: hasActiveSubscription, subscriptionCheckedAt: now },
+        });
+      }
+    }
   } catch (error) {
     console.error("[BILLING] Failed to check subscription:", error);
     // Fail-closed: hasActiveSubscription stays false
