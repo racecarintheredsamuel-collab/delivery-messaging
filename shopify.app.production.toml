@@ -16,7 +16,7 @@ api_version = "2025-10"
   compliance_topics = [ "customers/data_request", "customers/redact", "shop/redact" ]
 
 [access_scopes]
-scopes = "read_customers,write_products"
+scopes = "write_products"
 
 [auth]
 redirect_urls = [ "https://delivery-messaging.app/auth/callback" ]
