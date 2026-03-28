@@ -26,12 +26,15 @@ export function ProductBrowserModal({ open, onClose, currentTag, currentRuleTags
   const [showConflictsOnly, setShowConflictsOnly] = useState(false);
   const [showNoTagOnly, setShowNoTagOnly] = useState(false);
   const [showTaggedOnly, setShowTaggedOnly] = useState(false);
+  const [addedToRule, setAddedToRule] = useState(new Set());
 
   const searchTimerRef = useRef(null);
   const initialLoadRef = useRef(false);
   const filteredCountRef = useRef(0);
   const [loading, setLoading] = useState(false);
-  const productFetcher = useFetcher({ key: "product-browser" });
+  const productFetcher = useFetcher();
+  const lastSubmitRef = useRef(null);
+  const retryCountRef = useRef(0);
 
   // ---------------------------------------------------------------------------
   // Submit helper — uses React Router fetcher for Shopify auth
@@ -42,16 +45,41 @@ export function ProductBrowserModal({ open, onClose, currentTag, currentRuleTags
     for (const [key, val] of Object.entries(data)) {
       if (key !== "action" && val != null && val !== "") formData.set(key, val);
     }
-    productFetcher.submit(formData, { method: "POST", action: "/app/product-tags", unstable_defaultShouldRevalidate: false });
+    lastSubmitRef.current = data;
+    retryCountRef.current = 0;
+    productFetcher.submit(formData, { method: "POST" });
   }, [productFetcher]);
 
   // ---------------------------------------------------------------------------
   // Sync workingTag with prop when modal opens
   // ---------------------------------------------------------------------------
+  // Retry on auth failure (401 returns no valid data)
+  useEffect(() => {
+    if (productFetcher.state === "idle" && lastSubmitRef.current && retryCountRef.current < 2) {
+      const data = productFetcher.data;
+      if (!data && lastSubmitRef.current) {
+        retryCountRef.current += 1;
+        const retryData = lastSubmitRef.current;
+        setTimeout(() => {
+          const formData = new FormData();
+          formData.set("productAction", retryData.action);
+          for (const [key, val] of Object.entries(retryData)) {
+            if (key !== "action" && val != null && val !== "") formData.set(key, val);
+          }
+          productFetcher.submit(formData, { method: "POST" });
+        }, 500);
+      }
+    }
+  }, [productFetcher.state, productFetcher.data]);
+
+  // ---------------------------------------------------------------------------
   // Handle fetcher responses
   useEffect(() => {
     const data = productFetcher.data;
     if (!data) return;
+    // Clear retry state on success
+    lastSubmitRef.current = null;
+    retryCountRef.current = 0;
     if (data.productAction === "searchProducts") {
       if (data.appendMode) {
         setProducts((prev) => [...prev, ...(data.products || [])]);
@@ -97,6 +125,7 @@ export function ProductBrowserModal({ open, onClose, currentTag, currentRuleTags
       setShowConflictsOnly(false);
       setShowNoTagOnly(false);
       setShowTaggedOnly(false);
+      setAddedToRule(new Set());
       setLoading(false);
       initialLoadRef.current = true;
       // Fire initial load directly
@@ -169,6 +198,7 @@ export function ProductBrowserModal({ open, onClose, currentTag, currentRuleTags
     if (!tag) return;
     setWorkingTag(tag);
     setNewTagInput("");
+    setAddedToRule((prev) => new Set([...prev, tag]));
     if (onAddTagToRule) onAddTagToRule(tag);
   };
 
@@ -367,7 +397,8 @@ export function ProductBrowserModal({ open, onClose, currentTag, currentRuleTags
 
         {/* ---- Tag Pills ---- */}
         {(() => {
-          const otherRulesTags = allProfileTags.filter((t) => !currentRuleTags.includes(t));
+          const effectiveRuleTags = [...new Set([...currentRuleTags, ...addedToRule])];
+          const otherRulesTags = allProfileTags.filter((t) => !effectiveRuleTags.includes(t));
           return (
             <div style={{
               padding: "10px 20px",
@@ -378,10 +409,10 @@ export function ProductBrowserModal({ open, onClose, currentTag, currentRuleTags
               alignItems: "center",
               flexShrink: 0,
             }}>
-              {currentRuleTags.length > 0 && (
+              {effectiveRuleTags.length > 0 && (
                 <>
                   <span style={{ fontSize: 12, color: "#8c9196", marginRight: 4 }}>This rule:</span>
-                  {currentRuleTags.map((t) => (
+                  {effectiveRuleTags.map((t) => (
                     <button
                       key={t}
                       onClick={() => handleTagPillClick(t)}
