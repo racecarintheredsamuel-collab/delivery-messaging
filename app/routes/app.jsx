@@ -165,6 +165,7 @@ export default function App() {
         <s-link href="/app">Dashboard</s-link>
         <s-link href="/app/messages">Messages Editor</s-link>
         <s-link href="/app/free-delivery">Free Delivery</s-link>
+        <s-link href="/app/tag-manager">Tag Manager</s-link>
         <s-link href="/app/icons">Icons</s-link>
         <s-link href="/app/help">Help</s-link>
       </s-app-nav>

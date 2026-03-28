@@ -175,6 +175,9 @@ export const GET_FILTER_OPTIONS = `#graphql
         }
       }
     }
+    productTags(first: 250) {
+      edges { node }
+    }
   }
 `;
 

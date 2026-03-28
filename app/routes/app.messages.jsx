@@ -3,7 +3,7 @@
 // ============================================================================
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useFetcher, useLoaderData, useRouteError, useSearchParams } from "react-router";
+import { useFetcher, useLoaderData, useNavigate, useRouteError, useSearchParams } from "react-router";
 import { boundary } from "@shopify/shopify-app-react-router/server";
 import { authenticate } from "../shopify.server";
 import { ensureDeliveryRulesDefinition } from "../models/deliveryRules.server";
@@ -13,17 +13,16 @@ import { isHHMM, ruleHasMatch, safeParseNumber, friendlyError, safeLogError, val
 import { getSingleIconSize, getTextFontSize, getTextFontWeight, normalizeFontSize, normalizeEtaLabelFontSize, normalizeEtaDateFontSize, normalizeSingleIconSize } from "../utils/styling";
 import { getIconSvg, getConfiguredCustomIcons, generateIconsMetafield } from "../utils/icons";
 import { getHolidaysForYear, HOLIDAY_DEFINITIONS } from "../utils/holidays";
-import { SEARCH_PRODUCTS, GET_FILTER_OPTIONS, TAGS_ADD, TAGS_REMOVE } from "../graphql/queries";
 import { CustomDatePicker } from "../components/CustomDatePicker";
 import { FontSelector } from "../components/FontSelector";
 import { PreviewLine } from "../components/PreviewLine";
 import { ETATimelinePreview } from "../components/ETATimelinePreview";
 import { ColorPicker } from "../components/ColorPicker";
 import { HelpLink } from "../components/HelpLink";
-import { ProductBrowserModal } from "../components/ProductBrowserModal";
 import {
   GET_SHOP_DELIVERY_DATA,
   GET_SHOP_ID,
+  GET_FILTER_OPTIONS,
   SET_METAFIELDS,
   SET_METAFIELDS_MINIMAL,
   METAFIELD_NAMESPACE,
@@ -271,6 +270,14 @@ export const loader = async ({ request }) => {
 
   const shopCurrency = json?.data?.shop?.currencyCode || 'GBP';
 
+  // Fetch store tags for the Add Tags modal
+  let allStoreTags = [];
+  try {
+    const filtersRes = await admin.graphql(GET_FILTER_OPTIONS);
+    const filtersJson = await filtersRes.json();
+    allStoreTags = (filtersJson.data?.productTags?.edges || []).map((e) => e.node).filter(Boolean);
+  } catch { /* ignore — modal just won't show store tags */ }
+
   // Track whether we loaded with existing data (for auto-save safeguard)
   const hasExistingConfig = !!configMf?.value;
   const hasExistingSettings = !!settingsMf?.value && settingsMf.value !== "{}";
@@ -283,6 +290,7 @@ export const loader = async ({ request }) => {
     hasExistingConfig,
     hasExistingSettings,
     hasRules, // For empty state display
+    allStoreTags, // For Add Tags modal
   };
 };
 
@@ -291,8 +299,7 @@ export const loader = async ({ request }) => {
 // ============================================================================
 
 // Prevent loader revalidation for product tag operations
-export function shouldRevalidate({ actionResult, defaultShouldRevalidate }) {
-  if (actionResult?.productAction) return false;
+export function shouldRevalidate({ defaultShouldRevalidate }) {
   return defaultShouldRevalidate;
 }
 
@@ -300,93 +307,6 @@ export const action = async ({ request }) => {
   const { admin } = await authenticate.admin(request);
 
   const formData = await request.formData();
-
-  // ------ Product tag operations (from Tag Manager modal) ------
-  const productAction = formData.get("productAction");
-  if (productAction) {
-    if (productAction === "searchProducts") {
-      const search = formData.get("search") || "";
-      const vendor = formData.get("vendor") || "";
-      const productType = formData.get("productType") || "";
-      const collectionId = formData.get("collectionId") || "";
-      const tag = formData.get("tag") || "";
-      const after = formData.get("after") || null;
-      const first = parseInt(formData.get("first") || "25", 10);
-      const loadFilters = formData.get("loadFilters") === "true";
-      const appendMode = formData.get("appendMode") === "true";
-
-      const queryParts = [];
-      if (search) queryParts.push(`title:*${search}*`);
-      if (vendor) queryParts.push(`vendor:"${vendor}"`);
-      if (productType) queryParts.push(`product_type:"${productType}"`);
-      if (tag) queryParts.push(`tag:"${tag}"`);
-      if (collectionId) {
-        const numericId = collectionId.replace("gid://shopify/Collection/", "");
-        queryParts.push(`collection_id:${numericId}`);
-      }
-      const query = queryParts.join(" AND ") || null;
-
-      const productsRes = await admin.graphql(SEARCH_PRODUCTS, { variables: { first, after, query } });
-      const productsJson = await productsRes.json();
-      const productsData = productsJson.data?.products;
-
-      const products = (productsData?.edges || []).map((edge) => {
-        const node = edge.node;
-        return {
-          id: node.id, title: node.title, handle: node.handle, vendor: node.vendor,
-          productType: node.productType, tags: node.tags, status: node.status,
-          image: node.featuredMedia?.preview?.image?.url || null,
-          imageAlt: node.featuredMedia?.preview?.image?.altText || node.title,
-        };
-      });
-
-      const pageInfo = productsData?.pageInfo || { hasNextPage: false, endCursor: null };
-      const result = { ok: true, productAction: "searchProducts", products, pageInfo, appendMode };
-
-      if (loadFilters) {
-        const filtersRes = await admin.graphql(GET_FILTER_OPTIONS);
-        const filtersJson = await filtersRes.json();
-        const data = filtersJson.data;
-        result.vendors = (data?.productVendors?.edges || []).map((e) => e.node).filter(Boolean);
-        result.productTypes = (data?.productTypes?.edges || []).map((e) => e.node).filter(Boolean);
-        result.collections = (data?.collections?.edges || []).map((e) => ({ id: e.node.id, title: e.node.title }));
-      }
-
-      return result;
-    }
-
-    if (productAction === "addTag" || productAction === "removeTag") {
-      const tag = formData.get("tag");
-      const productIdsJson = formData.get("productIds");
-      if (!tag || !productIdsJson) return { ok: false, error: "Missing required fields" };
-
-      let productIds;
-      try { productIds = JSON.parse(productIdsJson); } catch { return { ok: false, error: "Invalid productIds" }; }
-
-      const mutation = productAction === "addTag" ? TAGS_ADD : TAGS_REMOVE;
-      const results = [];
-
-      for (const productId of productIds) {
-        try {
-          const res = await admin.graphql(mutation, { variables: { id: productId, tags: [tag] } });
-          const json = await res.json();
-          const data = productAction === "addTag" ? json.data?.tagsAdd : json.data?.tagsRemove;
-          const errors = data?.userErrors || [];
-          if (errors.length > 0) {
-            results.push({ id: productId, ok: false, error: errors[0].message });
-          } else {
-            results.push({ id: productId, ok: true, tags: data?.node?.tags || [] });
-          }
-        } catch (err) {
-          results.push({ id: productId, ok: false, error: err.message });
-        }
-      }
-
-      return { ok: true, productAction, results };
-    }
-
-    return { ok: false, error: "Unknown product action" };
-  }
 
   // ------ Standard metafield save operations ------
   const configRaw = formData.get("config");
@@ -1067,6 +987,7 @@ const setCollapsedState = (ruleId, section, collapsed) => {
 
 export default function Index() {
   const { config, globalSettings: loaderGlobalSettings, shopId, shopCurrency, hasExistingConfig, hasExistingSettings, hasRules } = useLoaderData();
+  const navigate = useNavigate();
 
   // Track whether we loaded with existing data (prevents overwriting with empty data)
   const [loadedWithData] = useState(hasExistingConfig || hasExistingSettings);
@@ -1614,9 +1535,8 @@ export default function Index() {
     return () => clearInterval(interval);
   }, [globalSettings?.cutoff_time, globalSettings?.cutoff_time_sat, globalSettings?.cutoff_time_sun, globalSettings?.preview_timezone, globalSettings?.closed_days, globalSettings?.custom_holidays, globalSettings?.bank_holiday_country, rule?.settings?.override_cutoff_times, rule?.settings?.cutoff_time, rule?.settings?.cutoff_time_sat, rule?.settings?.cutoff_time_sun, rule?.settings?.override_closed_days, rule?.settings?.closed_days]);
 
-  // Collapsed panel state (stored in localStorage, not metafield)
-  // Product browser modal state
-  const [showProductBrowser, setShowProductBrowser] = useState(false);
+  // Add Tags modal state
+  const [showAddTagsModal, setShowAddTagsModal] = useState(false);
   const allProfileTags = useMemo(() => {
     const tagSet = new Set();
     for (const r of rules) {
@@ -1626,7 +1546,9 @@ export default function Index() {
     }
     return Array.from(tagSet).sort();
   }, [rules]);
+  const loaderStoreTags = useLoaderData().allStoreTags || [];
 
+  // Collapsed panel state (stored in localStorage, not metafield)
   const [collapsedPanels, setCollapsedPanels] = useState({
     product_matching: true,
     dispatch_settings: true,
@@ -3791,23 +3713,40 @@ export default function Index() {
                     />
                   </label>
 
-                  {/* Browse products button */}
-                  <button
-                    onClick={() => setShowProductBrowser(true)}
-                    disabled={!rule.match?.tags?.length}
-                    style={{
-                      padding: "6px 12px",
-                      borderRadius: 6,
-                      border: "1px solid #d1d5db",
-                      background: "white",
-                      fontSize: 13,
-                      cursor: rule.match?.tags?.length ? "pointer" : "not-allowed",
-                      color: rule.match?.tags?.length ? "#303030" : "#9ca3af",
-                      opacity: rule.match?.tags?.length ? 1 : 0.6,
-                    }}
-                  >
-                    Tag manage this rule
-                  </button>
+                  {/* Add Tags + Tag Manager buttons */}
+                  <div style={{ display: "flex", gap: 8 }}>
+                    <button
+                      onClick={() => setShowAddTagsModal(true)}
+                      style={{
+                        flex: "6 1 0",
+                        padding: "6px 12px",
+                        borderRadius: 6,
+                        border: "1px solid #0369a1",
+                        background: "#e0f2fe",
+                        fontSize: 13,
+                        fontWeight: 500,
+                        cursor: "pointer",
+                        color: "#0369a1",
+                      }}
+                    >
+                      Add Tags
+                    </button>
+                    <button
+                      onClick={() => navigate("/app/tag-manager")}
+                      style={{
+                        flex: "4 1 0",
+                        padding: "6px 12px",
+                        borderRadius: 6,
+                        border: "1px solid #d1d5db",
+                        background: "white",
+                        fontSize: 13,
+                        cursor: "pointer",
+                        color: "#303030",
+                      }}
+                    >
+                      Open Tag Manager
+                    </button>
+                  </div>
 
                   <label>
                     <s-text>Product handles (comma-separated)</s-text>
@@ -7828,20 +7767,16 @@ export default function Index() {
       </s-section>
     </s-page>
 
-    {/* Product Browser Modal */}
-    <ProductBrowserModal
-      open={showProductBrowser}
-      onClose={() => setShowProductBrowser(false)}
-      currentTag={(rule?.match?.tags ?? [])[0] || ""}
-      currentRuleTags={rule?.match?.tags ?? []}
-      allProfileTags={allProfileTags}
-      rules={rules}
-      ruleName={rule?.name || ""}
-      currentRuleId={rule?.id || ""}
-      onAddTagToRule={(tag) => {
+    {/* ---- Add Tags Modal ---- */}
+    {showAddTagsModal && (() => {
+      const currentTags = rule?.match?.tags ?? [];
+      const otherRuleTags = allProfileTags.filter((t) => !currentTags.some((ct) => ct.toLowerCase() === t.toLowerCase()));
+      const ruleTagsLower = allProfileTags.map((t) => t.toLowerCase());
+      const storeTagsFiltered = loaderStoreTags.filter((t) => !ruleTagsLower.includes(t.toLowerCase()));
+
+      const addTagToRule = (tag) => {
         if (!rule) return;
-        const currentTags = rule.match?.tags ?? [];
-        if (currentTags.includes(tag)) return;
+        if (currentTags.some((t) => t.toLowerCase() === tag.toLowerCase())) return;
         const updatedTags = [...currentTags, tag];
         const idx = rules.findIndex((r) => r.id === rule.id);
         if (idx < 0) return;
@@ -7849,8 +7784,145 @@ export default function Index() {
         next[idx] = { ...next[idx], match: { ...next[idx].match, tags: updatedTags } };
         setRules(next);
         setTagsText(updatedTags.join(", "));
-      }}
-    />
+      };
+
+      const removeTagFromRule = (tag) => {
+        if (!rule) return;
+        const updatedTags = currentTags.filter((t) => t.toLowerCase() !== tag.toLowerCase());
+        const idx = rules.findIndex((r) => r.id === rule.id);
+        if (idx < 0) return;
+        const next = [...rules];
+        next[idx] = { ...next[idx], match: { ...next[idx].match, tags: updatedTags } };
+        setRules(next);
+        setTagsText(updatedTags.join(", "));
+      };
+
+      return (
+        <div
+          onClick={() => setShowAddTagsModal(false)}
+          onKeyDown={(e) => { if (e.key === "Escape") setShowAddTagsModal(false); }}
+          style={{
+            position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)",
+            zIndex: 1000, display: "flex", justifyContent: "center", alignItems: "center", padding: 16,
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              background: "white", borderRadius: 12, maxWidth: 480, width: "100%", maxHeight: "70vh",
+              display: "flex", flexDirection: "column", overflow: "hidden",
+              fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'San Francisco', 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif",
+            }}
+          >
+            {/* Header */}
+            <div style={{
+              padding: "14px 20px", borderBottom: "1px solid #e5e7eb",
+              display: "flex", justifyContent: "space-between", alignItems: "center",
+            }}>
+              <h3 style={{ margin: 0, fontSize: 15, fontWeight: 600, color: "#303030" }}>Add Tags to Rule</h3>
+              <button onClick={() => setShowAddTagsModal(false)}
+                style={{ background: "none", border: "none", cursor: "pointer", fontSize: 18, color: "#6b7280", padding: 4, lineHeight: 1 }}>
+                ✕
+              </button>
+            </div>
+
+            {/* Tag sections */}
+            <div style={{ flex: 1, overflowY: "auto", padding: "12px 20px" }}>
+              {/* This rule */}
+              {currentTags.length > 0 && (
+                <div style={{ marginBottom: 16 }}>
+                  <div style={{ fontSize: 12, color: "#8c9196", marginBottom: 6 }}>This rule (click to remove):</div>
+                  <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                    {currentTags.map((t) => (
+                      <button key={t} onClick={() => removeTagFromRule(t)}
+                        style={{
+                          padding: "4px 12px", borderRadius: 12, border: "1px solid #86efac",
+                          background: "#dcfce7", color: "#15803d", fontSize: 12, fontWeight: 500, cursor: "pointer",
+                        }}>
+                        {t} ✕
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Other rules */}
+              {otherRuleTags.length > 0 && (
+                <div style={{ marginBottom: 16 }}>
+                  <div style={{ fontSize: 12, color: "#8c9196", marginBottom: 6 }}>Other rules (click to add):</div>
+                  <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                    {otherRuleTags.map((t) => (
+                      <button key={t} onClick={() => addTagToRule(t)}
+                        style={{
+                          padding: "4px 12px", borderRadius: 12, border: "1px solid #93c5fd",
+                          background: "#eff6ff", color: "#1d4ed8", fontSize: 12, fontWeight: 500, cursor: "pointer",
+                        }}>
+                        {t}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Store tags */}
+              {storeTagsFiltered.length > 0 && (
+                <div style={{ marginBottom: 16 }}>
+                  <div style={{ fontSize: 12, color: "#8c9196", marginBottom: 6 }}>Store tags (click to add):</div>
+                  <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                    {storeTagsFiltered.map((t) => (
+                      <button key={t} onClick={() => addTagToRule(t)}
+                        style={{
+                          padding: "4px 12px", borderRadius: 12, border: "1px solid #e5e7eb",
+                          background: "#f9fafb", color: "#6b7280", fontSize: 12, fontWeight: 500, cursor: "pointer",
+                        }}>
+                        {t}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Custom tag input */}
+            <div style={{
+              padding: "12px 20px", borderTop: "1px solid #e5e7eb",
+              display: "flex", gap: 6, alignItems: "center",
+            }}>
+              <input
+                type="text"
+                placeholder="Type a custom tag..."
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && e.target.value.trim()) {
+                    addTagToRule(e.target.value.trim());
+                    e.target.value = "";
+                  }
+                }}
+                style={{
+                  flex: 1, padding: "6px 10px", borderRadius: 6, border: "1px solid #d1d5db",
+                  fontSize: 13, outline: "none",
+                }}
+              />
+              <button
+                onClick={(e) => {
+                  const input = e.target.previousElementSibling;
+                  if (input?.value?.trim()) {
+                    addTagToRule(input.value.trim());
+                    input.value = "";
+                  }
+                }}
+                style={{
+                  padding: "6px 14px", borderRadius: 6, border: "1px solid #d1d5db",
+                  background: "#0369a1", color: "white", fontSize: 13, fontWeight: 500, cursor: "pointer",
+                }}
+              >
+                Add
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+    })()}
+
     </>
   );
 }
