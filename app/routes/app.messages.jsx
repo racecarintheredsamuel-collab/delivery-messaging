@@ -5489,7 +5489,7 @@ export default function Index() {
                         type="range"
                         min="20"
                         max="48"
-                        step="4"
+                        step="1"
                         value={normalizeSingleIconSize(rule.settings?.single_icon_size, 36)}
                         onChange={(e) => {
                           const next = [...rules];
@@ -5942,7 +5942,7 @@ export default function Index() {
                       type="range"
                       min="20"
                       max="48"
-                      step="4"
+                      step="1"
                       value={rule.settings?.eta_icon_size || 36}
                       onChange={(e) => {
                         const next = [...rules];
@@ -6004,36 +6004,9 @@ export default function Index() {
                       >
                         <option value="center">Center (full height)</option>
                         <option value="icon">Center (icon level)</option>
-                        <option value="custom">Custom position</option>
                       </select>
                     </label>
                   </div>
-
-                  {rule.settings?.eta_connector_alignment === "custom" && (
-                    <div>
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
-                        <s-text size="small">
-                          Connector vertical offset ({rule.settings?.eta_connector_offset ?? 0}%)
-                        </s-text>
-                      </div>
-                      <input
-                        type="range"
-                        min="0"
-                        max="100"
-                        step="1"
-                        value={rule.settings?.eta_connector_offset ?? 0}
-                        onChange={(e) => {
-                          const next = [...rules];
-                          next[safeSelectedIndex] = {
-                            ...rule,
-                            settings: { ...rule.settings, eta_connector_offset: Number(e.target.value) },
-                          };
-                          setRules(next);
-                        }}
-                        style={{ width: "100%" }}
-                      />
-                    </div>
-                  )}
 
                   <label>
                     <s-text>Connector size ({rule.settings?.eta_connector_size || 24}px)</s-text>
@@ -6569,7 +6542,7 @@ export default function Index() {
                               type="range"
                               min="16"
                               max="96"
-                              step="8"
+                              step="1"
                               value={rule.settings?.special_delivery_icon_size || 24}
                               onChange={(e) => {
                                 const next = [...rules];
