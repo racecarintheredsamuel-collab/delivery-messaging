@@ -225,9 +225,9 @@ export const HELP_SECTIONS = [
       },
       {
         id: "special-delivery-content",
-        title: "Header & Message",
+        title: "Message",
         image: "/images/help/special-header1.png",
-        content: "The header is optional — use it for a short label like 'Palletised Shipment' or 'Made to Order'. The message body supports {lb} for line breaks, **bold** text, and [link](url) formatting. This is where you describe the delivery method, expected timescales, or any special instructions the customer should know.\n\nBoth fields support per-rule customisation, so different products can show completely different special delivery information based on which rule they match.",
+        content: "The message body supports {lb} for line breaks, **bold** text, and [link](url) formatting. Use bold text for headings like **Palletised Shipment**. This is where you describe the delivery method, expected timescales, or any special instructions the customer should know.\n\nMessages support per-rule customisation, so different products can show completely different special delivery information based on which rule they match.",
       },
       {
         id: "special-delivery-icon",

@@ -97,12 +97,6 @@ function defaultGlobalSettings() {
     // ETA Timeline padding
     eta_padding_horizontal: 8,
     eta_padding_vertical: 8,
-    // Typography - Special Delivery Header styling
-    special_delivery_header_use_theme_text_styling: true,
-    special_delivery_header_text_color: "#111827",
-    special_delivery_header_font_size: 16,
-    special_delivery_header_font_weight: "normal",
-    special_delivery_header_gap: 4,
     special_delivery_line_height: 1.4,
     special_delivery_icon_gap: 12,
     // Special Delivery Message styling
@@ -922,7 +916,6 @@ function defaultRule() {
 
       // Special Delivery block
       show_special_delivery: false,
-      special_delivery_header: "",
       special_delivery_message: "",
       special_delivery_icon_size: 24,
       special_delivery_icon_color: "#111827",
@@ -940,11 +933,6 @@ function defaultRule() {
       special_delivery_font_size: "medium",
       special_delivery_font_weight: "normal",
       special_delivery_text_alignment: "left",
-      // Special Delivery - Header Styling (per-rule override)
-      special_delivery_override_global_header_styling: false,
-      special_delivery_header_color: "#111827",
-      special_delivery_header_font_size: 16,
-      special_delivery_header_font_weight: "normal",
       // Special Delivery - Icon selection from Icons page
       special_delivery_icon: "",
     },
@@ -2480,55 +2468,17 @@ export default function Index() {
                     <input
                       type="checkbox"
                       checked={globalSettings?.special_delivery_use_theme_text_styling !== false}
-                      onChange={(e) => setGlobalSettings({ ...globalSettings, special_delivery_use_theme_text_styling: e.target.checked, special_delivery_header_use_theme_text_styling: e.target.checked })}
+                      onChange={(e) => setGlobalSettings({ ...globalSettings, special_delivery_use_theme_text_styling: e.target.checked })}
                     />
                     <s-text>Match theme text styling</s-text>
                   </label>
-                  {(rule?.settings?.special_delivery_override_global_text_styling === true || rule?.settings?.special_delivery_override_global_header_styling === true) && (
+                  {rule?.settings?.special_delivery_override_global_text_styling === true && (
                     <s-text size="small" style={{ color: "#6b7280", marginLeft: 24 }}><em>📌 Current rule is using custom text styling</em></s-text>
                   )}
                   {globalSettings?.special_delivery_use_theme_text_styling === false && (
-                  <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) minmax(0, 1fr)", gap: 16, overflow: "hidden" }}>
-                    {/* Header */}
-                    <div style={{ display: "grid", gap: 8, minWidth: 0 }}>
-                      <s-text size="small" style={{ fontWeight: 600 }}>Header (optional)</s-text>
+                  <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) minmax(0, 1fr)", gap: 12 }}>
                       <div>
-                        <s-text size="small">Color</s-text>
-                        <div style={{ marginTop: 4 }}>
-                          <ColorPicker
-                            color={globalSettings?.special_delivery_header_text_color || "#111827"}
-                            onChange={(color) => setGlobalSettings({ ...globalSettings, special_delivery_header_text_color: color })}
-                          />
-                        </div>
-                      </div>
-                      <div>
-                        <s-text size="small">Font size ({globalSettings?.special_delivery_header_font_size ?? 16}px)</s-text>
-                        <input
-                          type="range"
-                          min="12"
-                          max="24"
-                          value={globalSettings?.special_delivery_header_font_size ?? 16}
-                          onChange={(e) => setGlobalSettings({ ...globalSettings, special_delivery_header_font_size: Number(e.target.value) })}
-                          style={{ width: "100%", maxWidth: 175 }}
-                        />
-                      </div>
-                      <div>
-                        <s-text size="small">Font weight</s-text>
-                        <select
-                          value={globalSettings?.special_delivery_header_font_weight || "normal"}
-                          onChange={(e) => setGlobalSettings({ ...globalSettings, special_delivery_header_font_weight: e.target.value })}
-                          style={{ width: "100%" }}
-                        >
-                          <option value="normal">Normal</option>
-                          <option value="bold">Bold</option>
-                        </select>
-                      </div>
-                    </div>
-                    {/* Message */}
-                    <div style={{ display: "grid", gap: 8, minWidth: 0 }}>
-                      <s-text size="small" style={{ fontWeight: 600 }}>Message</s-text>
-                      <div>
-                        <s-text size="small">Color</s-text>
+                        <s-text size="small">Text color</s-text>
                         <div style={{ marginTop: 4 }}>
                           <ColorPicker
                             color={globalSettings?.special_delivery_text_color || "#374151"}
@@ -2544,7 +2494,7 @@ export default function Index() {
                           max="22"
                           value={globalSettings?.special_delivery_font_size ?? 16}
                           onChange={(e) => setGlobalSettings({ ...globalSettings, special_delivery_font_size: Number(e.target.value) })}
-                          style={{ width: "100%", maxWidth: 175 }}
+                          style={{ width: "100%" }}
                         />
                       </div>
                       <div>
@@ -2558,7 +2508,6 @@ export default function Index() {
                           <option value="bold">Bold</option>
                         </select>
                       </div>
-                    </div>
                   </div>
                   )}
                 </div>
@@ -2997,16 +2946,6 @@ export default function Index() {
                         max="40"
                         value={globalSettings?.special_delivery_padding_vertical ?? 10}
                         onChange={(e) => setGlobalSettings({ ...globalSettings, special_delivery_padding_vertical: safeParseNumber(e.target.value, 10, 0, 40) })}
-                        style={{ width: "100%" }}
-                      />
-                    </div>
-                    <div>
-                      <s-text size="small">Header gap</s-text>
-                      <input
-                        type="number"
-                        min="0"
-                        value={globalSettings?.special_delivery_header_gap ?? 4}
-                        onChange={(e) => setGlobalSettings({ ...globalSettings, special_delivery_header_gap: Number(e.target.value) || 0 })}
                         style={{ width: "100%" }}
                       />
                     </div>
@@ -5587,6 +5526,7 @@ export default function Index() {
                   {/* Content - only show when not collapsed */}
                   {!collapsedPanels.eta_timeline && (
                   <div style={{ padding: "16px", display: "grid", gap: 12 }}>
+
                     <div>
                       <div>ETA Timeline displays:</div>
                       <div>Order date (today) → Shipping date <span title="Cutoff and lead time set in Global Settings or overridden per rule in Dispatch Settings." style={{ cursor: "help" }}>ℹ️</span> → Delivery date range <span title="Courier delivery window set per rule in Dispatch Settings." style={{ cursor: "help" }}>ℹ️</span></div>
@@ -6413,31 +6353,6 @@ export default function Index() {
                       Display special delivery information for large items, palletised shipments, etc.
                     </s-text>
 
-                    {/* Header input (optional) */}
-                    <label>
-                      <s-text>Header (optional)</s-text>
-                      <div style={{ display: "flex", alignItems: "center", gap: 6, color: "var(--p-color-text-subdued, #6b7280)", marginTop: 4, marginBottom: 4 }}>
-                        <span style={{ fontSize: 12, flexShrink: 0 }}>💡</span>
-                        <span style={{ fontSize: 12 }}>Formatting: **bold**, [link](url)</span>
-                        <span title={"**text** = bold text\n[text](url) = clickable link"} style={{ cursor: "help", fontSize: 12 }}>ℹ️</span>
-                      </div>
-                      <input
-                        type="text"
-                        value={rule.settings?.special_delivery_header || ""}
-                        onChange={(e) => {
-                          const next = [...rules];
-                          next[safeSelectedIndex] = {
-                            ...rule,
-                            settings: { ...rule.settings, special_delivery_header: e.target.value },
-                          };
-                          setRules(next);
-                        }}
-                        maxLength={100}
-                        style={{ width: "100%" }}
-                        placeholder="Palletised Shipment"
-                      />
-                    </label>
-
                     {/* Message textarea */}
                     <label>
                       <s-text>Message</s-text>
@@ -6808,8 +6723,7 @@ export default function Index() {
                               ...rule,
                               settings: {
                                 ...rule.settings,
-                                special_delivery_override_global_text_styling: e.target.checked,
-                                special_delivery_override_global_header_styling: e.target.checked
+                                special_delivery_override_global_text_styling: e.target.checked
                               },
                             };
                             setRules(next);
@@ -6819,69 +6733,9 @@ export default function Index() {
                       </label>
 
                       {rule.settings?.special_delivery_override_global_text_styling === true && (
-                        <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) minmax(0, 1fr)", gap: 16, overflow: "hidden" }}>
-                          {/* Header */}
-                          <div style={{ display: "grid", gap: 8, minWidth: 0 }}>
-                            <s-text size="small" style={{ fontWeight: 600 }}>Header (optional)</s-text>
+                        <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) minmax(0, 1fr)", gap: 12 }}>
                             <div>
-                              <s-text size="small">Color</s-text>
-                              <div style={{ marginTop: 4 }}>
-                                <ColorPicker
-                                  color={rule.settings?.special_delivery_header_color || "#111827"}
-                                  onChange={(color) => {
-                                    const next = [...rules];
-                                    next[safeSelectedIndex] = {
-                                      ...rule,
-                                      settings: { ...rule.settings, special_delivery_header_color: color },
-                                    };
-                                    setRules(next);
-                                  }}
-                                />
-                              </div>
-                            </div>
-                            <div>
-                              <s-text size="small">Font size ({normalizeFontSize(rule.settings?.special_delivery_header_font_size, 16)}px)</s-text>
-                              <input
-                                type="range"
-                                min="12"
-                                max="24"
-                                step="1"
-                                value={normalizeFontSize(rule.settings?.special_delivery_header_font_size, 16)}
-                                onChange={(e) => {
-                                  const next = [...rules];
-                                  next[safeSelectedIndex] = {
-                                    ...rule,
-                                    settings: { ...rule.settings, special_delivery_header_font_size: parseInt(e.target.value) },
-                                  };
-                                  setRules(next);
-                                }}
-                                style={{ width: "100%", maxWidth: 175 }}
-                              />
-                            </div>
-                            <div>
-                              <s-text size="small">Font weight</s-text>
-                              <select
-                                value={rule.settings?.special_delivery_header_font_weight || "normal"}
-                                onChange={(e) => {
-                                  const next = [...rules];
-                                  next[safeSelectedIndex] = {
-                                    ...rule,
-                                    settings: { ...rule.settings, special_delivery_header_font_weight: e.target.value },
-                                  };
-                                  setRules(next);
-                                }}
-                                style={{ width: "100%" }}
-                              >
-                                <option value="normal">Normal</option>
-                                <option value="bold">Bold</option>
-                              </select>
-                            </div>
-                          </div>
-                          {/* Message */}
-                          <div style={{ display: "grid", gap: 8, minWidth: 0 }}>
-                            <s-text size="small" style={{ fontWeight: 600 }}>Message</s-text>
-                            <div>
-                              <s-text size="small">Color</s-text>
+                              <s-text size="small">Text color</s-text>
                               <div style={{ marginTop: 4 }}>
                                 <ColorPicker
                                   color={rule.settings?.special_delivery_text_color || "#374151"}
@@ -6933,7 +6787,6 @@ export default function Index() {
                                 <option value="bold">Bold</option>
                               </select>
                             </div>
-                          </div>
                         </div>
                       )}
 
@@ -7315,26 +7168,6 @@ export default function Index() {
                                 : (rule.settings.special_delivery_icon_color || "#111827");
                               const parsedMessage = parseMarkdown(message);
 
-                              // Header styling
-                              const header = rule.settings.special_delivery_header || "";
-                              const parsedHeader = parseMarkdown(header);
-                              const headerGap = globalSettings?.special_delivery_header_gap ?? 4;
-                              const headerColor = rule.settings.special_delivery_override_global_header_styling
-                                ? (rule.settings.special_delivery_header_color || "#111827")
-                                : globalSettings?.special_delivery_header_use_theme_text_styling === false
-                                  ? (globalSettings?.special_delivery_header_text_color || "#111827")
-                                  : "inherit";
-                              const headerFontSize = rule.settings.special_delivery_override_global_header_styling
-                                ? `${normalizeFontSize(rule.settings.special_delivery_header_font_size, 16)}px`
-                                : globalSettings?.special_delivery_header_use_theme_text_styling === false
-                                  ? `${normalizeFontSize(globalSettings?.special_delivery_header_font_size, 16)}px`
-                                  : "inherit";
-                              const headerFontWeight = rule.settings.special_delivery_override_global_header_styling
-                                ? getTextFontWeight(rule.settings.special_delivery_header_font_weight)
-                                : globalSettings?.special_delivery_header_use_theme_text_styling === false
-                                  ? getTextFontWeight(globalSettings?.special_delivery_header_font_weight)
-                                  : globalSettings?.eta_preview_font_weight || "normal";
-
                               // Border styling
                               const useCustomBorder = rule.settings.special_delivery_use_custom_border;
                               const borderThickness = useCustomBorder
@@ -7423,22 +7256,8 @@ export default function Index() {
                                       style={{ width: sizePx, height: sizePx, flexShrink: 0, objectFit: "contain" }}
                                     />
                                   )}
-                                  <div style={{ minWidth: 0, textAlign: textAlignment, display: "flex", flexDirection: "column", gap: header ? headerGap : 0 }}>
-                                    {/* Header - only render if populated */}
-                                    {header && (
-                                      <div style={{
-                                        color: headerColor,
-                                        fontSize: headerFontSize,
-                                        fontWeight: headerFontWeight,
-                                        fontFamily: fontFamily,
-                                      }}>
-                                        {parsedHeader.map((seg, i) => renderSegment(seg, i, 'sph', globalSettings))}
-                                      </div>
-                                    )}
-                                    {/* Message */}
-                                    <div>
-                                      {parsedMessage.map((seg, i) => renderSegment(seg, i, 'sp', globalSettings))}
-                                    </div>
+                                  <div style={{ minWidth: 0, textAlign: textAlignment }}>
+                                    {parsedMessage.map((seg, i) => renderSegment(seg, i, 'sp', globalSettings))}
                                   </div>
                                 </div>
                               );
